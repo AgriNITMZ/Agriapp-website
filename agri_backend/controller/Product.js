@@ -8,8 +8,7 @@ const { uploadUmageToCloudinary } = require('../utils/ImageUploader')
 exports.createProduct = async (req, res) => {
         try {
             const userId = req.user.id;
-            console.log("User ID: ", userId);
-    
+           
             const { name, price_size, category, description, tag: _tag, badges, fullShopDetails } = req.body;
             const parsedPriceSize = Array.isArray(price_size) ? price_size : JSON.parse(price_size);
             const images = Array.isArray(req.files.image) ? req.files.image : [req.files.image];

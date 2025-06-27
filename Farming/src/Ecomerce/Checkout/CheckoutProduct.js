@@ -94,7 +94,7 @@ const CheckoutProduct = () => {
       // Step 1: Create payment link
       const paymentResponse = await axios.post(
         'http://localhost:4000/api/v1/order/create-payment-link-before-order/',
-        { totalAmount: totalAmount },
+        { totalAmount: totalAmount},
         {
           headers: {
             Authorization: `Bearer ${token}`,

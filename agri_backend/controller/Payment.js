@@ -3,6 +3,7 @@ const User = require('../models/Users');
 const razorpay = require('../config/razorpay');
 const Product = require('../models/Product');
 const crypto = require('crypto');
+const mongoose=require('mongoose')
 
 exports.createPaymentLinkBeforeOrder = async (req, res) => {
     try {
@@ -21,12 +22,11 @@ exports.createPaymentLinkBeforeOrder = async (req, res) => {
             customer: {
                 name: user.Name,
                 email: user.email,
-                contact: user.mobile || "7633020372",
+                contact: user.mobile || "7307675982",
             },
             notify: {
                 sms: true,
                 email: true,
-                contact: true
             },
             reminder_enable: true,
             callback_url: `http://localhost:3000/payment/callback`,
@@ -38,6 +38,9 @@ exports.createPaymentLinkBeforeOrder = async (req, res) => {
 
         // Create Razorpay payment link
         const paymentLink = await razorpay.paymentLink.create(paymentLinkRequest);
+
+
+       
 
         res.status(200).json({
             success: true,
@@ -61,19 +64,13 @@ exports.createPaymentLinkBeforeOrder = async (req, res) => {
 exports.handleWebhook = async (req, res) => {
     try {
         // Verify webhook signature
-        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-        const signature = req.headers['x-razorpay-signature'];
-        
-        const shasum = crypto.createHmac('sha256', webhookSecret);
-        shasum.update(JSON.stringify(req.body));
-        const digest = shasum.digest('hex');
+       const digest = crypto
+    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .update(req.rawBody)                       // raw buffer!
+    .digest('hex');
 
-        if (signature !== digest) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid webhook signature'
-            });
-        }
+  if (digest !== req.headers['x-razorpay-signature'])
+    return res.status(400).send('Invalid webhook signature');
 
         const { payload } = req.body;
         const { payment_link } = payload;
@@ -87,6 +84,11 @@ exports.handleWebhook = async (req, res) => {
                 message: "Order not found"
             });
         }
+
+          /* ---------- 2-C  Idempotency guard ---------- */
+  if (order.paymentStatus === 'Completed' || order.orderStatus === 'Cancelled')
+    return res.json({ received: true });      // already handled
+
 
         // Handle different payment statuses
         switch (payment_link.status) {
@@ -118,37 +120,75 @@ exports.handleWebhook = async (req, res) => {
 
 // Handle successful payment
 async function handleSuccessfulPayment(order) {
-    try {
-        // Update order status
-        order.paymentStatus = 'Completed';
-        order.orderStatus = 'Processing';
-        
-        // Update product quantities
-        for (const item of order.items) {
-            const product = await Product.findById(item.product);
-            if (product) {
-                const sizeIndex = product.price_size.findIndex(p => p.size === item.size);
-                if (sizeIndex !== -1) {
-                    if (product.price_size[sizeIndex].quantity < item.quantity) {
-                        throw new Error(`Insufficient stock for product ${product.name} in size ${item.size}`);
-                    }
-                    product.price_size[sizeIndex].quantity -= item.quantity;
-                    await product.save();
-                }
-            }
-        }
 
-        await order.save();
-        return true;
-    } catch (error) {
-        // If there's an error updating stock, mark payment for refund
-        order.paymentStatus = 'Refund_Pending';
-        order.orderStatus = 'Cancelled';
-        order.failureReason = error.message;
-        await order.save();
-        throw error;
-    }
+    if (order.stockAdjusted) {
+    console.log(`Stock already adjusted for order ${order._id}`);
+    return;
+  }
+  const session = await mongoose.startSession();
+  await session.withTransaction(async () => {
+    // Update order status
+    order.paymentStatus = 'Completed';
+    order.orderStatus = 'Processing';
+
+    // Update product quantities
+    for (const item of order.items) {
+      const product = await Product.findById(item.product);
+      if (!product) continue;
+
+      // Determine the correct price_size array to update
+      let priceArray;
+      if (item.sellerId) {
+        const sellerEntry = product.sellers.find(s =>
+          s.sellerId.toString() === item.sellerId.toString()
+        );
+        if (!sellerEntry) {
+          throw new Error(`Seller not linked to product ${product.name}`);
+        }
+        priceArray = sellerEntry.price_size;
+      } else {
+        priceArray = product.price_size;
+      }
+
+      const sizeIndex = priceArray.findIndex(p => p.size === item.size);
+      if (sizeIndex === -1) {
+        throw new Error(`Size ${item.size} not available for product ${product.name}`);
+      }
+
+      if (priceArray[sizeIndex].quantity < item.quantity) {
+        throw new Error(`Insufficient stock for ${product.name} (Size: ${item.size})`);
+      }
+
+
+
+      // Deduct stock
+      console.log(`Before:`, priceArray[sizeIndex].quantity);
+priceArray[sizeIndex].quantity -= item.quantity;
+console.log(`After:`, priceArray[sizeIndex].quantity);
+  
+if (item.sellerId) {
+  product.markModified('sellers');
+} else {
+  product.markModified('price_size');
 }
+
+await product.save({ session });
+    }
+    order.stockAdjusted=true;
+
+    await order.save({ session });
+  });
+
+  session.endSession();
+}
+
+
+
+    
+
+
+    
+
 
 // Handle failed payment
 async function handleFailedPayment(order, status) {
@@ -162,9 +202,7 @@ async function handleFailedPayment(order, status) {
 exports.verifyPayment = async (req, res) => {
     try {
         const {
-            razorpay_payment_id,
             razorpay_payment_link_id,
-            razorpay_payment_link_status
         } = req.body;
 
         // Find order by payment link ID

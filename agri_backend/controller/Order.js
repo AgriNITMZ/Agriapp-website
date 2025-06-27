@@ -28,19 +28,33 @@ exports.createOrder = async (req, res) => {
       if (productId) {
         // Single Product Order
         const product = await Product.findById(productId);
+        console.log(product)
+      
+
         if (!product) {
           return res.status(404).json({ message: "Product not found." });
         }
+        console.log("file" +product.price_size)
+        console.dir(product.sellers.price_size, { depth: null });
+
   
-        // Find the selected size and its price
-        const sizeDetail = product.price_size.find((item) => item.size === size);
-        if (!sizeDetail) {
-          return res.status(400).json({ message: "Selected size not available." });
-        }
-  
-        if (sizeDetail.quantity < quantity) {
-          return res.status(400).json({ message: "Insufficient stock for the selected size." });
-        }
+        // choose which price_size to use
+const priceArray =
+  sellerId                     // sellerId came in the request
+    ? product.sellers.find(s => s.sellerId.toString() === sellerId)?.price_size
+    : product.price_size;
+
+if (!priceArray) {
+  return res.status(404).json({ message: 'Seller not linked to this product' });
+}
+
+const sizeDetail = priceArray.find(p => p.size === size);
+if (!sizeDetail)
+  return res.status(400).json({ message: 'Selected size not available' });
+
+if (sizeDetail.quantity < quantity)
+  return res.status(400).json({ message: 'Insufficient stock for the selected size' });
+
   
         // Prepare order item
         orderItems.push({

@@ -68,7 +68,10 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Addresses',
     required: true
-  }
+  },
+  stockAdjusted: { type: Boolean, 
+    default: false }
+
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt
 });
