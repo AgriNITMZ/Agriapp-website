@@ -1,200 +1,158 @@
-const Order = require('../models/Order');
+// controller/Order.js
+const Order   = require('../models/Order');
 const Product = require('../models/Product');
-const Cart = require('../models/CartItem');
+const Cart    = require('../models/CartItem');
+const {asyncHandler}=require('../utils/error')
 
-exports.createOrder = async (req, res) => {
-    try {
-      const userId = req.user.id;
-      console.log(`User ID: ${userId}`);
-      const {
-        productId,
-        size,
-        quantity,
-        addressId,
-        paymentMethod,
-        paymentLinkId,
-        paymentLink,
-        sellerId // <-- Added sellerId from request
-      } = req.body;
-      console.log("sellerId", sellerId)
-     
-      let cartId = await Cart.findOne({ userId });
-  
-      let orderItems = [];
-      let totalAmount = 0;
-
-      
-  
-      if (productId) {
-        // Single Product Order
-        const product = await Product.findById(productId);
-        console.log(product)
-      
-
-        if (!product) {
-          return res.status(404).json({ message: "Product not found." });
-        }
-        console.log("file" +product.price_size)
-        console.dir(product.sellers.price_size, { depth: null });
-
-  
-        // choose which price_size to use
-const priceArray =
-  sellerId                     // sellerId came in the request
-    ? product.sellers.find(s => s.sellerId.toString() === sellerId)?.price_size
-    : product.price_size;
-
-if (!priceArray) {
-  return res.status(404).json({ message: 'Seller not linked to this product' });
+/* -------------------------------------------------- *
+ *  Helper: return price_size array for a seller
+ * -------------------------------------------------- */
+function getPriceArray(product, sellerId) {
+  if (sellerId) {
+    const block = product.sellers.find(
+      s => s.sellerId.toString() === sellerId.toString()
+    );
+    return block ? block.price_size : null;
+  }
+  return product.price_size;           // default seller
 }
 
-const sizeDetail = priceArray.find(p => p.size === size);
-if (!sizeDetail)
-  return res.status(400).json({ message: 'Selected size not available' });
+/* -------------------------------------------------- *
+ *  POST /createorder
+ * -------------------------------------------------- */
+exports.createOrder = asyncHandler(async (req, res) => {
 
-if (sizeDetail.quantity < quantity)
-  return res.status(400).json({ message: 'Insufficient stock for the selected size' });
+    const userId = req.user.id;
+    const {
+      productId,
+      size,
+      quantity,
+      addressId,
+      paymentMethod,      // 'online' | 'cod'
+      paymentLinkId,      // online only
+      paymentLink,        // online only
+      sellerId
+    } = req.body;
 
-  
-        // Prepare order item
+    const cart = await Cart.findOne({ userId }).populate('items.product');
+    const orderItems = [];
+    let   totalAmount = 0;
+
+    /* ---------- 1. single-product checkout ---------- */
+    if (productId) {
+      const product = await Product.findById(productId);
+      if (!product) return res.status(404).json({ message: 'Product not found' });
+
+      const priceArr = getPriceArray(product, sellerId);
+      if (!priceArr) return res.status(404).json({ message: 'Seller not linked to product' });
+
+      const sizeDetail = priceArr.find(p => p.size === size);
+      if (!sizeDetail)  return res.status(400).json({ message: 'Size not available' });
+      if (sizeDetail.quantity < quantity)
+        return res.status(400).json({ message: 'Insufficient stock' });
+
+      orderItems.push({
+        product   : productId,
+        sellerId  : sellerId || product.sellerId,
+        size,
+        selectedprice           : sizeDetail.price,
+        selectedDiscountedPrice : sizeDetail.discountedPrice,
+        quantity
+      });
+      totalAmount = sizeDetail.discountedPrice * quantity;
+    }
+
+    /* ---------- 2. cart checkout ---------- */
+    else if (cart && cart.items.length) {
+      for (const item of cart.items) {
+        const product = item.product;
+        const priceArr = getPriceArray(product, item.sellerId);
+        if (!priceArr)
+          return res.status(404).json({ message: `Seller not linked to ${product.name}` });
+
+        const sizeDetail = priceArr.find(p => p.size === item.selectedsize);
+        if (!sizeDetail)
+          return res.status(400).json({ message: `Size ${item.selectedsize} not available` });
+        if (sizeDetail.quantity < item.quantity)
+          return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
+
         orderItems.push({
-          product: productId,
-          size: size,
-          selectedprice: sizeDetail.price,
-          selectedDiscountedPrice: sizeDetail.discountedPrice,
-          quantity: quantity,
-          sellerId: sellerId // <-- Save sellerId here
+          product   : product._id,
+          sellerId  : item.sellerId || product.sellerId,
+          size      : item.selectedsize,
+          selectedprice           : sizeDetail.price,
+          selectedDiscountedPrice : sizeDetail.discountedPrice,
+          quantity  : item.quantity
         });
-  
-        totalAmount = sizeDetail.discountedPrice * quantity;
-      } else if (cartId) {
-        // Cart-based Order
-        const cart = await Cart.findById(cartId).populate('items.product');
-        if (!cart || cart.items.length === 0) {
-          return res.status(404).json({ message: "Cart is empty or not found." });
-        }
-  
-        for (const item of cart.items) {
-          const product = item.product;
-  
-          const sizeDetail = product.price_size.find((p) => p.size === item.selectedsize);
-          if (!sizeDetail) {
-            return res.status(400).json({ message: `Size ${item.selectedsize} not available for product ${product.name}.` });
-          }
-  
-          if (sizeDetail.quantity < item.quantity) {
-            return res.status(400).json({ message: `Insufficient stock for product ${product.name} in size ${item.selectedsize}.` });
-          }
-  
-          orderItems.push({
-            product: product._id,
-            size: item.selectedsize,
-            selectedprice: sizeDetail.price,
-            selectedDiscountedPrice: sizeDetail.discountedPrice,
-            quantity: item.quantity,
-            sellerId: item.sellerId // <-- Ensure sellerId is included in cart item
-          });
-  
-          totalAmount += sizeDetail.discountedPrice * item.quantity;
-        }
-  
-        // Clear the cart after creating the order
-        cart.items = [];
-        await cart.save();
-      } else {
-        return res.status(400).json({ message: "Provide either productId for a single product or cartId for cart items." });
+        totalAmount += sizeDetail.discountedPrice * item.quantity;
       }
-  
-      // Create the order with payment details
-      const newOrder = new Order({
-        userId: userId,
-        items: orderItems,
-        totalAmount: totalAmount,
-        paymentMethod: paymentMethod,
-        shippingAddress: addressId,
-        paymentStatus: 'Pending',
-        orderStatus: 'Pending',
-        paymentId: paymentLinkId,
-        paymentLink: paymentLink
-      });
-  
-      await newOrder.save();
-  
-      res.status(201).json({
-        success: true,
-        message: "Order created successfully.",
-        order: newOrder
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ 
-        success: false,
-        message: "Internal server error.", 
-        error 
-      });
+
+      /* empty the cart */
+      cart.items = [];
+      await cart.save();
+    } else {
+      return res.status(400).json({ message: 'No product or cart supplied' });
     }
-  };
 
-// find order by id
+    /* ---------- 3. create Order document ---------- */
+    const newOrder = await Order.create({
+      userId,
+      items        : orderItems,
+      totalAmount,
+      paymentMethod,
+      shippingAddress: addressId,
+      paymentStatus : paymentMethod === 'cod' ? 'Pending' : 'Pending',
+      orderStatus   : paymentMethod === 'cod' ? 'Processing' : 'Pending',
+      paymentId     : paymentLinkId || null,
+      paymentLink   : paymentLink   || null
+    });
 
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      order  : newOrder
+    });
+ 
+});
+
+/* -------------------------------------------------- *
+ *  GET /order/:orderId
+ * -------------------------------------------------- */
 exports.getOrderById = async (req, res) => {
-    try {
-        const orderId = req.params.orderId;
-        console.log(`Order ${orderId}`)
-        const order = await Order.findById(orderId).populate('items.product');
+  try {
+    const order = await Order.findById(req.params.orderId).populate('items.product');
+    if (!order) return res.status(404).json({ message:'Order not found' });
 
-        if (!order) {
-            return res.status(404).json({ message: "Order not found." });
-        }
-
-        res.status(201).json({
-            message: "Order retrieved successfully.",
-            order: order
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal server error.", error });
-    }
+    res.status(200).json({ message:'Order retrieved', order });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message:'Internal server error', error: err.message });
+  }
 };
 
-// order History
+/* -------------------------------------------------- *
+ *  GET /order/history (buyer)
+ * -------------------------------------------------- */
+exports.getOrderHistory = asyncHandler(async (req, res) => {
 
-exports.getOrderHistory = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const orders = await Order.find({ userId }).populate('items.product');
+    const orders = await Order.find({ userId: req.user.id })
+                              .populate('items.product')
+                              .populate({path: 'shippingAddress',
+    select: 'Name streetAddress   city state  zipcode mobile',
+  })
+                              .sort({ createdAt: -1 });
+    res.status(200).json({ message:'Orders retrieved', orders });
+  
+});
 
-        if (!orders) {
-            return res.status(404).json({ message: "No orders found." });
-        }
+/* -------------------------------------------------- *
+ *  GET /seller/orders (seller)
+ * -------------------------------------------------- */
+exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
 
-        res.status(201).json({
-            message: "Order history retrieved successfully.",
-            orders: orders
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal server error.", error });
-    }
-};
-
-// seller order history
-exports.getSellerOrderHistory = async (req, res) => {
-    try {
-        const sellerId = req.user.id;
-        const orders = await Order.find({ 'items.product.sellerId': sellerId }).populate('items.product');
-
-        if (!orders) {
-            return res.status(404).json({ message: "No orders found." });
-        }
-
-        res.status(201).json({
-            message: "Order history retrieved successfully.",
-            orders: orders
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal server error.", error });
-    }
-};
-
+    const orders = await Order.find({ 'items.sellerId': req.user.id })
+                              .populate('items.product')
+                              .sort({ createdAt: -1 });
+    res.status(200).json({ message:'Seller orders retrieved', orders });
+  
+});

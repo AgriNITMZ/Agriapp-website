@@ -3,10 +3,10 @@ const Category = require('../models/Category')
 const ParenstCategory = require('../models/ParentCategory');
 const User = require('../models/Users')
 const { uploadUmageToCloudinary } = require('../utils/ImageUploader')
+const{asyncHandler}=require('../utils/error')
 
 
-exports.createProduct = async (req, res) => {
-        try {
+exports.createProduct = asyncHandler(async (req, res) => {
             const userId = req.user.id;
            
             const { name, price_size, category, description, tag: _tag, badges, fullShopDetails } = req.body;
@@ -57,16 +57,11 @@ exports.createProduct = async (req, res) => {
     
             console.log("Newly created product:", savedProduct);
             res.status(201).json({ success: true, msg: 'Product created successfully', product: savedProduct });
-        } catch (error) {
-            console.error("Error creating product:", error);
-            res.status(500).json({ success: false, msg: 'Something went wrong while creating the product' });
-        }
-    };
+    });
 
 // find product by id
 
-exports.getProductById = async (req, res) => {
-    try {
+exports.getProductById = asyncHandler(async (req, res) => {
 
         const productId = req.params.productId;
 
@@ -82,21 +77,12 @@ exports.getProductById = async (req, res) => {
             success: true,
             msg: 'Product found successfully',
             product
-        })
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            msg: 'Some thing error while finding product'
-        })
-    }
-}
+        })  
+})
 
 // get all products
 
-exports.getAllProducts = async (req, res) => {
-    try {
+exports.getAllProducts = asyncHandler(async (req, res) => {
         const products = await Product.find()
 
         res.status(200).json({
@@ -105,14 +91,7 @@ exports.getAllProducts = async (req, res) => {
             products
         })
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            msg: 'Some thing error while finding products'
-        })
-    }
-}
+})
 
 // get product by parent category
 
@@ -680,8 +659,8 @@ exports.editProduct = async (req, res) => {
 
 
 // Controller to add a seller to an existing product
-exports.addSellerToProduct = async (req, res) => {
-    try {
+exports.addSellerToProduct = asyncHandler(async (req, res) => {
+    
         const userId = req.user.id;
         const { productId } = req.params;
         const { price_size, fullShopDetails } = req.body;
@@ -746,11 +725,5 @@ exports.addSellerToProduct = async (req, res) => {
             product
         });
 
-    } catch (err) {
-        console.error('Error adding seller to product:', err);
-        res.status(500).json({
-            success: false,
-            msg: 'Internal server error'
-        });
-    }
-};
+  
+});

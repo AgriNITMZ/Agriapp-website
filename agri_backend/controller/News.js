@@ -1,8 +1,9 @@
 const News = require('../models/News');
+const{asyncHandler}=require('../utils/error')
 
 // @desc Add News
-exports.addNews = async (req, res) => {
-    try {
+exports.addNews = asyncHandler(async (req, res) => {
+ 
         const { title, date, source, image, description } = req.body;
         const news = new News({
             title,
@@ -14,14 +15,11 @@ exports.addNews = async (req, res) => {
 
         await news.save();
         res.status(201).json({ success: true, message: "News added successfully", data: news });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+  
+});
 
 // @desc Get All News with Pagination
-exports.getAllNews = async (req, res) => {
-    try {
+exports.getAllNews = asyncHandler(async (req, res) => {
         let { page, limit } = req.query;
         page = parseInt(page) || 1;
         limit = parseInt(limit) || 10;
@@ -37,26 +35,21 @@ exports.getAllNews = async (req, res) => {
             total,
             data: newsList
         });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+   
+});
 
 // @desc Get Single News by ID
-exports.getNewsById = async (req, res) => {
-    try {
+exports.getNewsById = asyncHandler(async (req, res) => {
         const news = await News.findById(req.params.id);
         if (!news) return res.status(404).json({ success: false, message: "News not found" });
 
         res.status(200).json({ success: true, data: news });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+  
+});
 
 // @desc Update News
-exports.updateNews = async (req, res) => {
-    try {
+exports.updateNews = asyncHandler(async (req, res) => {
+   
         const { title, date, source, image, description } = req.body;
         const updatedNews = await News.findByIdAndUpdate(req.params.id, {
             title,
@@ -69,19 +62,15 @@ exports.updateNews = async (req, res) => {
         if (!updatedNews) return res.status(404).json({ success: false, message: "News not found" });
 
         res.status(200).json({ success: true, message: "News updated successfully", data: updatedNews });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+   
+});
 
 // @desc Delete News
-exports.deleteNews = async (req, res) => {
-    try {
+exports.deleteNews = asyncHandler(async (req, res) => {
+    
         const deletedNews = await News.findByIdAndDelete(req.params.id);
         if (!deletedNews) return res.status(404).json({ success: false, message: "News not found" });
 
         res.status(200).json({ success: true, message: "News deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+    
+});

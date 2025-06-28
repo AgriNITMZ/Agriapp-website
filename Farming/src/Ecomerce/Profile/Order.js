@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import ProfileLayout from './Profile';
 import axios from 'axios';
-import { Package, Clock, CheckCircle, XCircle, AlertTriangle, Truck } from 'lucide-react';
+import {
+  Package, Clock, CheckCircle, XCircle,
+  AlertTriangle, Truck
+} from 'lucide-react';
 
 const Order = () => {
   const [orders, setOrders] = useState([]);
@@ -14,71 +17,47 @@ const Order = () => {
 
   const fetchOrders = async () => {
     try {
-      const storedTokenData = JSON.parse(localStorage.getItem("token"));
+      const storedTokenData = JSON.parse(localStorage.getItem('token'));
       if (!storedTokenData || Date.now() >= storedTokenData.expires) {
-        throw new Error("Token expired or not found");
+        throw new Error('Token expired or not found');
       }
 
-      const response = await axios.get(
+      const { data } = await axios.get(
         'http://localhost:4000/api/v1/order/orderhistory',
-        {
-          headers: {
-            Authorization: `Bearer ${storedTokenData.value}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${storedTokenData.value}` } }
       );
 
-      setOrders(response.data.orders);
+      setOrders(data.orders);
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      setError(error.message);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError(err.message);
       setLoading(false);
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Pending':
-        return <Clock className="text-yellow-500" size={24} />;
-      case 'Processing':
-        return <Package className="text-blue-500" size={24} />;
-      case 'Shipped':
-        return <Truck className="text-purple-500" size={24} />;
-      case 'Delivered':
-        return <CheckCircle className="text-green-500" size={24} />;
-      case 'Cancelled':
-        return <XCircle className="text-red-500" size={24} />;
-      default:
-        return <AlertTriangle className="text-gray-500" size={24} />;
-    }
-  };
+  /* ---------- helpers ---------- */
+  const getStatusIcon = (s) => ({
+    Pending:     <Clock      className="text-yellow-500" size={24} />,
+    Processing:  <Package    className="text-blue-500"   size={24} />,
+    Shipped:     <Truck      className="text-purple-500" size={24} />,
+    Delivered:   <CheckCircle className="text-green-500" size={24} />,
+    Cancelled:   <XCircle    className="text-red-500"    size={24} />,
+  }[s] || <AlertTriangle className="text-gray-500" size={24} />);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'Shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'Delivered':
-        return 'bg-green-100 text-green-800';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const badgeColor = (s) => ({
+    Pending:    'bg-yellow-100 text-yellow-800',
+    Processing: 'bg-blue-100 text-blue-800',
+    Shipped:    'bg-purple-100 text-purple-800',
+    Delivered:  'bg-green-100 text-green-800',
+    Cancelled:  'bg-red-100 text-red-800',
+  }[s] || 'bg-gray-100 text-gray-800');
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const formatDate = (d) => new Date(d).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
 
+  /* ---------- render ---------- */
   if (loading) {
     return (
       <ProfileLayout>
@@ -88,13 +67,11 @@ const Order = () => {
       </ProfileLayout>
     );
   }
-
   if (error) {
     return (
       <ProfileLayout>
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <strong>Error:&nbsp;</strong>{error}
         </div>
       </ProfileLayout>
     );
@@ -104,7 +81,7 @@ const Order = () => {
     <ProfileLayout>
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">My Orders</h1>
-        
+
         {orders.length === 0 ? (
           <div className="text-center py-8">
             <Package className="mx-auto h-16 w-16 text-gray-400" />
@@ -114,24 +91,45 @@ const Order = () => {
         ) : (
           orders.map((order) => (
             <div key={order._id} className="bg-white rounded-lg shadow-md p-6 space-y-4">
-              <div className="flex justify-between items-center border-b pb-4">
+              {/* ---------- order header ---------- */}
+              <div className="flex flex-wrap justify-between items-center gap-y-4 border-b pb-4">
                 <div>
-                  <p className="text-sm text-gray-500">ORDER PLACED</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Order Placed</p>
                   <p className="font-medium">{formatDate(order.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">TOTAL</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
                   <p className="font-medium">₹{order.totalAmount.toFixed(2)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">ORDER #{order._id.slice(-6)}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Payment Mode</p>
+                  <p className="font-medium">{order.paymentMethod}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Order #</p>
+                  <p className="font-medium">{order._id.slice(-6)}</p>
                 </div>
               </div>
 
+              {/* ---------- NEW: shipping address block ---------- */}
+              {order.shippingAddress && (
+                <div className="bg-gray-50 rounded-md p-4 space-y-0.5 text-sm">
+                  <p className="font-semibold">Shipping to</p>
+                  <p>{order.shippingAddress.Name}</p>
+                 
+                  <p>
+                   {order.shippingAddress.streetAddress}, {order.shippingAddress.city}, {order.shippingAddress.state}{' '}
+                    {order.shippingAddress.zipcode}
+                  </p>
+                  <p>Phone: {order.shippingAddress.mobile}</p>
+                </div>
+              )}
+
+              {/* ---------- items ---------- */}
               <div className="space-y-4">
-                {order.items.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className="flex-shrink-0 w-24 h-24">
+                {order.items.map((item, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <div className="w-24 h-24 flex-shrink-0">
                       <img
                         src={item.product?.images?.[0] || '/placeholder.png'}
                         alt={item.product?.name}
@@ -141,7 +139,7 @@ const Order = () => {
                     <div className="flex-grow">
                       <h3 className="font-medium">{item.product?.name}</h3>
                       <p className="text-sm text-gray-500">
-                        Size: {item.size} | Quantity: {item.quantity}
+                        Size: {item.size} | Qty: {item.quantity}
                       </p>
                       <p className="text-sm">
                         Price: ₹{item.selectedDiscountedPrice.toFixed(2)}
@@ -156,35 +154,54 @@ const Order = () => {
                 ))}
               </div>
 
+              {/* ---------- status & timeline ---------- */}
               <div className="border-t pt-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-y-2">
                   <div className="flex items-center space-x-2">
                     {getStatusIcon(order.orderStatus)}
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.orderStatus)}`}>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${badgeColor(order.orderStatus)}`}>
                       {order.orderStatus}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.paymentStatus)}`}>
-                      Payment: {order.paymentStatus}
-                    </span>
-                  </div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${badgeColor(order.paymentStatus)}`}>
+                    Payment: {order.paymentStatus}
+                  </span>
                 </div>
-                
-                {/* Order Timeline */}
+
+                {/* timeline */}
                 <div className="mt-4">
                   <div className="flex items-center space-x-4">
-                    <div className={`h-2 w-2 rounded-full ${order.orderStatus !== 'Cancelled' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <div className={`flex-1 h-0.5 ${order.orderStatus === 'Processing' || order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <div className={`h-2 w-2 rounded-full ${order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <div className={`flex-1 h-0.5 ${order.orderStatus === 'Delivered' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <div className={`h-2 w-2 rounded-full ${order.orderStatus === 'Delivered' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    {['Ordered', 'Processing', 'Shipped', 'Delivered'].map((step, i) => (
+                      <React.Fragment key={step}>
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            (step === 'Ordered' ||
+                              (step === 'Processing' && ['Processing', 'Shipped', 'Delivered'].includes(order.orderStatus)) ||
+                              (step === 'Shipped' && ['Shipped', 'Delivered'].includes(order.orderStatus)) ||
+                              (step === 'Delivered' && order.orderStatus === 'Delivered'))
+                              ? 'bg-green-500'
+                              : 'bg-gray-300'
+                          }`}
+                        />
+                        {i < 3 && (
+                          <div
+                            className={`flex-1 h-0.5 ${
+                              (step === 'Ordered' && ['Processing', 'Shipped', 'Delivered'].includes(order.orderStatus)) ||
+                              (step === 'Processing' && ['Shipped', 'Delivered'].includes(order.orderStatus)) ||
+                              (step === 'Shipped' && order.orderStatus === 'Delivered')
+                                ? 'bg-green-500'
+                                : 'bg-gray-300'
+                            }`}
+                          />
+                        )}
+                      </React.Fragment>
+                    ))}
                   </div>
-                  <div className="flex justify-between text-sm mt-1">
-                    <span className="text-gray-500">Ordered</span>
-                    <span className="text-gray-500">Processing</span>
-                    <span className="text-gray-500">Shipped</span>
-                    <span className="text-gray-500">Delivered</span>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Ordered</span>
+                    <span>Processing</span>
+                    <span>Shipped</span>
+                    <span>Delivered</span>
                   </div>
                 </div>
               </div>

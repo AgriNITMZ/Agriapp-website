@@ -108,7 +108,7 @@ const OrdersTable = () => {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
-                </th>
+                </th>F
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Items
                 </th>
@@ -131,6 +131,9 @@ const OrdersTable = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(order.createdAt)}
+                  </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(order.paymentMethod)}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     <div className="max-w-xs">

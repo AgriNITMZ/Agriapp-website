@@ -5,6 +5,8 @@ const otpGenerator = require('otp-generator')
 const Profile = require('../models/Profile')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const {asyncHandler}=require('../utils/error')
+
 
 
 require('dotenv').config()
@@ -29,18 +31,10 @@ exports.SendOtp = async (req, res) => {
             specialChars: false
         })
         console.log("generated Otp", otp)
-        // let result = await Otp.findOne({ otp: otp })
-        // while (result) {
-        //     otp = otpGenerator.generate(6, {
-        //         upperCaseAlphabets: false,
-        //         lowerCaseAlphabets: false,
-        //         specialChars: false
-        //     })
-        // }
+      
         const otpPayload = { email, otp }
         const otpBody = await Otp.create(otpPayload)
 
-        console.log(otpBody)
         // return response
         res.status(200).json({
             success: true,
@@ -61,8 +55,8 @@ exports.SendOtp = async (req, res) => {
 
 
 // signup
-exports.SignUp = async (req, res) => {
-    try {
+exports.SignUp = asyncHandler(async (req, res) => {
+   
         // data fetch from request body
         const { Name,
             email,
@@ -114,9 +108,6 @@ exports.SignUp = async (req, res) => {
             })
         }
 
-
-
-
         // hash password
         const hashedPassword = await bcrypt.hash(password, 10)
 
@@ -127,6 +118,7 @@ exports.SignUp = async (req, res) => {
             about: null,
             contactNo: null
         })
+
         // create entry in database
         const user = await User.create({
             Name,
@@ -136,6 +128,7 @@ exports.SignUp = async (req, res) => {
             additionalDetail: profileDetails._id,
             image: `https:api.dicebear.com/8.x/initials/svg?seed=${Name}`,
         })
+
         // creat cart for user
         let cart = await Cart.create({ userId: user._id });
         user.cartId = cart._id;
@@ -154,7 +147,6 @@ exports.SignUp = async (req, res) => {
         user.token = token
         user.password = undefined
 
-
         // generate cookie and send resposnse
 
         const options = {
@@ -171,20 +163,15 @@ exports.SignUp = async (req, res) => {
         })
 
 
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            success: false,
-            message: "User cann't register try again"
-        })
-    }
+    
+    
 
-}
+})
 
 // login
 
-exports.Login = async (req, res) => {
-    try {
+exports.Login = asyncHandler(async (req, res) => {
+  
         // get data from request body
         const { email, password } = req.body
         // validation of data
@@ -203,18 +190,7 @@ exports.Login = async (req, res) => {
             })
         }
 
-        // creat cart for user
-
-        // Check if cart already exists before creating
-        // let cart = await Cart.findOne({ userId: user._id });
-        // if (!cart) {
-
-        // }
-
-
-
-
-
+       
         // password match
         if (await bcrypt.compare(password, user.password)) {
             // generate JWT TOKEN
@@ -251,19 +227,13 @@ exports.Login = async (req, res) => {
                 message: "Incorrect Password!"
             })
         }
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            success: false,
-            message: "Server error! Please try again later."
-        })
-    }
-}
+  
+})
 
 // get user by id
 
-exports.getUserById = async (req, res) => {
-    try {
+exports.getUserById = asyncHandler(async (req, res) => {
+
         const user = await User.findById(req.params.userId);
         if (!user) {
             return res.status(404).json({
@@ -275,18 +245,11 @@ exports.getUserById = async (req, res) => {
             success: true,
             user
         })
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            success: false,
-            message: "Error while fetching user"
-        })
-    }
-}
+  })
 // get user by token
 
-exports.getUserByToken = async (req, res) => {
-    try {
+exports.getUserByToken = asyncHandler(async (req, res) => {
+   
         const token = req.header('Authorization')?.replace('Bearer ', '');
         if (!token) {
             return res.status(401).json({
@@ -306,17 +269,11 @@ exports.getUserByToken = async (req, res) => {
             success: true,
             user
         })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({
-            success: false,
-            message: "Error while fetching user"
-        })
-    }
-}
+   
+})
 
-exports.getUserProfile = async (req, res) => {
-    try {
+exports.getUserProfile = asyncHandler(async (req, res) => {
+   
         const token = req.header('Authorization')?.replace('Bearer ', '');
         if (!token) {
             return res.status(401).json({
@@ -339,16 +296,6 @@ exports.getUserProfile = async (req, res) => {
             success: true,
             user
         });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            success: false,
-            message: "Error while fetching user"
-        });
-    }
-};
-
-
-
-// update password
+    
+});
 

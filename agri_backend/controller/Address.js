@@ -1,9 +1,11 @@
 const User = require('../models/Users')
 const Address = require('../models/Address')
+const {asyncHandler}=require('../utils/error')
+
 // create address controller
 
-exports.createAddress = async (req, res) => {
-    try {
+exports.createAddress = asyncHandler(async (req, res) => {
+
         const userId = req.user.id
         const { Name,
             streetAddress,
@@ -35,18 +37,11 @@ exports.createAddress = async (req, res) => {
         await user.save();
         await newAddress.save()
         res.json({ msg: "Address created successfully" })
-
-
-    } catch (error) {
-        console.error(error.message)
-        res.status(500).send("Server error")
-    }
-}
+})
 
 // get all addresses
 
-exports.getAllAddresses = async (req, res) => {
-    try {
+exports.getAllAddresses = asyncHandler(async (req, res) => {
         const userId = req.user.id
 
         const user = await User.findById(userId);
@@ -58,14 +53,10 @@ exports.getAllAddresses = async (req, res) => {
 
         res.json(addresses)
 
-    } catch (error) {
-        console.error(error.message)
-        res.status(500).send("Server error")
-    }
-}
 
-exports.editAddress = async (req, res) => {
-    try {
+})
+
+exports.editAddress = asyncHandler(async (req, res) => {
         const userId = req.user.id;
         const addressId = req.params.id; // Assuming the address ID is passed in the URL
         const { Name, streetAddress, city, state, zipCode, mobile } = req.body;
@@ -87,17 +78,14 @@ exports.editAddress = async (req, res) => {
         // Save the updated address
         await address.save();
         res.json({ message: "Address updated successfully", address });
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).send("Server error");
-    }
-};
+   
+});
 
 
 // delete address by id
 
-exports.deleteAddress = async (req, res) => {
-    try {
+exports.deleteAddress = asyncHandler(async (req, res) => {
+   
         const userId = req.user.id
         const addressId = req.params.id
 
@@ -116,15 +104,12 @@ exports.deleteAddress = async (req, res) => {
         res.json({ msg: "Address deleted successfully" })
 
 
-    } catch (error) {
-        console.error(error.message)
-        res.status(500).send("Server error")
-    }
-}
+    
+})
 
 // update address by id
-exports.updateAddress = async (req, res) => {
-    try {
+exports.updateAddress = asyncHandler(async (req, res) => {
+   
         const userId = req.user.id;
         const addressId = req.params.editingAddressId;
         const { Name, streetAddress, city, state, zipCode, mobile } = req.body;
@@ -157,12 +142,4 @@ exports.updateAddress = async (req, res) => {
             message: "Address updated successfully",
             address: updatedAddress
         });
-
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).json({
-            success: false,
-            message: "Server error while updating address"
-        });
-    }
-}
+})

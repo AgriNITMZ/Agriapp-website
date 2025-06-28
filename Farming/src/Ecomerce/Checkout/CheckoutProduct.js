@@ -91,6 +91,40 @@ const CheckoutProduct = () => {
     setIsProcessing(true);
 
     try {
+
+      /*---------------
+      1) Cod 
+      ------------------*/
+
+        if (paymentMethod === 'cod') {
+      const orderResp = await axios.post(
+        'http://localhost:4000/api/v1/order/createorder',
+        {
+          productId,
+          sellerId,
+          size,
+          quantity,
+          paymentMethod: 'cod',
+          addressId: selectedAddress._id
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (orderResp.data.success) {
+        toast.success('Order placed with Cash on Delivery');
+        navigate('/product/profile/orders');
+      } else {
+        toast.error('Order creation failed. Please try again.');
+      }
+      return;                 // ⛔  stop here – don’t create Razorpay link
+    }
+
+
+    /*------------------
+    Online Payment
+    -------------------*/
+
+
       // Step 1: Create payment link
       const paymentResponse = await axios.post(
         'http://localhost:4000/api/v1/order/create-payment-link-before-order/',
@@ -109,12 +143,12 @@ const CheckoutProduct = () => {
         // In handlePayment()
         const orderResponse = await axios.post(
           'http://localhost:4000/api/v1/order/createorder',
-          {
+          { 
             productId: productId,
             sellerId,       // from query param
             size,           // from query param
             quantity,
-            paymentMethod: 'online',
+            paymentMethod,
             paymentLinkId: paymentLinkId,
             addressId: selectedAddress._id,
           },
@@ -259,6 +293,22 @@ const CheckoutProduct = () => {
                   <span className="flex items-center space-x-2">
                     <CreditCard className="w-5 h-5 text-gray-600" />
                     <span>Online Payment</span>
+                  </span>
+                </label>
+              </div>
+               <div className="space-y-4">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    value="cod"
+                    checked={paymentMethod === 'cod'}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="form-radio h-5 w-5 text-green-600"
+                  />
+
+                  <span className="flex items-center space-x-2">
+                    <CreditCard className="w-5 h-5 text-gray-600" />
+                    <span>COD</span>
                   </span>
                 </label>
               </div>
