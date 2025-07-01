@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "PreciAgri",
+    "slug": "PreciAgri",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/images/logos/app_logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/images/logos/app_logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "splash": {
+      "image": "./src/assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+      "package": "com.vicky1001.PreciAgriapp"
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "plugins": [
+      [
+      "expo-splash-screen",
+      {
+        "backgroundColor": "#ffffff",
+        "image": "./src/assets/images/splash.png",
+        "imageWidth": 200
+      }
+    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8637ae67-f09d-4d3b-83ab-30e55063dbf0"
+      }
+    },
+    "owner": "vicky1001"
+  }
+}

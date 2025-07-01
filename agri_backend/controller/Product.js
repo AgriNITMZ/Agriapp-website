@@ -95,8 +95,7 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
 
 // get product by parent category
 
-exports.getProductsByParentCategory = async (req, res) => {
-    try {
+exports.getProductsByParentCategory = asyncHandler(async (req, res) => {
         const { parentCategoryId } = req.body;
 
 
@@ -120,11 +119,7 @@ exports.getProductsByParentCategory = async (req, res) => {
         // Return the list of products
         return res.status(200).json(allProducts);
 
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Server error, please try again' });
-    }
-};
+});
 
 
 //   get product by category
@@ -528,8 +523,8 @@ exports.getFilteredProducts = async (req, res) => {
     }
 };
 
-exports.editProduct = async (req, res) => {
-    try {
+exports.editProduct = asyncHandler(async (req, res) => {
+    
       const userId = req.user.id;
       const productId = req.params.productId;
       const product = await Product.findById(productId);
@@ -645,14 +640,8 @@ exports.editProduct = async (req, res) => {
         msg: 'Product updated successfully',
         product,
       });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        msg: 'Something went wrong while updating the product',
-      });
-    }
-  };
+   
+  });
 
  
 
