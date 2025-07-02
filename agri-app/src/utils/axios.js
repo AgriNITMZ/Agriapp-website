@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getUserFromLocalStorage } from './localStorage'
 
 const customFetch = axios.create({
-    baseURL: 'http://192.168.61.195:4000/api/v1',
+    baseURL: 'http://192.168.0.101:4000/api/v1',
 })
 // https://preciagribackend.onrender.com
 
