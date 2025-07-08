@@ -20,7 +20,7 @@ const ProfileLayout = ({ children }) => {
                 navigate("/product/profile/addresses");
                 break;
             case "PAN Card Information":
-                navigate("/product/profile/pan-card");
+                navigate("/profile/pan-card");
                 break;
             // Add cases for other pages
             default:

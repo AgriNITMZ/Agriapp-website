@@ -2,6 +2,7 @@ const Product = require('../models/Product')
 const Category = require('../models/Category')
 const ParenstCategory = require('../models/ParentCategory');
 const User = require('../models/Users')
+const mongoose = require('mongoose')
 const { uploadUmageToCloudinary } = require('../utils/ImageUploader')
 const{asyncHandler}=require('../utils/error')
 
@@ -231,51 +232,65 @@ exports.getAllProductBySeller = async (req, res) => {
 
 // delete products
 exports.deleteProduct = async (req, res) => {
-    try {
-        const userId = req.user.id
-        const productId = req.params.productId
-        const product = await Product.findById(productId)
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                msg: 'Product not found'
-            })
-        }
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const userId = req.user.id;
+    const { productId } = req.params;
 
-        if (product.sellerId != userId) {
-            return res.status(401).json({
-                success: false,
-                msg: 'You are not authorized to delete this product'
-            })
-        }
+    const product = await Product.findOneAndDelete(
+      { _id: productId },
+      { session }
+    );
 
-        await Product.findByIdAndDelete(productId)
-        // also remove from category and user schema
-        await Category.findByIdAndUpdate(product.category, {
-            $pull: {
-                product: productId
-            }
-        })
-        await User.findByIdAndUpdate(userId, {
-            $pull: {
-                products: productId
-            }
-        })
-        // send notification to admin
-
-        res.status(200).json({
-            success: true,
-            msg: 'Product deleted successfully'
-        })
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            msg: 'Some thing error while deleting product'
-        })
+    if (!product) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, msg: 'Product not found' });
     }
+
+
+          // string
+const isSeller = product.sellers.some(
+  (s) => s.sellerId.toString() === userId
+);
+
+if (!isSeller) {
+  await session.abortTransaction();
+  return res.status(403).json({
+    success: false,
+    msg: 'You are not authorized to delete this product',
+  });
 }
+
+
+    await Category.updateOne(
+      { _id: product.category },
+      { $pull: { products: productId } },
+      { session }
+    );
+
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { products: productId } },
+      { session }
+    );
+
+    // TODO: send notification to admin here (email/queue) if needed
+
+    await session.commitTransaction();
+    res.status(200).json({ success: true, msg: 'Product deleted successfully' });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      msg: 'Something went wrong while deleting the product',
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
 exports.getFilteredProducts = async (req, res) => {
 
     try {

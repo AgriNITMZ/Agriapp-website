@@ -44,7 +44,8 @@ const ProductTable = () => {
   }
   // Handle delete product
   const handleDeleteProduct = (productId) => {
-   deleteProduct(productId)
+      if (!window.confirm('Are you sure you want to delete this product?')) return;
+   dispatch(deleteProduct(productId))
   };
   const handleEditProduct = (id) => {
     navigate(`/seller/edit-product/${id}`);

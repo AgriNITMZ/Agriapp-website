@@ -30,6 +30,7 @@ import Server from '../Server/Server'
 import PaymentCallback from '../Ecomerce/Payment/PaymentCallback'
 import SingleNews from '../Component/HomePage/SingleNews'
 import SingleScheme from '../Component/HomePage/SingleScheme'
+import PanCard from '../Ecomerce/Profile/PanCardInfo'
 
 
 const CustomerRoutes = () => {
@@ -61,6 +62,7 @@ const CustomerRoutes = () => {
         <Route path="/product/profile/orders" element={<Order/>} />
         <Route path="/product/checkout" element={<CheckoutProduct/>} />
         <Route path="/server" element={<Server/>} />
+        <Route path="/profile/pan-card" element={<PanCard/>} />
         <Route path="/payment/callback" element={<PaymentCallback/>} />
 
       </Routes>

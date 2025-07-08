@@ -22,6 +22,7 @@ const { createProduct,
     editProduct,
     addSellerToProduct,
     getAllProductBySeller,
+    deleteProduct,
     } = require('../controller/Product');
 
 
@@ -39,6 +40,7 @@ router.get('/getproductbyId/:productId', getProductById)
 router.get('/getallproduct', getAllProducts)
 router.get('/getproductbyparentcategory', getProductsByParentCategory)
 router.get('/getproductbycategory', getProductsByCategory)
+router.delete('/product/delete/:productId', auth, isSeller, deleteProduct) // Assuming you want to delete a product by its ID
 
 
 

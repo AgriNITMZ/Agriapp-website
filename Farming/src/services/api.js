@@ -12,7 +12,7 @@ export const productEndpoint={
     GET_PRODUCTS_API: BASE_URL + "/products",
     GET_PRODUCT_API: BASE_URL + "/product",
     ADD_PRODUCT_API: BASE_URL + "/product/add",
-    DELETE_PRODUCT_API: BASE_URL + "/product/delete",
+    DELETE_PRODUCT_API: BASE_URL + "/products/product/delete/",
     UPDATE_PRODUCT_API: BASE_URL + "/product/update",
     GET_PRODUCT_BY_ID_API: BASE_URL + "/products/getproductbyId/",
     GET_PRODUCT_BY_CATEGORY_API: BASE_URL + "/products/category/",
