@@ -39,20 +39,20 @@ import {
 
 } from './src/screens';
 import AppNavigator from './AppNavigator';
-import WeatherPage from './src/screens/Services/WeatherPage';
-import ShowAddressPage from './src/screens/Address/ShowAddress';
+import WeatherPage from './src/screens/services/WeatherPage';
+import ShowAddressPage from './src/screens/address/ShowAddress';
 import AddPost from './src/screens/Posts/AddPost';
 import EditPost from './src/screens/Posts/EditPost';
-import SelectAddressPage from './src/screens/Address/SelectAddressPage';
+import SelectAddressPage from './src/screens/address/SelectAddressPage';
 import OrderSummaryPage from './src/screens/Orders/OrderSummaryPage';
 import SellerOrdersPage from './src/screens/Orders/SellerOrderPage';
-import FarmingTipsPage from './src/screens/Services/FarmingTipsPage';
+import FarmingTipsPage from './src/screens/services/FarmingTipsPage';
 import AboutUs from './src/screens/General/AboutUs';
 import ContactUs from './src/screens/General/ContactUs';
 import OrderSuccessScreen from './src/screens/Orders/OrderSuccessScreen';
 import OrderFailedScreen from './src/screens/Orders/OrderFailedScreen';
 import OrderHistoryScreen from './src/screens/Orders/MyOrdersPage';
-import AuthChecker from './src/screens/Auth/AuthChecker';
+import AuthChecker from './src/screens/auth/AuthChecker';
 import customFetch from './src/utils/axios';
 import SensorDropdownScreen from './src/screens/Sensor/Sensor';
 
