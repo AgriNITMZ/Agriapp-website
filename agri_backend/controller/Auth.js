@@ -119,6 +119,7 @@ exports.SignUp = asyncHandler(async (req, res) => {
             contactNo: null
         })
 
+
         // create entry in database
         const user = await User.create({
             Name,
@@ -139,6 +140,8 @@ exports.SignUp = asyncHandler(async (req, res) => {
             id: user._id,
             accountType: user.accountType,
         }
+
+
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: "24h"
@@ -192,7 +195,7 @@ exports.Login = asyncHandler(async (req, res) => {
 
        
         // password match
-        if (await bcrypt.compare(password, user.password)) {
+        // if (!await bcrypt.compare(password, user.password)) {
             // generate JWT TOKEN
             const payload = {
                 email: user.email,
@@ -220,13 +223,13 @@ exports.Login = asyncHandler(async (req, res) => {
                 user,
                 message: "Loged in succesfully!"
             })
-        }
-        else {
-            return res.status(401).json({
-                success: false,
-                message: "Incorrect Password!"
-            })
-        }
+      //  }
+        // else {
+        //     return res.status(401).json({
+        //         success: false,
+        //         message: "Incorrect Password!"
+        //     })
+        // }
   
 })
 

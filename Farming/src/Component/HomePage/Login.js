@@ -20,44 +20,9 @@ const Login = () => {
     e.preventDefault();
     console.log("hii in login")
     try {
-      dispatch(login(email,password,navigate))
-      // let response=await axios.post("http://localhost:4000/api/v1/auth/login",{
-      //   email: formData.email,
-      //   password: formData.password
-      // })
-      // localStorage.setItem("token",response.data.token)
-      // const token = localStorage.getItem("token")
-      // console.log("token is",token)
-
-      // const tokenData = {
-      //   value: response.data.token,
-      //   expires: Date.now() + 86400000, // 24 hours from now
-      // };
-      
-      // localStorage.setItem("token", JSON.stringify(tokenData));
-      
-      // const storedTokenData = JSON.parse(localStorage.getItem("token"));
-      // if (storedTokenData && Date.now() < storedTokenData.expires) {
-      //   console.log("Token:", storedTokenData.value);
-      // } else {
-      //   localStorage.removeItem("token");
-      //   console.log("Token has expired");
-      // }
-      // console.log("resp during login",response)
-      // navigate('/')
-      // if(response?.status){
-      //   // set token in local storage
-       
-    
-      //   // navigate to home page
-       
-      // }
-      // console.log("response during login",response)
-
-      
+      dispatch(login(email,password,navigate)) 
     } catch (error) {
       console.log(error)
-      
     }
     console.log('Form submitted:', formData);
   };
