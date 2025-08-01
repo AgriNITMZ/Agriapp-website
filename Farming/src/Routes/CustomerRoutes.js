@@ -52,7 +52,8 @@ const CustomerRoutes = () => {
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path='/product/item/:productId' element={<SingleItem/>} />
         <Route path='/product/cart' element={<Cart/>} />
-        <Route path='/product/profile' element={<ProfileLayout/>} /> 
+       <Route path="/product/profile" element={<ProfileLayout />} />
+<Route path="/profile" element={<ProfileLayout />} />
         <Route path='/product/wishlist' element={<WishList/>} />   
         <Route path='/product/search' element={<Search/>} /> 
         <Route path='/update-password/:token' element={<UpdatePassword/>} /> 

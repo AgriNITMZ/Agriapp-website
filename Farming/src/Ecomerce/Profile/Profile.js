@@ -22,6 +22,10 @@ const ProfileLayout = ({ children }) => {
             case "PAN Card Information":
                 navigate("/profile/pan-card");
                 break;
+            case "My Wishlist":
+            navigate("/product/wishlist");
+
+                break;
             // Add cases for other pages
             default:
                 navigate("/product/profile/information");

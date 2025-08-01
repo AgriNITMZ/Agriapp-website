@@ -3,13 +3,22 @@ const User = require('../models/Users');
 const razorpay = require('../config/razorpay');
 const Product = require('../models/Product');
 const crypto = require('crypto');
-const mongoose=require('mongoose')
+const mongoose=require('mongoose');
+const Address = require('../models/Address');
+// or const mongoose = require('mongoose');
+const { Types } = mongoose;
 
 exports.createPaymentLinkBeforeOrder = async (req, res) => {
     try {
+         const { ObjectId } = Types;
         const userId = req.user.id;
-        const { totalAmount } = req.body;
+        const { totalAmount,addressId } = req.body;
         const user = await User.findById(userId);
+        const idofAddress= new ObjectId(addressId);
+
+        const address=await Address.findById(idofAddress);
+        console.log(address)
+
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -22,7 +31,7 @@ exports.createPaymentLinkBeforeOrder = async (req, res) => {
             customer: {
                 name: user.Name,
                 email: user.email,
-                contact: user.mobile || "7307675982",
+                contact: address.mobile ,
             },
             notify: {
                 sms: true,
@@ -38,9 +47,6 @@ exports.createPaymentLinkBeforeOrder = async (req, res) => {
 
         // Create Razorpay payment link
         const paymentLink = await razorpay.paymentLink.create(paymentLinkRequest);
-
-
-       
 
         res.status(200).json({
             success: true,
