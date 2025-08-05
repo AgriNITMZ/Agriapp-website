@@ -5,6 +5,7 @@ import cartReducer from '../slice/cartSlice'
 import wishlistReducer from '../slice/wishlistSlice'
 import singleproductReducer from '../slice/SingleProductSlice'
 import sellerProductReducer from '../slice/SellerProductSlice'
+import adminProductReducer from '../slice/adminProductsSlice'
 
 const rootReducer=combineReducers({
     auth:authReducer,
@@ -12,7 +13,8 @@ const rootReducer=combineReducers({
     cart:cartReducer,
     wishlist:wishlistReducer,
     singleproduct:singleproductReducer,
-    sellerproduct:sellerProductReducer
+    sellerproduct:sellerProductReducer,
+    adminProduct:adminProductReducer
 
 })
 

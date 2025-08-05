@@ -11,6 +11,7 @@ const NavBar = () => {
 
   // ⬇️  NEW: read token from Redux
   const token = useSelector((state) => state.auth.token);
+  console.log("Token from Redux:", token);
 
   // Redux state for wishlist & user profile
   const wishlistCount = useSelector((state) => state.wishlist.totalItems);
@@ -43,7 +44,7 @@ const NavBar = () => {
       try {
         const { data } = await axios.get(
           "http://localhost:4000/api/v1/auth/getuserbytoken",
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token.value}` } }
         );
         setUserImage(data.user.image);
         setUserRole(data.user.accountType);

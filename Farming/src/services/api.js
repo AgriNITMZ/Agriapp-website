@@ -34,3 +34,8 @@ export const paymentEndpoint ={
     PRODUCT_VERIFY_API: BASE_URL + "/",
     SEND_PAYMENT_SUCCESS_EMAIL_API: BASE_URL +"",
 }
+
+export const AdminEndpoint ={
+    GET_PRODUCTS: BASE_URL + "/products/getallproduct",
+    
+}

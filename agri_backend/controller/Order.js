@@ -156,3 +156,4 @@ exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
     res.status(200).json({ message:'Seller orders retrieved', orders });
   
 });
+9
