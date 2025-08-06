@@ -3,7 +3,8 @@ import { TouchableOpacity, StyleSheet, View, KeyboardAvoidingView, Platform } fr
 import { Text } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import customFetch from '../../utils/axios';
-import { addUserToLocalStorage } from '../../utils/localStorage'
+import { addUserToLocalStorage } from '../../utils/localStorage';
+import { useRefreshProviders } from '../../context/AppProviders'; // ✅ ADDED
 import Background from '../../components/auth/Background';
 import Logo from '../../components/auth/Logo';
 import Header from '../../components/auth/Header';
@@ -17,12 +18,13 @@ import { passwordValidator } from '../../helpers/passwordValidator';
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState({ value: '', error: '' });
   const [password, setPassword] = useState({ value: '', error: '' });
+  const { refreshAll } = useRefreshProviders(); // ✅ ADDED
 
   // Handle login process
   const onLoginPressed = async () => {
     const emailError = emailValidator(email.value);
     const passwordError = passwordValidator(password.value);
-
+    
     if (emailError || passwordError) {
       setEmail({ ...email, error: emailError });
       setPassword({ ...password, error: passwordError });
@@ -36,11 +38,6 @@ export default function LoginScreen({ navigation }) {
       });
 
       if (response.status === 200) {
-        Toast.show({
-          type: 'success',
-          text1: 'Login Successful',
-          text2: 'Welcome back!',
-        });
         const data = response.data;
         const user = {
           id: data.user._id,
@@ -50,7 +47,18 @@ export default function LoginScreen({ navigation }) {
           token: data.token
         };
 
+        // Save user data
         await addUserToLocalStorage(user);
+        
+        // ✅ ADDED: Refresh providers after successful login
+        await refreshAll();
+
+        Toast.show({
+          type: 'success',
+          text1: 'Login Successful',
+          text2: 'Welcome back!',
+        });
+
         navigation.replace('HomePage');
       }
     } catch (error) {
@@ -93,7 +101,7 @@ export default function LoginScreen({ navigation }) {
       </View>
       <Button mode="contained" onPress={onLoginPressed}>Login</Button>
       <View style={styles.row}>
-        <Text>Don’t have an account? </Text>
+        <Text>Don't have an account? </Text>
         <TouchableOpacity onPress={() => navigation.replace('SignUpScreen')}>
           <Text style={styles.link}>Sign up</Text>
         </TouchableOpacity>

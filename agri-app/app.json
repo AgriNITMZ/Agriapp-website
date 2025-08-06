@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "newArchEnabled": true
     },
     "experiments": {
       "newArchEnabled": true
@@ -23,24 +24,36 @@
         "backgroundColor": "#ffffff"
       },
       "splash": {
-      "image": "./src/assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-      "package": "com.vicky1001.PreciAgriapp"
+        "image": "./src/assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vicky1001.PreciAgriapp",
+      "newArchEnabled": true
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
       [
-      "expo-splash-screen",
-      {
-        "backgroundColor": "#ffffff",
-        "image": "./src/assets/images/splash.png",
-        "imageWidth": 200
-      }
-    ]
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./src/assets/images/splash.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
