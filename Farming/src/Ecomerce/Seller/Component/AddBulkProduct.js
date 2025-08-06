@@ -76,22 +76,54 @@ setExcelData(normalizedData);
   useEffect(() => {
     if (excelData.length === 0) return;
 
-    const transformed = excelData.map((item) => ({
-      name: item["Product Name"] || "",
-      description: `Sold by ${item["Name of the Shop"]}, ${item["Address of Shop"]}. Contact: ${item["Phone Number"]}`,
-      category: item["Product Type"] || "",
-      images: item["Images"]?.split(",").map(img => img.trim()) || [],
-      price_size:
-        item["Price(Rs)"]?.split(",").map((pair) => {
-          const [size, price] = pair.split(":");
-          return {
-            size: size?.trim() || "Default",
-            price: parseFloat(price) || 0,
-          };
-        }) || [],
-      owner: item["Owner Name"] || null,
-      email: item["Email"] || null,
-    }));
+ let lastShopName = null;
+let lastAddress = null;
+let lastPhone = null;
+let lastOwner = null;
+let lastEmail = null;
+let lastCategory = null;
+let lastImages = null;
+let lastPriceString = null;
+
+const parsePriceSize = (priceStr) => {
+  if (!priceStr) return [];
+
+  return priceStr.split(",").map((entry) => {
+    const match = entry.match(/(.+?)\s*\(?(\d+)\D*\)?/);
+    if (match) {
+      const size = match[1]?.trim() || "Default";
+      const price = parseFloat(match[2]) || 0;
+      return { size, price };
+    } else {
+      return { size: "Default", price: 0 };
+    }
+  });
+};
+
+
+const transformed = excelData.map((item) => {
+  // Fill forward missing values
+  if (item["Name of the Shop"]) lastShopName = item["Name of the Shop"];
+  if (item["Address of Shop"]) lastAddress = item["Address of Shop"];
+  if (item["Phone Number"]) lastPhone = item["Phone Number"];
+  if (item["Owner Name"]) lastOwner = item["Owner Name"];
+  if (item["Email"]) lastEmail = item["Email"];
+  if (item["Product Type"]) lastCategory = item["Product Type"];
+  if (item["Images"]) lastImages = item["Images"];
+  if (item["Price(Rs)"]) lastPriceString = item["Price(Rs)"];
+
+  return {
+    name: item["Product Name"] || "",
+    description: `Sold by ${lastShopName || "N/A"}, ${lastAddress || "N/A"}. Contact: ${lastPhone || "N/A"}`,
+    category: lastCategory || "N/A",
+    images: lastImages?.split(",").map(img => img.trim()) || [],
+    price_size: parsePriceSize(lastPriceString),
+    owner: lastOwner || "N/A",
+    email: lastEmail || "N/A",
+  };
+});
+
+
 
     setPreviewData(transformed);
   }, [excelData]);
