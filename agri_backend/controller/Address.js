@@ -14,9 +14,6 @@ exports.createAddress = asyncHandler(async (req, res) => {
             zipCode,
             mobile } = req.body
 
-
-        // const existingAddress = await Address.findOne({ userId })
-
         const newAddress = new Address({
             Name,
             userId,
@@ -25,8 +22,8 @@ exports.createAddress = asyncHandler(async (req, res) => {
             state,
             zipCode,
             mobile
-
         })
+        
         // add in user model
         const user = await User.findById(userId);
         if (!user) {
