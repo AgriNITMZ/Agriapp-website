@@ -3,6 +3,7 @@ import AddProduct from './Component/AddProduct';
 import OrdersTable from './Component/OrdersTable';
 import ProductTable from './Component/ProductTable';
 import DashBoard from './Component/DashBoard';
+import BulkUpload from './Component/AddBulkProduct';
 
 // Placeholder components for dashboard views
 
@@ -25,7 +26,8 @@ const Seller = () => {
     { name: "Total Earnings", path: "/earnings", icon: "💰" },
     { name: "Weekly Overview", path: "/weekly", icon: "📅" },
     { name: "Monthly Overview", path: "/monthly", icon: "📆" },
-    { name: "Add Product", path: "/product/create", icon: "➕" }
+    { name: "Add Product", path: "/product/create", icon: "➕" },
+    { name: "Bulk Add Product", path: "/bulk", icon: "✏️" }
   ];
 
   // Responsive check
@@ -58,6 +60,8 @@ const Seller = () => {
         return <OrdersTable />;
       case '/product/create':
         return <AddProduct />;
+         case '/bulk':
+        return <BulkUpload />;
       case '/product/update':
         return <UpdateProductForm />;
       default:

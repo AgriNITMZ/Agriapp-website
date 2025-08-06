@@ -13,6 +13,7 @@ const {
 } = require('../controller/Category');
 
 const { createProduct,
+    createBulkUpload,
     getProductById,
     getAllProducts,
     getProductsByParentCategory,
@@ -38,8 +39,10 @@ router.post('/particularcreatecategory', getCategoryById)
 
 
 router.post("/createproduct", auth, isSeller, createProduct)
+router.post("/bulk-upload", auth, isSeller, createBulkUpload)
 router.get('/getproductbyId/:productId', getProductById)
-router.get('/getallproduct',auth,isAdmin, getAllProducts)
+// router.get('/getallproduct',auth,isAdmin, getAllProducts)
+router.get('/getallproduct',auth, getAllProducts)
 router.get('/getproductbyparentcategory', getProductsByParentCategory)
 router.get('/getproductbycategory', getProductsByCategory)
 router.delete('/product/delete/:productId', auth, isSeller, deleteProduct) // Assuming you want to delete a product by its ID

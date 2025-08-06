@@ -60,6 +60,99 @@ exports.createProduct = asyncHandler(async (req, res) => {
             res.status(201).json({ success: true, msg: 'Product created successfully', product: savedProduct });
     });
 
+
+exports.createBulkUpload = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  // If you're using multipart/form-data, get bulkData as string and parse it
+  const bulkData = Array.isArray(req.body.bulkData)
+    ? req.body.bulkData
+    : JSON.parse(req.body.bulkData);
+
+  if (!bulkData || !Array.isArray(bulkData)) {
+    return res.status(400).json({ success: false, msg: 'Invalid bulk data' });
+  }
+
+  const user = await User.findById(userId);
+  if (!user || user.accountType !== 'Seller') {
+    return res.status(401).json({ success: false, msg: 'Only sellers can upload products' });
+  }
+
+  const createdProducts = [];
+
+  for (const row of bulkData) {
+    try {
+      const {
+        name,
+        priceDetails, // Should be array of { price, discountedPrice, size, quantity }
+        category,
+        description,
+        tag,
+        images,
+        badges,
+       
+         sellers: [{
+                    sellerId: userId,
+                    price_size: parsedPriceSize,
+                    fullShopDetails,
+                   
+                }] // Should be array of URLs if present
+      } = row;
+
+      if (
+        !name ||
+        !priceDetails ||
+        !category ||
+        !description ||
+        !tag ||
+        !badges 
+
+      ) {
+        console.log(`Skipping product due to missing fields: ${name}`);
+        continue;
+      }
+
+      const categoryExists = await Category.findById(category);
+      if (!categoryExists) {
+        console.log(`Skipping product "${name}": Category not found`);
+        continue;
+      }
+
+      const newProduct = new Product({
+        name,
+        category,
+        description,
+        tag,
+        images: images || [],
+        badges,
+        sellers: [
+          {
+            sellerId: userId,
+            price_size: priceDetails,
+            fullShopDetails,
+          },
+        ],
+      });
+
+      const savedProduct = await newProduct.save();
+
+      await User.findByIdAndUpdate(userId, { $push: { products: savedProduct._id } });
+      await Category.findByIdAndUpdate(category, { $push: { product: savedProduct._id } });
+
+      createdProducts.push(savedProduct);
+    } catch (err) {
+      console.error(`Failed to process row: ${row.name}`, err);
+    }
+  }
+
+  res.status(201).json({
+    success: true,
+    msg: `${createdProducts.length} products uploaded successfully`,
+    products: createdProducts,
+  });
+});
+
+
 // find product by id
 
 exports.getProductById = asyncHandler(async (req, res) => {
