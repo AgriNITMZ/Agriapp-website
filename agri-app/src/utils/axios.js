@@ -3,7 +3,7 @@ import { getUserFromLocalStorage, removeUserFromLocalStorage } from './localStor
 import checkTokenExpiration from './checkTokenExpiration';
 
 const customFetch = axios.create({
-    baseURL: 'http://192.168.0.106:4000/api/v1',
+    baseURL: 'http://10.222.37.22:4000/api/v1',
 });
 
 // Flag to prevent multiple simultaneous token cleanup operations
