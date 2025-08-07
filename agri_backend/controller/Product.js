@@ -61,18 +61,31 @@ exports.createProduct = asyncHandler(async (req, res) => {
     });
 
 
+
+
 exports.createBulkUpload = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  console.log(req.body.bulkData);
+  console.log(req.files);
+  const folder = process.env.FOLDER_NAME || 'products';
 
-  // If you're using multipart/form-data, get bulkData as string and parse it
-  const bulkData = Array.isArray(req.body.bulkData)
-    ? req.body.bulkData
-    : JSON.parse(req.body.bulkData);
+  // 1. Parse bulk data
+  let bulkData;
+  if (Array.isArray(req.body.bulkData)) {
+    bulkData = req.body.bulkData;
+  } else {
+    try {
+      bulkData = JSON.parse(req.body.bulkData);
+    } catch (error) {
+      return res.status(400).json({ success: false, msg: 'Invalid bulkData JSON' });
+    }
+  }
 
   if (!bulkData || !Array.isArray(bulkData)) {
     return res.status(400).json({ success: false, msg: 'Invalid bulk data' });
   }
 
+  // 2. Validate seller
   const user = await User.findById(userId);
   if (!user || user.accountType !== 'Seller') {
     return res.status(401).json({ success: false, msg: 'Only sellers can upload products' });
@@ -80,55 +93,85 @@ exports.createBulkUpload = asyncHandler(async (req, res) => {
 
   const createdProducts = [];
 
-  for (const row of bulkData) {
+  for (let i = 0; i < bulkData.length; i++) {
+    const row = bulkData[i];
     try {
       const {
         name,
-        priceDetails, // Should be array of { price, discountedPrice, size, quantity }
+        uniqueKey, // Get the uniqueKey from frontend
+        price_size,
         category,
         description,
         tag,
-        images,
         badges,
-       
-         sellers: [{
-                    sellerId: userId,
-                    price_size: parsedPriceSize,
-                    fullShopDetails,
-                   
-                }] // Should be array of URLs if present
+        fullShopDetails = "",
       } = row;
 
+      const trimmedName = name?.trim();
+
       if (
-        !name ||
-        !priceDetails ||
-        !category ||
-        !description ||
-        !tag ||
-        !badges 
-
+        !trimmedName ||
+        !Array.isArray(price_size) || price_size.length === 0 ||
+        !description
       ) {
-        console.log(`Skipping product due to missing fields: ${name}`);
+        console.log(`Skipping invalid product: ${trimmedName}`);
         continue;
       }
 
-      const categoryExists = await Category.findById(category);
-      if (!categoryExists) {
-        console.log(`Skipping product "${name}": Category not found`);
+      const categoryDoc = await Category.findById(category);
+      if (!categoryDoc) {
+        console.log(`Category not found: ${category}`);
         continue;
       }
 
+      // 3. Handle Image Uploads - UPDATED to use uniqueKey
+      let uploadedImages = [];
+      
+      // Look for images with the uniqueKey format
+      const imageFieldName = `images_${uniqueKey}[]`;
+      
+      if (req.files && req.files[imageFieldName]) {
+        const files = Array.isArray(req.files[imageFieldName])
+          ? req.files[imageFieldName]
+          : [req.files[imageFieldName]];
+
+        for (const file of files) {
+          const uploaded = await uploadUmageToCloudinary(file, folder, 1000, 1000);
+          uploadedImages.push(uploaded.secure_url);
+        }
+      }
+      
+      // FALLBACK: Also check for old index-based format for backward compatibility
+      if (uploadedImages.length === 0) {
+        const oldImageFieldName = `image_${i}`;
+        if (req.files && req.files[oldImageFieldName]) {
+          const files = Array.isArray(req.files[oldImageFieldName])
+            ? req.files[oldImageFieldName]
+            : [req.files[oldImageFieldName]];
+
+          for (const file of files) {
+            const uploaded = await uploadUmageToCloudinary(file, folder, 1000, 1000);
+            uploadedImages.push(uploaded.secure_url);
+          }
+        }
+      }
+      
+      console.log(`Product: ${trimmedName}, Images found: ${uploadedImages.length}`);
+
+      const parsedTag = typeof tag === "string" ? JSON.parse(tag) : tag;
+
+      // 4. Create product
       const newProduct = new Product({
-        name,
+        name: trimmedName,
         category,
         description,
-        tag,
-        images: images || [],
+        tag: parsedTag,
+        images: uploadedImages,
         badges,
         sellers: [
           {
             sellerId: userId,
-            price_size: priceDetails,
+            price_size,
             fullShopDetails,
           },
         ],
@@ -136,12 +179,13 @@ exports.createBulkUpload = asyncHandler(async (req, res) => {
 
       const savedProduct = await newProduct.save();
 
+      // 5. Push product into user and category
       await User.findByIdAndUpdate(userId, { $push: { products: savedProduct._id } });
       await Category.findByIdAndUpdate(category, { $push: { product: savedProduct._id } });
 
       createdProducts.push(savedProduct);
     } catch (err) {
-      console.error(`Failed to process row: ${row.name}`, err);
+      console.error(`Error uploading product "${row.name || 'Unnamed'}":`, err);
     }
   }
 
@@ -151,6 +195,10 @@ exports.createBulkUpload = asyncHandler(async (req, res) => {
     products: createdProducts,
   });
 });
+
+
+
+
 
 
 // find product by id

@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema({
                     quantity: { type: Number }
                 }
             ],
-            fullShopDetails: { type: String, required: true }
+            fullShopDetails: { type: String,default: 'Full Shop Details' },
         }
     ],
     name: {
@@ -47,6 +47,7 @@ const productSchema = new mongoose.Schema({
         {
             type: String,
             required: true,
+            default: 'New Arrival'
         }
     ],
     createdAt: {
