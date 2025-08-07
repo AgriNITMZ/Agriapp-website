@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router()
+const { auth, isAdmin, isUser, isSeller } = require('../middleware/auth');
 const {
     createCategory,
     getCategories,
@@ -10,7 +11,7 @@ const {
     getParentCategoriesList
 
 } = require('../controller/Category');
-const { auth, isAdmin, isUser, isSeller } = require('../middleware/auth');
+
 const { createProduct,
     createBulkUpload,
     getProductById,
@@ -72,7 +73,7 @@ router.get('/wishlistid', auth, getWishList)
 
 router.get('/searchProducts/search',seachProduct)
 router.get('/sellerProductt',auth,isSeller,getAllProductBySeller)
-router.get('/searchProducts/search', seachProduct)
+// router.get('/searchProducts/search', seachProduct)
 router.get('/filteredproducts', getFilteredProducts)
 
 

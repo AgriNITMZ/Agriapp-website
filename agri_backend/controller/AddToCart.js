@@ -1,3 +1,4 @@
+
 const User = require('../models/Users')
 const Product = require('../models/Product')
 const Cart = require('../models/CartItem')
@@ -184,11 +185,10 @@ exports.clearCart = async (req, res) => {
     }
 };
 
-
 // using it for app
 exports.addProductToCartApp = async (req, res) => {
     try {
-        const { productId, quantity, selectedsize, selecetedDiscountedPrice, selectedPrice } = req.body;
+        const { productId, quantity, selectedsize, selectedDiscountedPrice, selectedPrice, sellerId } = req.body;
         const userId = req.user.id;
 
         if (!productId || !quantity || !selectedsize) {
@@ -205,7 +205,10 @@ exports.addProductToCartApp = async (req, res) => {
             // Check if the product with the same size exists in the cart
             const existingItemIndex = cart.items.findIndex(
                 (item) =>
-                    item.product.toString() === productId && item.selectedsize === selectedsize
+                    item.product.toString() === productId &&
+                    item.selectedsize === selectedsize &&
+                    item.sellerId.toString() === sellerId.toString()
+
             );
 
             if (existingItemIndex > -1) {
@@ -213,16 +216,16 @@ exports.addProductToCartApp = async (req, res) => {
                 cart.items[existingItemIndex].quantity = quantity;
                 // Update the selected price and discounted price if the quantity is updated
                 cart.items[existingItemIndex].selectedPrice = selectedPrice;
-                cart.items[existingItemIndex].selecetedDiscountedPrice = selecetedDiscountedPrice;
+                cart.items[existingItemIndex].selectedDiscountedPrice = selectedDiscountedPrice;
             } else {
                 // Add a new item to the cart 
-                cart.items.push({ product: productId, quantity, selectedsize, selectedPrice, selecetedDiscountedPrice });
+                cart.items.push({ product: productId, quantity, selectedsize, selectedPrice, selectedDiscountedPrice, sellerId });
             }
         } else {
             // Create a new cart for the user
             cart = new Cart({
                 userId,
-                items: [{ product: productId, quantity, selectedsize, selectedPrice, selecetedDiscountedPrice }],
+                items: [{ product: productId, quantity, selectedsize, selectedPrice, selectedDiscountedPrice, sellerId }],
             });
         }
 
@@ -232,7 +235,7 @@ exports.addProductToCartApp = async (req, res) => {
             _id: cart._id,
             userId: cart.userId,
             totalPrice: cart.items.reduce((acc, item) => acc + item.selectedPrice * item.quantity, 0),
-            totalDiscountedPrice: cart.items.reduce((acc, item) => acc + item.selecetedDiscountedPrice * item.quantity, 0),
+            totalDiscountedPrice: cart.items.reduce((acc, item) => acc + item.selectedDiscountedPrice * item.quantity, 0),
             items: await Promise.all(
                 cart.items.map(async (item) => {
                     const productDetails = await Product.findById(item.product).select('name images');
@@ -244,7 +247,8 @@ exports.addProductToCartApp = async (req, res) => {
                         quantity: item.quantity,
                         selectedsize: item.selectedsize,
                         selectedPrice: item.selectedPrice,
-                        selecetedDiscountedPrice: item.selecetedDiscountedPrice,
+                        selectedDiscountedPrice: item.selectedDiscountedPrice,
+                        sellerId: item.sellerId || null,
                     };
                 })
             ),
@@ -274,7 +278,7 @@ exports.getCartItemsApp = async (req, res) => {
             _id: cart._id,
             userId: cart.userId,
             totalPrice: cart.items.reduce((acc, item) => acc + item.selectedPrice * item.quantity, 0),
-            totalDiscountedPrice: cart.items.reduce((acc, item) => acc + item.selecetedDiscountedPrice * item.quantity, 0),
+            totalDiscountedPrice: cart.items.reduce((acc, item) => acc + item.selectedDiscountedPrice * item.quantity, 0),
             items: await Promise.all(
                 cart.items.map(async (item) => {
                     const productDetails = await Product.findById(item.product).select('name images');
@@ -286,7 +290,8 @@ exports.getCartItemsApp = async (req, res) => {
                         quantity: item.quantity,
                         selectedsize: item.selectedsize,
                         selectedPrice: item.selectedPrice,
-                        selecetedDiscountedPrice: item.selecetedDiscountedPrice,
+                        selectedDiscountedPrice: item.selectedDiscountedPrice,
+                        sellerId: item.sellerId,
                     };
                 })
             ),

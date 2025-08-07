@@ -13,14 +13,22 @@ const PORT = process.env.PORT || 5000;
 app.use(morgan('tiny')) // only for development purpose
 app.use(express.json());
 app.use(cookieParser());
+const allowedOrigins = [
+  "http://localhost:3000", // for web
+  "http://192.168.0.101:19000", // Expo Go dev server (adjust IP accordingly)
+];
 app.use(cors(
     {
-        origin: "http://localhost:3000",
-        credentials: true
-
+    origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
     }
+  },
+  credentials: true,
 
-));
+}));
 database.connect()
 
 app.use(

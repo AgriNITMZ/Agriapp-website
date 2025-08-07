@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import customFetch from '../utils/axios';
 import Toast from 'react-native-toast-message';
+import { getUserFromLocalStorage } from '../utils/localStorage';
 
 export const CartContext = createContext();
 
@@ -12,9 +13,48 @@ export const CartProvider = ({ children }) => {
         totalDiscountedPrice: 0,
         items: [],
     });
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
-    // Load cart from API and sync with AsyncStorage on app start
+    // Check authentication status first
     useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const user = await getUserFromLocalStorage();
+                const authenticated = !!(user && user.token);
+                setIsAuthenticated(authenticated);
+                console.log('Cart Provider - Authentication status:', authenticated);
+            } catch (error) {
+                console.error('Error checking auth in CartProvider:', error);
+                setIsAuthenticated(false);
+            } finally {
+                setHasCheckedAuth(true);
+            }
+        };
+        checkAuth();
+    }, []);
+
+    // Load cart from API ONLY after authentication is verified
+    useEffect(() => {
+        if (!hasCheckedAuth) return; // Wait for auth check
+        
+        if (!isAuthenticated) {
+            // User not authenticated, load from AsyncStorage only
+            const loadLocalCart = async () => {
+                try {
+                    const savedCart = await AsyncStorage.getItem('cart');
+                    if (savedCart) {
+                        setCart(JSON.parse(savedCart));
+                    }
+                } catch (error) {
+                    console.error('Error loading local cart:', error);
+                }
+            };
+            loadLocalCart();
+            return;
+        }
+
+        // User is authenticated, fetch from API
         const loadCart = async () => {
             try {
                 const response = await customFetch.get('products/cartitemsapp');
@@ -24,12 +64,7 @@ export const CartProvider = ({ children }) => {
                 }
             } catch (error) {
                 console.error('Error fetching cart:', error);
-                // Toast.show({
-                //     type: 'error',
-                //     text1: 'Cart Sync Failed',
-                //     text2: 'Could not load cart from server.',
-                // });
-
+                
                 // Load from AsyncStorage if API call fails
                 const savedCart = await AsyncStorage.getItem('cart');
                 if (savedCart) {
@@ -38,15 +73,48 @@ export const CartProvider = ({ children }) => {
             }
         };
         loadCart();
-    }, []);
+    }, [isAuthenticated, hasCheckedAuth]);
 
-    //  Save cart to AsyncStorage whenever it changes
+    // Save cart to AsyncStorage whenever it changes
     useEffect(() => {
-        AsyncStorage.setItem('cart', JSON.stringify(cart));
-    }, [cart]);
+        if (hasCheckedAuth) {
+            AsyncStorage.setItem('cart', JSON.stringify(cart));
+        }
+    }, [cart, hasCheckedAuth]);
+
+    // Add method to refresh auth status (call this when user logs in/out)
+    const refreshAuthStatus = async () => {
+        try {
+            const user = await getUserFromLocalStorage();
+            const authenticated = !!(user && user.token);
+            setIsAuthenticated(authenticated);
+            
+            if (!authenticated) {
+                // Clear cart when user logs out
+                setCart({
+                    _id: null,
+                    totalPrice: 0,
+                    totalDiscountedPrice: 0,
+                    items: [],
+                });
+            }
+        } catch (error) {
+            console.error('Error refreshing auth status:', error);
+            setIsAuthenticated(false);
+        }
+    };
 
     //  Add or update item in cart
     const addToCart = async (product, quantity, selectedSize, selectedSeller) => {
+        if (!isAuthenticated) {
+            Toast.show({
+                type: 'error',
+                text1: 'Login Required',
+                text2: 'Please login to add items to cart.',
+            });
+            return;
+        }
+
         try {
             const priceSize = selectedSeller?.price_size || product.price_size;
 
@@ -75,7 +143,7 @@ export const CartProvider = ({ children }) => {
                 quantity,
                 selectedsize: selectedPriceSize.size,
                 selectedPrice: selectedPriceSize.price,
-                selecetedDiscountedPrice: selectedPriceSize.discountedPrice || selectedPriceSize.price,
+                selectedDiscountedPrice: selectedPriceSize.discountedPrice || selectedPriceSize.price,
                 sellerId: selectedSeller.sellerId || selectedSeller._id,
             });
 
@@ -100,32 +168,24 @@ export const CartProvider = ({ children }) => {
 
     //  Increase or decrease quantity (calls addToCart)
     const updateQuantity = async (item, newQuantity) => {
+        if (!isAuthenticated) {
+            Toast.show({
+                type: 'error',
+                text1: 'Login Required',
+                text2: 'Please login to update cart.',
+            });
+            return;
+        }
+
         console.log('Updating quantity for item:', item, 'to', newQuantity);
-        const product = {
-            _id: item.productId,
-            name: item.productName,
-            // Create a mock seller structure
-            selectedSeller: {
-                sellerId: item.sellerId, // Use the sellerId from the cart item
-                _id: item.sellerId,
-                price_size: {
-                    0: { // Use index 0 as the selectedSize parameter
-                        size: item.selectedsize,
-                        price: item.selectedPrice,
-                        discountedPrice: item.selecetedDiscountedPrice
-                    }
-                }
-            }
-        };
 
         try {
-
             const response = await customFetch.post('products/addtocartapp', {
                 productId: item.productId,
                 quantity: newQuantity,
                 selectedsize: item.selectedsize,
                 selectedPrice: item.selectedPrice,
-                selecetedDiscountedPrice: item.selecetedDiscountedPrice,
+                selectedDiscountedPrice: item.selectedDiscountedPrice,
                 sellerId: item.sellerId,
             });
             if (response.data.cart) {
@@ -150,6 +210,15 @@ export const CartProvider = ({ children }) => {
 
     //  Remove item from cart 
     const removeFromCart = async (itemId) => {
+        if (!isAuthenticated) {
+            Toast.show({
+                type: 'error',
+                text1: 'Login Required',
+                text2: 'Please login to remove items.',
+            });
+            return;
+        }
+
         try {
             await customFetch.delete(`products/removeitem/${itemId}`);
             // Filter out the removed item
@@ -161,7 +230,7 @@ export const CartProvider = ({ children }) => {
             );
 
             const newTotalDiscountedPrice = updatedItems.reduce(
-                (sum, item) => sum + (item.selecetedDiscountedPrice * item.quantity), 0
+                (sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0
             );
 
             // Update the cart with new items and recalculated totals
@@ -193,15 +262,12 @@ export const CartProvider = ({ children }) => {
     //  Clear cart (both local and API)
     const clearCart = async () => {
         try {
-            await customFetch.delete(`products/clearcart`);
+            if (isAuthenticated) {
+                await customFetch.delete(`products/clearcart`);
+            }
             setCart({ _id: null, totalPrice: 0, totalDiscountedPrice: 0, items: [] });
             await AsyncStorage.removeItem('cart');
 
-            // Toast.show({
-            //     type: 'success',
-            //     text1: 'Cart Cleared',
-            //     text2: 'Your cart is now empty.',
-            // });
         } catch (error) {
             console.error('Error clearing cart:', error);
             Toast.show({
@@ -224,7 +290,17 @@ export const CartProvider = ({ children }) => {
 
     return (
         <CartContext.Provider
-            value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartSize, isProductInCart }}
+            value={{ 
+                cart, 
+                addToCart, 
+                removeFromCart, 
+                updateQuantity, 
+                clearCart, 
+                cartSize, 
+                isProductInCart,
+                refreshAuthStatus,
+                isAuthenticated 
+            }}
         >
             {children}
         </CartContext.Provider>
