@@ -1,35 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react'; // ✅ useRef added
 import { View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRefreshProviders } from '../../context/AppProviders'; // ✅ ADDED
+import { useRefreshProviders } from '../../context/AppProviders';
 
 const LogoutScreen = ({ navigation }) => {
-    const { refreshAll } = useRefreshProviders(); // ✅ ADDED
+    const { refreshAll } = useRefreshProviders();
+
+    const hasLoggedOut = useRef(false); // ✅ added to prevent loop
 
     useEffect(() => {
         const logout = async () => {
+            if (hasLoggedOut.current) return; // ✅ prevent multiple executions
+            hasLoggedOut.current = true; // ✅ set flag
+
             try {
                 console.log('Starting logout process...');
-                
-                // Clear the token from AsyncStorage
                 await AsyncStorage.removeItem('user');
                 console.log('User data cleared from storage');
-                
-                // ✅ ADDED: Refresh providers after logout to clear cart/wishlist
+
                 await refreshAll();
                 console.log('Providers refreshed');
-                
-                // Redirect to StartScreen after logout
+
                 navigation.navigate('StartScreen');
             } catch (error) {
                 console.error("Error during logout:", error);
-                // Still navigate even if there's an error
                 navigation.navigate('StartScreen');
             }
         };
 
         logout();
-    }, [navigation, refreshAll]); // ✅ ADDED refreshAll to dependencies
+    }, [navigation, refreshAll]);
 
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
