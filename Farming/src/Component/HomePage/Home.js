@@ -4,7 +4,9 @@ import HeroSection from './HeroSection';
 import Service from './Service';
 import Technique from './Technique';
 import NavBar from '../Common/NavBar';
-import video from '../../Data/Logo/Video Banner.mp4';
+// //import video from '../../Data/Logo/Video Banner.mp4';
+// import video from '../../Data/Logo/new.mp4';
+import video from '../../Data/Logo/Mizo Farm Landscape.mp4';
 
 const Home = () => {
 
