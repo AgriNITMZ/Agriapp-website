@@ -354,6 +354,8 @@ const AddProduct = () => {
               name="price"
               placeholder="Price"
               value={detail.price}
+              onWheel={(e) => e.target.blur()}
+
               onChange={(e) => handlePriceDetailChange(idx, e)}
               className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
