@@ -2,16 +2,17 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Scheam from "./Scheam";
+import MizoramAgriSchemesList from "./SchemesList.jsx";
 
 const News = () => {
   const [news, setNews] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const navigate = useNavigate();
-  const [currentPageType, setCurrentPageType] = useState("news"); // Toggle between "news" and "schemes"
+  const [currentPageType, setCurrentPageType] = useState("news"); 
   const limit = 10;
 
-  // Fetch news data from the API
+  // Fetch news data
   const fetchNews = async (page = 1, limit = 10) => {
     try {
       const response = await axios.get("http://localhost:4000/api/v1/news", {
@@ -33,42 +34,65 @@ const News = () => {
     }
   };
 
-  // Reset pagination when switching to "news"
+  // Reset when switching to news
   useEffect(() => {
     if (currentPageType === "news") {
-      setCurrentPage(1); // Reset to the first page
-      fetchNews(1, limit); // Fetch the first page of news
+      setCurrentPage(1);
+      fetchNews(1, limit);
     }
   }, [currentPageType]);
 
-  // Redirect to news detail page
+  // Redirect to news detail
   const goToNews = (id) => {
     navigate(`/news/${id}`);
   };
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">
-      {/* Toggle Button */}
-      <div className="flex  mb-6 mt-16">
+      {/* ===== Toggle Buttons ===== */}
+      <div className="flex gap-4 mb-6 mt-16">
         <button
-          onClick={() =>
-            setCurrentPageType((prevType) =>
-              prevType === "news" ? "schemes" : "news"
-            )
-          }
-          className="px-6 py-2 bg-blue-600 text-white font-bold rounded-md shadow-md hover:bg-blue-700 transition"
+          onClick={() => setCurrentPageType("news")}
+          className={`px-6 py-2 rounded-md shadow-md font-bold transition ${
+            currentPageType === "news"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
         >
-          {currentPageType === "news" ? "View Schemes" : "View News"}
+          News
+        </button>
+
+        <button
+          onClick={() => setCurrentPageType("schemes")}
+          className={`px-6 py-2 rounded-md shadow-md font-bold transition ${
+            currentPageType === "schemes"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Schemes
+        </button>
+
+        <button
+          onClick={() => setCurrentPageType("schemeList")}
+          className={`px-6 py-2 rounded-md shadow-md font-bold transition ${
+            currentPageType === "schemeList"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Government Sources
         </button>
       </div>
 
-      {/* Render News or Schemes based on toggle state */}
-      {currentPageType === "news" ? (
+      {/* ===== Render Content ===== */}
+      {currentPageType === "news" && (
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">
             Latest News
           </h1>
 
+          {/* News Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map((item) => (
               <div
@@ -126,9 +150,10 @@ const News = () => {
             </button>
           </div>
         </div>
-      ) : (
-        <Scheam />
       )}
+
+      {currentPageType === "schemes" && <Scheam />}
+      {currentPageType === "schemeList" && <MizoramAgriSchemesList />}
     </div>
   );
 };

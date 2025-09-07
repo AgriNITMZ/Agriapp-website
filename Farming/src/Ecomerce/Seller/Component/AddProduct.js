@@ -5,16 +5,6 @@ import TextEditor from './TextEditor';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-/**
- * Full version of the AddProduct / EditProduct component
- * - Adds toast feedback and a submit‑time loader
- * - Prevents double‑submits while the request is in flight
- * - Shows success / error messages
- *
- * NOTE: Make sure you placed <Toaster position="top-right" /> once near the
- * root of your app (e.g. in App.jsx) to render the toasts.
- */
-
 const AddProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -22,6 +12,7 @@ const AddProduct = () => {
   // ----- local state -----
   const [fetchdata, setFetchedData] = useState([]); // category list
   const [images, setImages] = useState([]); // File objects for upload
+  const [deletedImages, setDeletedImages] = useState([]); // track images removed from DB
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [chips, setChips] = useState([]); // tag chips
@@ -33,7 +24,7 @@ const AddProduct = () => {
     name: '',
     description: '',
     priceDetails: [{ price: '', discountedPrice: '', size: '', quantity: '' }],
-    images: [],
+    images: [], // will hold both URLs (old) and preview URLs (new files)
   });
 
   // ----- fetch product if editing -----
@@ -57,7 +48,7 @@ const AddProduct = () => {
           priceDetails: product.sellers[0]?.price_size || [
             { price: '', discountedPrice: '', size: '', quantity: '' },
           ],
-          images: product.images || [],
+          images: product.images || [], // URLs from DB
         });
         setSelectedCategory(product.category || '');
         setChips(product.tag || []);
@@ -123,9 +114,50 @@ const AddProduct = () => {
     const urls = files.map((file) => URL.createObjectURL(file));
     setProductData((prev) => ({ ...prev, images: [...prev.images, ...urls] }));
   };
+  
+  // ***********************************************
+  // ** 1. NEW FUNCTION TO HANDLE PASTED IMAGES **
+  // ***********************************************
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+    if (!items) return;
 
+    const pastedFiles = [];
+    for (let i = 0; i < items.length; i++) {
+      // Check if the clipboard item is a file and an image
+      if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          pastedFiles.push(file);
+        }
+      }
+    }
+
+    if (pastedFiles.length > 0) {
+      e.preventDefault(); // Prevent any unwanted default paste behavior
+      
+      // Update state using the same logic as your manual upload function
+      setImages((prev) => [...prev, ...pastedFiles]);
+      const urls = pastedFiles.map((file) => URL.createObjectURL(file));
+      setProductData((prev) => ({ ...prev, images: [...prev.images, ...urls] }));
+      
+      toast.success(`${pastedFiles.length} image(s) pasted successfully!`);
+    }
+  };
+  // ***********************************************
+  // ** END OF NEW FUNCTION             **
+  // ***********************************************
+
+  // ✅ updated removeImage
   const removeImage = (index) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    const imgToRemove = productData.images[index];
+
+    if (typeof imgToRemove === 'string' && isEditing) {
+      setDeletedImages((prev) => [...prev, imgToRemove]);
+    } else {
+      setImages((prev) => prev.filter((_, i) => i !== index));
+    }
+
     setProductData((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
@@ -155,14 +187,13 @@ const AddProduct = () => {
   // ----- submit -----
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (submitting) return; // safeguard
+    if (submitting) return;
 
     const storedTokenData = JSON.parse(localStorage.getItem('token'));
     if (!storedTokenData || Date.now() >= storedTokenData.expires) {
       return toast.error('Session expired. Please sign in again.');
     }
 
-    // Build FormData
     const formData = new FormData();
     formData.append('name', productData.name);
     formData.append('description', productData.description);
@@ -171,7 +202,12 @@ const AddProduct = () => {
     formData.append('category', selectedSubcategory || selectedCategory);
     formData.append('badges', 'PreciAgri');
     formData.append('tag', JSON.stringify(chips));
+
     images.forEach((img) => formData.append('image', img));
+
+    if (deletedImages.length > 0) {
+      formData.append('deletedImages', JSON.stringify(deletedImages));
+    }
 
     const config = {
       headers: { Authorization: `Bearer ${storedTokenData.value}` },
@@ -198,7 +234,7 @@ const AddProduct = () => {
   };
 
   // -------------------------------------------------------------------------
-  //                               RENDER
+  //                               RENDER
   // -------------------------------------------------------------------------
   return (
     <form
@@ -308,14 +344,20 @@ const AddProduct = () => {
         />
       </div>
 
-      {/* Images */}
-      <div className="mb-6">
+      {/* ***************************************************************** */}
+      {/* ** 2. UPDATED JSX TO ADD onPaste EVENT AND HELPER TEXT         ** */}
+      {/* ***************************************************************** */}
+      <div className="mb-6" onPaste={handlePaste}>
         <label className="block mb-1 font-medium text-gray-700">Product Images</label>
+        {/* NEW HELPER TEXT */}
+        <p className="text-sm text-gray-500 mb-4">
+          Click "Upload Images" or simply paste an image directly onto this section.
+        </p>
         <div className="flex flex-wrap gap-4 mb-4">
           {productData.images.map((img, idx) => (
             <div key={idx} className="relative group">
               <img
-                src={img}
+                src={typeof img === 'string' ? img : img}
                 alt="Product"
                 className="w-32 h-32 object-cover rounded-lg shadow-md"
               />
@@ -329,7 +371,7 @@ const AddProduct = () => {
             </div>
           ))}
         </div>
-        <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
+        <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 w-fit">
           <Camera size={20} /> Upload Images
           <input
             type="file"
@@ -354,6 +396,7 @@ const AddProduct = () => {
               name="price"
               placeholder="Price"
               value={detail.price}
+              onWheel={(e) => e.target.blur()}
               onChange={(e) => handlePriceDetailChange(idx, e)}
               className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
@@ -418,10 +461,7 @@ const AddProduct = () => {
       >
         {submitting ? (
           <span className="flex items-center justify-center">
-            <svg
-              className="animate-spin h-5 w-5 mr-2"
-              viewBox="0 0 24 24"
-            >
+            <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -441,8 +481,10 @@ const AddProduct = () => {
             </svg>
             Saving…
           </span>
+        ) : isEditing ? (
+          'Update Product'
         ) : (
-          isEditing ? 'Update Product' : 'Add Product'
+          'Add Product'
         )}
       </button>
     </form>

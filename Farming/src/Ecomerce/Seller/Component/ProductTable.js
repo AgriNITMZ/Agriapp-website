@@ -114,7 +114,7 @@ console.log("seller product is",sellerProducts)
                       </div>
                     </td>
                     <td className="px-4 py-4 w-[100px] text-sm text-gray-500">
-                      ${product?.price?.toFixed(2) || "N/A"}
+                      ₹{product?.price?.toFixed(2) || "N/A"}
                     </td>
                     <td className="px-4 py-4 w-[120px]">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 truncate">
