@@ -83,13 +83,17 @@ const AddProduct = () => {
   };
 
   const handlePriceDetailChange = (index, e) => {
-    const { name, value } = e.target;
-    setProductData((prev) => {
-      const priceDetails = [...prev.priceDetails];
-      priceDetails[index][name] = value;
-      return { ...prev, priceDetails };
-    });
-  };
+  const { name, value } = e.target;
+  setProductData((prev) => {
+    const priceDetails = [...prev.priceDetails];
+    priceDetails[index][name] =
+      name === "price" || name === "discountedPrice" || name === "quantity"
+        ? Number(value)
+        : value;
+    return { ...prev, priceDetails };
+  });
+};
+
 
   const addPriceDetail = () => {
     setProductData((prev) => ({

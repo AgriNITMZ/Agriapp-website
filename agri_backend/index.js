@@ -47,6 +47,10 @@ const orderRoute = require('./routes/Order')
 const newsRoute = require('./routes/News')
 const schemeRoute = require('./routes/Scheme')
 
+const chatRoute = require("./routes/chat");
+app.use("/api/v1/chat", chatRoute);
+
+
 // Routes
 app.use("/api/v1/auth", userRoute)
 app.use("/api/v1/products", productRoute)

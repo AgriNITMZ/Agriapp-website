@@ -18,10 +18,11 @@ const productSchema = new mongoose.Schema({
             fullShopDetails: { type: String,default: 'Full Shop Details' },
         }
     ],
-    name: {
-        type: String,
-        required: true,
-    },
+  name: {
+  en: { type: String, required: true },
+  mizo: { type: String, default: "" }
+},
+
     category: {
         type: String,
         required: true,
