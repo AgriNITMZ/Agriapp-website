@@ -725,6 +725,7 @@ exports.editProduct = asyncHandler(async (req, res) => {
       : JSON.parse(price_size);
 
     const validatePriceSize = (priceSizeArray) => {
+      console.log(priceSizeArray);
       if (!Array.isArray(priceSizeArray)) return false;
       return priceSizeArray.every(
         (item) =>

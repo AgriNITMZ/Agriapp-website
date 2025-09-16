@@ -4,6 +4,7 @@ import { Heart, Search, Server, ShoppingCart, Store, User } from "lucide-react";
 import logo from "../../Data/Logo/logo.png";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import ChatBot from "./ChatBot";
 
 const NavBar = () => {
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -228,6 +229,8 @@ const NavBar = () => {
           </div>
         </div>
       )}
+          <ChatBot />
+
     </>
   );
 };
