@@ -32,7 +32,7 @@ const Address = () => {
 
     const fetchAddresses=async()=>{
         try {
-            const response = await axios.get("http://localhost:4000/api/v1/auth/getaddress", {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -87,7 +87,7 @@ const Address = () => {
     const handleDeleteClick = async (addressId) => {
         if (window.confirm('Are you sure you want to delete this address?')) {
             try {
-                await axios.delete(`http://localhost:4000/api/v1/auth/deleteaddress/${addressId}`, {
+                await axios.delete(`${process.env.REACT_APP_BASE_URL}/auth/deleteaddress/${addressId}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -115,7 +115,7 @@ const Address = () => {
         try {
             if (isEditing) {
                 await axios.put(
-                    `http://localhost:4000/api/v1/auth/updateaddress/${editingAddressId}`,
+                    `${process.env.REACT_APP_BASE_URL}/auth/updateaddress/${editingAddressId}`,
                     formData,
                     {
                         headers: {
@@ -125,7 +125,7 @@ const Address = () => {
                 );
             } else {
                 await axios.post(
-                    "http://localhost:4000/api/v1/auth/addaddress",
+                    `${process.env.REACT_APP_BASE_URL}/auth/addaddress`,
                     formData,
                     {
                         headers: {

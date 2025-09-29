@@ -44,7 +44,7 @@ const PaymentCallback = () => {
 
                 // Verify payment with backend
                 const response = await axios.post(
-                    'http://localhost:4000/api/v1/order/payment-verify',
+                    `${process.env.REACT_APP_BASE_URL}/order/payment-verify`,
                     {
                         razorpay_payment_id,
                         razorpay_payment_link_id,
@@ -144,4 +144,4 @@ const PaymentCallback = () => {
     );
 };
 
-export default PaymentCallback; 
+export default PaymentCallback;
