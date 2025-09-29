@@ -38,7 +38,7 @@ exports.createPaymentLinkBeforeOrder = async (req, res) => {
                 email: true,
             },
             reminder_enable: true,
-            callback_url: `http://localhost:3000/payment/callback`,
+            callback_url: `{process.env.REACT/payment/callback`,
             callback_method: 'get',
             notes: {
                 userId: userId

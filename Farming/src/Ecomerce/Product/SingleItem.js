@@ -56,7 +56,7 @@ const SingleItem = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get("http://localhost:4000/api/v1/auth/getuserbytoken", {
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getuserbytoken`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUserRole(response.data.user.accountType);
@@ -118,7 +118,7 @@ const SingleItem = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/v1/products/addtocart",
+        `${process.env.REACT_APP_BASE_URL}/products/addtocart`,
         {
           productId: id,
           quantity,

@@ -36,7 +36,7 @@ const AddProduct = () => {
         if (!storedTokenData || Date.now() >= storedTokenData.expires) return;
 
         const { data } = await axios.get(
-          `http://localhost:4000/api/v1/products/getproductbyid/${id}`,
+          `${process.env.REACT_APP_BASE_URL}/products/getproductbyid/${id}`,
           { headers: { Authorization: `Bearer ${storedTokenData.value}` } }
         );
         const product = data.product;
@@ -66,7 +66,7 @@ const AddProduct = () => {
     const fetchCategory = async () => {
       try {
         const { data } = await axios.get(
-          'http://localhost:4000/api/v1/products/getallparentcategory'
+          `${process.env.REACT_APP_BASE_URL}/products/getallparentcategory`
         );
         setFetchedData(data.data);
       } catch (err) {
@@ -222,8 +222,8 @@ const AddProduct = () => {
 
     try {
       const url = isEditing
-        ? `http://localhost:4000/api/v1/products/editproduct/${id}`
-        : 'http://localhost:4000/api/v1/products/createproduct';
+        ? `${process.env.REACT_APP_BASE_URL}/products/editproduct/${id}`
+        : `${process.env.REACT_APP_BASE_URL}/products/createproduct`;
       const method = isEditing ? 'put' : 'post';
 
       await axios[method](url, formData, config);

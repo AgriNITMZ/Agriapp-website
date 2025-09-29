@@ -14,7 +14,8 @@ app.use(morgan('tiny')) // only for development purpose
 app.use(express.json());
 app.use(cookieParser());
 const allowedOrigins = [
-  "http://localhost:3000", // for web
+  "http://localhost:3000",
+  process.env.CORS_ORIGIN, // for web
   "http://192.168.0.101:19000", // Expo Go dev server (adjust IP accordingly)
 ];
 app.use(cors(

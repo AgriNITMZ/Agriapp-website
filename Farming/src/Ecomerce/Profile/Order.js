@@ -23,7 +23,7 @@ const Order = () => {
       }
 
       const { data } = await axios.get(
-        'http://localhost:4000/api/v1/order/orderhistory',
+        `${process.env.REACT_APP_BASE_URL}/order/orderhistory`,
         { headers: { Authorization: `Bearer ${storedTokenData.value}` } }
       );
 

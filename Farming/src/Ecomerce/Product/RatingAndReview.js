@@ -12,7 +12,7 @@ const RatingAndReview = ({ productId }) => {
       try {
         setLoading(true);
         setError("");
-        let response = await axios.get(`http://localhost:4000/api/v1/products/${productId}`);
+        let response = await axios.get(`${process.env.REACT_APP_BASE_URL}/products/${productId}`);
         setRatingReview(response?.data?.data || []);
       } catch (error) {
         setError("Failed to load reviews.");

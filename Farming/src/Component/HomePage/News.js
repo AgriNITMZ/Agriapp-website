@@ -15,7 +15,7 @@ const News = () => {
   // Fetch news data
   const fetchNews = async (page = 1, limit = 10) => {
     try {
-      const response = await axios.get("http://localhost:4000/api/v1/news", {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/api/v1/news`, {
         params: { page, limit },
       });
       setNews(response.data.data);
