@@ -18,7 +18,7 @@ const Cart = () => {
   // Fetch cart items
   const fetchProduct = async () => {
     try {
-      const response = await axios.get("http://localhost:4000/api/v1/products/cartitems", {
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/products/cartitems`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("cart response", response?.data?.cart);
@@ -51,7 +51,7 @@ const Cart = () => {
     const fetchAddresses = async () => {
      
       try {
-        const response = await axios.get("http://localhost:4000/api/v1/auth/getaddress", {
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response?.data) {
@@ -92,14 +92,14 @@ const Cart = () => {
     setIsProcessing(true);
     try {
       const paymentResponse = await axios.post(
-        'http://localhost:4000/api/v1/order/create-payment-link-before-order/',
+        `${process.env.REACT_APP_BASE_URL}/order/create-payment-link-before-order/`,
         { totalAmount: totalAmount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (paymentResponse.data.success) {
         const { paymentLinkId, payment_link_url } = paymentResponse.data.data;
         const orderResponse = await axios.post(
-          'http://localhost:4000/api/v1/order/createorder/',
+          `${process.env.REACT_APP_BASE_URL}/order/createorder/`,
           {
             paymentLinkId: paymentLinkId,
             totalAmount: totalAmount,
@@ -128,7 +128,7 @@ const Cart = () => {
   const removeItem = async (id) => {
     try {
       console.log("Removing", id);
-      await axios.delete(`http://localhost:4000/api/v1/products/removeitem/${id}`, {
+      await axios.delete(`${process.env.REACT_APP_BASE_URL}/products/removeitem/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Product removed from cart successfully!');
