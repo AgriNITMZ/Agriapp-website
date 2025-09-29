@@ -11,7 +11,7 @@ const Scheme = () => {
     useEffect(() => {
         const fetchSchemes = async () => {
             try {
-                const response = await fetch(`http://localhost:4000/api/v1/scheme?page=${page}&limit=${limit}`);
+                const response = await fetch(`${process.env.REACT_APP_BASE_URL}/scheme?page=${page}&limit=${limit}`);
                 const data = await response.json();
 
                 if (data.success) {

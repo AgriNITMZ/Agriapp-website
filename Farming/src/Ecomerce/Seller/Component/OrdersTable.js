@@ -19,7 +19,7 @@ const OrdersTable = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:4000/api/v1/orders/seller/orders',
+        `${process.env.REACT_APP_BASE_URL}/orders/seller/orders`,
         {},
         {
           headers: {

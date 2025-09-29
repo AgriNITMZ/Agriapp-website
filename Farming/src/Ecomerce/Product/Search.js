@@ -13,7 +13,7 @@ const Search = () => {
 
     const searchProduct = async () => {
         try {
-            const response = await axios.get("http://localhost:4000/api/v1/products/searchProducts/search", {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/products/searchProducts/search`, {
                 params: { query, page, limit },
             });
             setProduct(response.data.products || []); // Ensure an empty array if no products
@@ -92,5 +92,3 @@ const Search = () => {
 };
 
 export default Search;
-
-

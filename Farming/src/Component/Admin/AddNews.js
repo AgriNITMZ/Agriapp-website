@@ -39,7 +39,7 @@ const AddNewsForm = () => {
             return;
         }
 
-      const res = await axios.post("http://localhost:4000/api/v1/news", data, 
+      const res = await axios.post(`${process.env.REACT_APP_BASE_URL}/news`, data, 
          { headers: { Authorization: `Bearer ${storedTokenData.value}` } }
       );
 
