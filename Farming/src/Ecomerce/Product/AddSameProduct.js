@@ -48,7 +48,7 @@ const AddSameProduct = ({ setPopupforAddProduct, productId, selectedProduct, tok
             };
 
             // Call the backend API to add the seller to the existing product
-            await axios.put(`http://localhost:4000/api/v1/products/addseller/${productId}`, sellerData, {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/products/addseller/${productId}`, sellerData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
