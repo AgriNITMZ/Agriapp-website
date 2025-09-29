@@ -26,7 +26,7 @@ const AddressPopup = ({ isVisible, onClose, onAddressSelect }) => {
     const fetchAddresses = async () => {
         try {
            
-            const response = await axios.get("http://localhost:4000/api/v1/auth/getaddress", {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -53,7 +53,7 @@ const AddressPopup = ({ isVisible, onClose, onAddressSelect }) => {
         try {
            
             await axios.post(
-                "http://localhost:4000/api/v1/auth/addaddress",
+                `${process.env.REACT_APP_BASE_URL}/auth/addaddress`,
                 formData,
                 {
                     headers: {

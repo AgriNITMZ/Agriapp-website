@@ -24,7 +24,7 @@ const UpdatePassword = () => {
       return;
     }
    try {
-    let response=await axios.post("http://localhost:4000/api/v1/auth/resetpassword",{
+    let response=await axios.post(`${process.env.REACT_APP_BASE_URL}/auth/resetpassword`,{
         password:newPassword,
          confirmPassword:cofermPassword,
           token:token

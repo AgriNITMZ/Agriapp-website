@@ -44,7 +44,7 @@ const NavBar = () => {
     const fetchUser = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/auth/getuserbytoken",
+          `${process.env.REACT_APP_BASE_URL}/auth/getuserbytoken`,
           { headers: { Authorization: `Bearer ${token.value}` } }
         );
         setUserImage(data.user.image);

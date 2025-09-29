@@ -44,7 +44,7 @@ const CheckoutProduct = () => {
       }
 
       try {
-        const response = await axios.get("http://localhost:4000/api/v1/auth/getaddress", {
+        const response = await axios.get(`${process.env.REACT_BASE_API_URL}/auth/getaddress`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -98,7 +98,7 @@ const CheckoutProduct = () => {
 
         if (paymentMethod === 'cod') {
       const orderResp = await axios.post(
-        'http://localhost:4000/api/v1/order/createorder',
+        `${process.env.REACT_BASE_API_URL}/order/createorder`,
         {
           productId,
           sellerId,
@@ -127,7 +127,7 @@ const CheckoutProduct = () => {
 
       // Step 1: Create payment link
       const paymentResponse = await axios.post(
-        'http://localhost:4000/api/v1/order/create-payment-link-before-order/',
+        `${process.env.REACT_BASE_API_URL}/order/create-payment-link-before-order/`,
         { totalAmount: totalAmount,addressId:selectedAddress._id},
         {
           headers: {
@@ -141,8 +141,7 @@ const CheckoutProduct = () => {
 
         // Step 2: Create order with payment details
         // In handlePayment()
-        const orderResponse = await axios.post(
-          'http://localhost:4000/api/v1/order/createorder',
+        const orderResponse = await axios.post( `${process.env.REACT_BASE_API_URL}/order/createorder`,
           { 
             productId: productId,
             sellerId,       // from query param
