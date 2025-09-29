@@ -6,7 +6,7 @@ const client = new TranslationServiceClient();
 
 // Google project & location
 // const projectId = process.env.GCLOUD_PROJECT_ID; correct one
-const projectId = process.env.GCLOUD_PROJECTI_ID; // wrong but using to avoid the token limit reached issue
+const projectId = process.env.GCLOUD_PROJECT_ID; // wrong but using to avoid the token limit reached issue
 
 const location = "global";
 
