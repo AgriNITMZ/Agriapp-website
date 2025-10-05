@@ -186,13 +186,15 @@ exports.clearCart = async (req, res) => {
 };
 
 // using it for app
+
+
 exports.addProductToCartApp = async (req, res) => {
     try {
         const { productId, quantity, selectedsize, selectedDiscountedPrice, selectedPrice, sellerId } = req.body;
         const userId = req.user.id;
 
-        if (!productId || !quantity || !selectedsize) {
-            return res.status(400).json({ message: 'Product ID, quantity, and size are required.' });
+        if (!productId || !quantity || !selectedsize || !sellerId) {
+            return res.status(400).json({ message: 'Product ID, quantity, size, and seller ID are required.' });
         }
 
         const product = await Product.findById(productId);
@@ -201,41 +203,56 @@ exports.addProductToCartApp = async (req, res) => {
         }
 
         let cart = await Cart.findOne({ userId });
+        
         if (cart) {
-            // Check if the product with the same size exists in the cart
+            // Check if the product with the same size and seller exists
             const existingItemIndex = cart.items.findIndex(
                 (item) =>
                     item.product.toString() === productId &&
                     item.selectedsize === selectedsize &&
                     item.sellerId.toString() === sellerId.toString()
-
             );
 
             if (existingItemIndex > -1) {
-                // Update quantity if the item exists
+                // Update quantity and prices if the item exists
                 cart.items[existingItemIndex].quantity = quantity;
-                // Update the selected price and discounted price if the quantity is updated
                 cart.items[existingItemIndex].selectedPrice = selectedPrice;
                 cart.items[existingItemIndex].selectedDiscountedPrice = selectedDiscountedPrice;
             } else {
-                // Add a new item to the cart 
-                cart.items.push({ product: productId, quantity, selectedsize, selectedPrice, selectedDiscountedPrice, sellerId });
+                // Add a new item to the cart
+                cart.items.push({ 
+                    product: productId, 
+                    quantity, 
+                    selectedsize, 
+                    selectedPrice, 
+                    selectedDiscountedPrice,  // FIXED: Consistent naming
+                    sellerId 
+                });
             }
         } else {
             // Create a new cart for the user
             cart = new Cart({
                 userId,
-                items: [{ product: productId, quantity, selectedsize, selectedPrice, selectedDiscountedPrice, sellerId }],
+                items: [{ 
+                    product: productId, 
+                    quantity, 
+                    selectedsize, 
+                    selectedPrice, 
+                    selectedDiscountedPrice,  // FIXED: Consistent naming
+                    sellerId 
+                }],
             });
         }
 
-        // Save the cart
+        // Save the cart (pre-save hook will calculate totals)
         await cart.save();
+
+        // Format response for app
         const formattedCart = {
             _id: cart._id,
             userId: cart.userId,
-            totalPrice: cart.items.reduce((acc, item) => acc + item.selectedPrice * item.quantity, 0),
-            totalDiscountedPrice: cart.items.reduce((acc, item) => acc + item.selectedDiscountedPrice * item.quantity, 0),
+            totalPrice: cart.totalPrice,
+            totalDiscountedPrice: cart.totalDiscountedPrice,
             items: await Promise.all(
                 cart.items.map(async (item) => {
                     const productDetails = await Product.findById(item.product).select('name images');
@@ -247,8 +264,8 @@ exports.addProductToCartApp = async (req, res) => {
                         quantity: item.quantity,
                         selectedsize: item.selectedsize,
                         selectedPrice: item.selectedPrice,
-                        selectedDiscountedPrice: item.selectedDiscountedPrice,
-                        sellerId: item.sellerId || null,
+                        selectedDiscountedPrice: item.selectedDiscountedPrice,  // FIXED
+                        sellerId: item.sellerId,
                     };
                 })
             ),
@@ -260,25 +277,36 @@ exports.addProductToCartApp = async (req, res) => {
         });
     } catch (error) {
         console.error('Error adding to cart:', error);
-        res.status(500).json({ message: 'Internal server error.', error });
+        res.status(500).json({ message: 'Internal server error.', error: error.message });
     }
 };
 
+// Get cart items (for app)
 exports.getCartItemsApp = async (req, res) => {
     try {
         const userId = req.user.id;
         const cart = await Cart.findOne({ userId });
 
         if (!cart) {
-            return res.status(404).json({ message: 'Cart not found' });
+            // Return empty cart instead of 404
+            return res.status(200).json({ 
+                message: 'Cart is empty',
+                cart: {
+                    _id: null,
+                    userId: userId,
+                    totalPrice: 0,
+                    totalDiscountedPrice: 0,
+                    items: []
+                }
+            });
         }
 
         // Format response with product details
         const formattedCart = {
             _id: cart._id,
             userId: cart.userId,
-            totalPrice: cart.items.reduce((acc, item) => acc + item.selectedPrice * item.quantity, 0),
-            totalDiscountedPrice: cart.items.reduce((acc, item) => acc + item.selectedDiscountedPrice * item.quantity, 0),
+            totalPrice: cart.totalPrice,
+            totalDiscountedPrice: cart.totalDiscountedPrice,
             items: await Promise.all(
                 cart.items.map(async (item) => {
                     const productDetails = await Product.findById(item.product).select('name images');
@@ -290,7 +318,7 @@ exports.getCartItemsApp = async (req, res) => {
                         quantity: item.quantity,
                         selectedsize: item.selectedsize,
                         selectedPrice: item.selectedPrice,
-                        selectedDiscountedPrice: item.selectedDiscountedPrice,
+                        selectedDiscountedPrice: item.selectedDiscountedPrice,  // FIXED
                         sellerId: item.sellerId,
                     };
                 })
@@ -303,6 +331,69 @@ exports.getCartItemsApp = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching cart:', error);
-        res.status(500).json({ message: 'Internal server error.', error });
+        res.status(500).json({ message: 'Internal server error.', error: error.message });
+    }
+};
+
+// Remove cart item
+exports.removeCartItem = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const itemId = req.params.id;
+        const mongoose = require('mongoose');
+
+        if (!mongoose.Types.ObjectId.isValid(itemId)) {
+            return res.status(400).json({ message: 'Invalid item ID.' });
+        }
+
+        let cart = await Cart.findOne({ userId });
+
+        if (!cart) {
+            return res.status(404).json({ message: 'Cart not found.' });
+        }
+
+        const itemIndex = cart.items.findIndex(item => item._id.toString() === itemId);
+
+        if (itemIndex === -1) {
+            return res.status(404).json({ message: 'Item not found in the cart.' });
+        }
+
+        // Remove the item
+        cart.items.splice(itemIndex, 1);
+
+        // Save (pre-save hook will recalculate totals)
+        await cart.save();
+
+        res.status(200).json({
+            message: 'Item removed from cart successfully.',
+            cart,
+        });
+
+    } catch (error) {
+        console.error('Error removing item from cart:', error);
+        res.status(500).json({ message: 'Internal server error.', error: error.message });
+    }
+};
+
+// Clear cart
+exports.clearCart = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const cart = await Cart.findOne({ userId });
+        if (!cart) {
+            return res.status(404).json({ message: 'Cart not found' });
+        }
+
+        // Clear items
+        cart.items = [];
+
+        // Save (pre-save hook will set totals to 0)
+        await cart.save();
+
+        res.status(200).json({ message: 'Cart cleared successfully', cart });
+    } catch (error) {
+        console.error('Error clearing cart:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };

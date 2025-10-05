@@ -1,8 +1,3 @@
-// =====================================================
-// FILE: src/components/Chatbot.js
-// UPDATED: Added conversation history/context
-// =====================================================
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,

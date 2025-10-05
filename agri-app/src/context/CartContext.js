@@ -36,7 +36,7 @@ export const CartProvider = ({ children }) => {
 
     // Load cart from API ONLY after authentication is verified
     useEffect(() => {
-        if (!hasCheckedAuth) return; // Wait for auth check
+        if (!hasCheckedAuth) return;
         
         if (!isAuthenticated) {
             // User not authenticated, load from AsyncStorage only
@@ -57,10 +57,14 @@ export const CartProvider = ({ children }) => {
         // User is authenticated, fetch from API
         const loadCart = async () => {
             try {
+                console.log('Fetching cart from API...');
                 const response = await customFetch.get('products/cartitemsapp');
+                console.log('Cart API response:', response.data);
+                
                 if (response.data.cart) {
                     setCart(response.data.cart);
                     await AsyncStorage.setItem('cart', JSON.stringify(response.data.cart));
+                    console.log('Cart loaded successfully:', response.data.cart.items.length, 'items');
                 }
             } catch (error) {
                 console.error('Error fetching cart:', error);
@@ -82,7 +86,7 @@ export const CartProvider = ({ children }) => {
         }
     }, [cart, hasCheckedAuth]);
 
-    // Add method to refresh auth status (call this when user logs in/out)
+    // Refresh auth status
     const refreshAuthStatus = async () => {
         try {
             const user = await getUserFromLocalStorage();
@@ -90,13 +94,18 @@ export const CartProvider = ({ children }) => {
             setIsAuthenticated(authenticated);
             
             if (!authenticated) {
-                // Clear cart when user logs out
                 setCart({
                     _id: null,
                     totalPrice: 0,
                     totalDiscountedPrice: 0,
                     items: [],
                 });
+            } else {
+                // Re-fetch cart when user logs in
+                const response = await customFetch.get('products/cartitemsapp');
+                if (response.data.cart) {
+                    setCart(response.data.cart);
+                }
             }
         } catch (error) {
             console.error('Error refreshing auth status:', error);
@@ -104,7 +113,7 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    //  Add or update item in cart
+    // Add or update item in cart
     const addToCart = async (product, quantity, selectedSize, selectedSeller) => {
         if (!isAuthenticated) {
             Toast.show({
@@ -138,6 +147,15 @@ export const CartProvider = ({ children }) => {
 
             const selectedPriceSize = priceSize[selectedSize];
 
+            console.log('Adding to cart:', {
+                productId: product._id,
+                quantity,
+                selectedsize: selectedPriceSize.size,
+                selectedPrice: selectedPriceSize.price,
+                selectedDiscountedPrice: selectedPriceSize.discountedPrice || selectedPriceSize.price,
+                sellerId: selectedSeller.sellerId || selectedSeller._id,
+            });
+
             const response = await customFetch.post('products/addtocartapp', {
                 productId: product._id,
                 quantity,
@@ -153,7 +171,7 @@ export const CartProvider = ({ children }) => {
                 Toast.show({
                     type: 'success',
                     text1: 'Item Added',
-                    text2: `${product.name.slice(0, 25) + "..."} added to cart.`,
+                    text2: `${product.name.slice(0, 25)}... added to cart.`,
                 });
             }
         } catch (error) {
@@ -161,12 +179,12 @@ export const CartProvider = ({ children }) => {
             Toast.show({
                 type: 'error',
                 text1: 'Failed to Add',
-                text2: 'Could not add item to cart. Try again!',
+                text2: error.response?.data?.message || 'Could not add item to cart.',
             });
         }
     };
 
-    //  Increase or decrease quantity (calls addToCart)
+    // Update quantity
     const updateQuantity = async (item, newQuantity) => {
         if (!isAuthenticated) {
             Toast.show({
@@ -188,6 +206,7 @@ export const CartProvider = ({ children }) => {
                 selectedDiscountedPrice: item.selectedDiscountedPrice,
                 sellerId: item.sellerId,
             });
+            
             if (response.data.cart) {
                 setCart(response.data.cart);
                 await AsyncStorage.setItem('cart', JSON.stringify(response.data.cart));
@@ -197,18 +216,17 @@ export const CartProvider = ({ children }) => {
                     text2: `Quantity updated to ${newQuantity}.`,
                 });
             }
-
         } catch (error) {
             console.error('Error updating quantity:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Update Failed',
-                text2: 'Could not update quantity. Try again!',
+                text2: error.response?.data?.message || 'Could not update quantity.',
             });
         }
     };
 
-    //  Remove item from cart 
+    // Remove item from cart
     const removeFromCart = async (itemId) => {
         if (!isAuthenticated) {
             Toast.show({
@@ -221,19 +239,16 @@ export const CartProvider = ({ children }) => {
 
         try {
             await customFetch.delete(`products/removeitem/${itemId}`);
-            // Filter out the removed item
+            
+            // Update local state
             const updatedItems = cart.items.filter((item) => item._id !== itemId);
-
-            // Recalculate the total price and total discounted price
             const newTotalPrice = updatedItems.reduce(
                 (sum, item) => sum + (item.selectedPrice * item.quantity), 0
             );
-
             const newTotalDiscountedPrice = updatedItems.reduce(
                 (sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0
             );
 
-            // Update the cart with new items and recalculated totals
             const updatedCart = {
                 ...cart,
                 items: updatedItems,
@@ -254,36 +269,36 @@ export const CartProvider = ({ children }) => {
             Toast.show({
                 type: 'error',
                 text1: 'Remove Failed',
-                text2: 'Could not remove item. Try again!',
+                text2: error.response?.data?.message || 'Could not remove item.',
             });
         }
     };
 
-    //  Clear cart (both local and API)
+    // Clear cart
     const clearCart = async () => {
         try {
             if (isAuthenticated) {
-                await customFetch.delete(`products/clearcart`);
+                await customFetch.delete('products/clearcart');
             }
             setCart({ _id: null, totalPrice: 0, totalDiscountedPrice: 0, items: [] });
             await AsyncStorage.removeItem('cart');
-
+            console.log('Cart cleared successfully');
         } catch (error) {
             console.error('Error clearing cart:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Clear Failed',
-                text2: 'Could not clear cart. Try again!',
+                text2: error.response?.data?.message || 'Could not clear cart.',
             });
         }
     };
 
-    // Check if product is already in cart
+    // Check if product is in cart
     const isProductInCart = (productId) => {
         return cart.items.some((item) => item.productId === productId);
     };
 
-    // Get cart size (total number of items)
+    // Get cart size
     const cartSize = () => {
         return cart.items.length;
     };
