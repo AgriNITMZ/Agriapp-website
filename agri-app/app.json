@@ -54,12 +54,6 @@
           }
         }
       ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "8637ae67-f09d-4d3b-83ab-30e55063dbf0"
-      }
-    },
-    "owner": "vicky1001"
+    ]
   }
 }

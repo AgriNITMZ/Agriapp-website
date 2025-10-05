@@ -60,7 +60,6 @@ import {
   removeUserFromLocalStorage
 } from './src/utils/localStorage';
 import checkTokenExpiration from './src/utils/checkTokenExpiration';
-
 // Prevent auto-hide
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({

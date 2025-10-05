@@ -51,6 +51,9 @@ const schemeRoute = require('./routes/Scheme')
 const chatRoute = require("./routes/chat");
 app.use("/api/v1/chat", chatRoute);
 
+const appChatRoute = require("./routes/appChat");
+app.use("/api/v1/appChat", appChatRoute);
+
 
 // Routes
 app.use("/api/v1/auth", userRoute)
