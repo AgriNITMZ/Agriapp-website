@@ -13,7 +13,7 @@ import {
 import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE = "http://192.168.0.103:4000/api/v1";
+const API_BASE = "http://192.168.0.100:4000/api/v1";
 
 // FAQ Database
 const FAQ = [
