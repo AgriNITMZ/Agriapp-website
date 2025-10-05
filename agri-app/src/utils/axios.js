@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { getUserFromLocalStorage, removeUserFromLocalStorage } from './localStorage';
 import checkTokenExpiration from './checkTokenExpiration';
+import { API_BASE } from '@env';
 
 const customFetch = axios.create({
-    baseURL: 'http://192.168.0.100:4000/api/v1',
+    baseURL: API_BASE,
 });
 
 // Flag to prevent multiple simultaneous token cleanup operations
