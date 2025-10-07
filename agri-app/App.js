@@ -60,6 +60,7 @@ import {
   removeUserFromLocalStorage
 } from './src/utils/localStorage';
 import checkTokenExpiration from './src/utils/checkTokenExpiration';
+import NotificationScreen from './src/components/topBar/NotificationScreen';
 // Prevent auto-hide
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({
@@ -118,6 +119,11 @@ const StackNav = ({ route }) => {
       <Stack.Screen name="SellerOrder" component={SellerOrdersPage} />
       <Stack.Screen name="FarmingTips" component={FarmingTipsPage} />
       <Stack.Screen name="Sensor" component={SensorDropdownScreen} />
+      <Stack.Screen 
+          name="Notification" 
+          component={NotificationScreen} 
+          options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 };
