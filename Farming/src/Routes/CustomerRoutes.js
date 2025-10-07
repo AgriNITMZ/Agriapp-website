@@ -1,6 +1,6 @@
 import React from 'react'
 import NavBar from '../Component/Common/NavBar'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import Product from '../Ecomerce/Pages/Product'
 import Home from '../Component/HomePage/Home'
 import News from '../Component/HomePage/News'
@@ -34,6 +34,9 @@ import PanCard from '../Ecomerce/Profile/PanCardInfo'
 
 
 const CustomerRoutes = () => {
+  const location = useLocation();
+  const isProductPage = location.pathname.startsWith('/product');
+
   return (
     <>
       <NavBar />
@@ -67,7 +70,7 @@ const CustomerRoutes = () => {
         <Route path="/payment/callback" element={<PaymentCallback/>} />
 
       </Routes>
-      <Footer/>
+      {!isProductPage && <Footer/>}
     </>
   )
 }
