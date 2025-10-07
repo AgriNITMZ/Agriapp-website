@@ -127,8 +127,8 @@ const CartPage = ({ navigation }) => {
                 <Text style={styles.productName}>{item.productName}</Text>
                 <Text style={styles.sizeText}>Size: {item.selectedsize}</Text>
                 <Text style={styles.productPrice}>
-                    ₹ {item.selecetedDiscountedPrice}{' '}
-                    {item.selectedPrice !== item.selecetedDiscountedPrice && (
+                    ₹ {item.selectedDiscountedPrice}{' '}
+                    {item.selectedPrice !== item.selectedDiscountedPrice && (
                         <Text style={styles.originalPrice}>₹ {item.selectedPrice}</Text>
                     )}
                 </Text>

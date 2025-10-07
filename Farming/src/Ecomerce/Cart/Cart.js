@@ -49,14 +49,14 @@ const Cart = () => {
   // Fetch addresses
   useEffect(() => {
     const fetchAddresses = async () => {
-     
+
       try {
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response?.data) {
-          setAddresses(response?.data.addresses);
-          const validAddress = response.data.addresses.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
+          setAddresses(response?.data);
+          const validAddress = response.data.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
           if (validAddress) {
             setSelectedAddress(validAddress);
           } else {
@@ -67,21 +67,18 @@ const Cart = () => {
         }
       } catch (error) {
         console.error('Error fetching addresses:', error);
-      //  toast.error('Failed to load addresses. Please try again.');
+        //  toast.error('Failed to load addresses. Please try again.');
       }
     };
     fetchAddresses();
   }, [token]);
 
   // Handle address selection
-  const handleAddressSelect = (addressId) => {
-    const selected = addresses.find(addr => addr._id === addressId);
-    if (selected) {
-      setSelectedAddress(selected);
-      setIsAddressPopupVisible(false);
-      toast.success('Address selected successfully.');
-    }
-  };
+ const handleAddressSelect = (address) => {
+  setSelectedAddress(address);
+  setIsAddressPopupVisible(false);
+  toast.success('Address selected successfully.');
+};
 
   // Handle payment processing
   const handlePayment = async (totalAmount) => {
@@ -228,7 +225,7 @@ const Cart = () => {
                           <div className="flex items-center gap-2 mt-2">
                             <span className="font-medium">Price:</span>
                             <span className="line-through text-gray-500">₹{item?.selectedPrice}</span>
-                            <span className="text-green-600 font-semibold">₹{item?.selecetedDiscountedPrice}</span>
+                            <span className="text-green-600 font-semibold">₹{item?.selectedDiscountedPrice}</span>
                           </div>
                         </div>
                       </div>

@@ -4,7 +4,7 @@ const Product = require('../models/Product')
 const Cart = require('../models/CartItem')
 exports.addToProductToCart = async (req, res) => {
     try {
-        const { productId, quantity, selectedsize, selecetedDiscountedPrice, selectedPrice, sellerId } = req.body;
+        const { productId, quantity, selectedsize, selectedDiscountedPrice, selectedPrice, sellerId } = req.body;
         const userId = req.user.id;
 
         // Validate required fields
@@ -60,7 +60,7 @@ exports.addToProductToCart = async (req, res) => {
                     quantity,
                     selectedsize,
                     selectedPrice,
-                    selecetedDiscountedPrice,
+                    selectedDiscountedPrice,
                     sellerId,
                 });
             }
@@ -74,7 +74,7 @@ exports.addToProductToCart = async (req, res) => {
                         quantity,
                         selectedsize,
                         selectedPrice,
-                        selecetedDiscountedPrice,
+                        selectedDiscountedPrice,
                         sellerId,
                     },
                 ],
@@ -144,7 +144,7 @@ exports.removeCartItem = async (req, res) => {
 
         // Recalculate the total price and discounted price
         cart.totalPrice = cart.items.reduce((total, item) => total + item.selectedPrice * item.quantity, 0);
-        cart.totalDiscountedPrice = cart.items.reduce((total, item) => total + item.selecetedDiscountedPrice * item.quantity, 0);
+        cart.totalDiscountedPrice = cart.items.reduce((total, item) => total + item.selectedDiscountedPrice * item.quantity, 0);
 
         // Save the updated cart
         await cart.save();
