@@ -31,6 +31,12 @@ import PaymentCallback from '../Ecomerce/Payment/PaymentCallback'
 import SingleNews from '../Component/HomePage/SingleNews'
 import SingleScheme from '../Component/HomePage/SingleScheme'
 import PanCard from '../Ecomerce/Profile/PanCardInfo'
+import GiftCards from '../Ecomerce/Profile/GiftCards'
+import SavedUPI from '../Ecomerce/Profile/SavedUPI'
+import SavedCards from '../Ecomerce/Profile/SavedCards'
+import MyCoupons from '../Ecomerce/Profile/MyCoupons'
+import MyReviewsRatings from '../Ecomerce/Profile/MyReviewsRatings'
+import AllNotifications from '../Ecomerce/Profile/AllNotifications'
 
 
 const CustomerRoutes = () => {
@@ -64,6 +70,12 @@ const CustomerRoutes = () => {
         <Route path="/product/profile/information" element={<ProfileInformation/>} />
         <Route path="/product/profile/addresses" element={<Address/>} />
         <Route path="/product/profile/orders" element={<Order/>} />
+        <Route path="/product/profile/gift-cards" element={<GiftCards/>} />
+        <Route path="/product/profile/saved-upi" element={<SavedUPI/>} />
+        <Route path="/product/profile/saved-cards" element={<SavedCards/>} />
+        <Route path="/product/profile/coupons" element={<MyCoupons/>} />
+        <Route path="/product/profile/reviews" element={<MyReviewsRatings/>} />
+        <Route path="/product/profile/notifications" element={<AllNotifications/>} />
         <Route path="/product/checkout" element={<CheckoutProduct/>} />
         <Route path="/server" element={<Server/>} />
         <Route path="/profile/pan-card" element={<PanCard/>} />
