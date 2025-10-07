@@ -52,9 +52,13 @@ const analyticsRoute = require('./routes/Analytics')
 const chatRoute = require("./routes/chat");
 app.use("/api/v1/chat", chatRoute);
 
+// app chatBot
 const appChatRoute = require("./routes/appChat");
 app.use("/api/v1/appChat", appChatRoute);
 
+// notification routes
+const notificationRoutes = require('./routes/notification');
+app.use('/api/v1/notifications', notificationRoutes);
 
 // Routes
 app.use("/api/v1/auth", userRoute)
