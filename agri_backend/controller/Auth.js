@@ -306,7 +306,7 @@ exports.getUserProfile = asyncHandler(async (req, res) => {
 // Update Profile
 exports.updateProfile = asyncHandler(async (req, res) => {
     try {
-        const { Name, gender, contactNo, dateofBirth, about } = req.body;
+        const { Name, firstName, lastName, gender, contactNo, dateofBirth, about } = req.body;
         const userId = req.user.id;
 
         // Find the user
@@ -318,13 +318,19 @@ exports.updateProfile = asyncHandler(async (req, res) => {
             });
         }
 
-        // Update user basic info
-        if (Name) user.Name = Name;
+        // Update user basic info - construct full name from first and last name if provided
+        if (firstName && lastName) {
+            user.Name = `${firstName} ${lastName}`;
+        } else if (Name) {
+            user.Name = Name;
+        }
 
         // Update or create profile details
         let profileDetails = user.additionalDetails;
         if (!profileDetails) {
             profileDetails = await Profile.create({
+                firstName: firstName || null,
+                lastName: lastName || null,
                 gender: gender || null,
                 dateofBirth: dateofBirth || null,
                 about: about || null,
@@ -332,6 +338,8 @@ exports.updateProfile = asyncHandler(async (req, res) => {
             });
             user.additionalDetails = profileDetails._id;
         } else {
+            if (firstName !== undefined) profileDetails.firstName = firstName;
+            if (lastName !== undefined) profileDetails.lastName = lastName;
             if (gender !== undefined) profileDetails.gender = gender;
             if (contactNo !== undefined) profileDetails.contactNo = contactNo;
             if (dateofBirth !== undefined) profileDetails.dateofBirth = dateofBirth;

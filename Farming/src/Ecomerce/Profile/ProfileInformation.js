@@ -11,6 +11,8 @@ const ProfileInformation = () => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         Name: "",
+        firstName: "",
+        lastName: "",
         gender: "",
         email: "",
         contactNo: "",
@@ -33,6 +35,8 @@ const ProfileInformation = () => {
         if (user) {
             setFormData({
                 Name: user.Name || "",
+                firstName: user.additionalDetails?.firstName || "",
+                lastName: user.additionalDetails?.lastName || "",
                 gender: user.additionalDetails?.gender || "",
                 email: user.email || "",
                 contactNo: user.additionalDetails?.contactNo || "",
@@ -52,8 +56,12 @@ const ProfileInformation = () => {
     };
 
     const validateForm = () => {
-        if (!formData.Name.trim()) {
-            toast.error("Name is required");
+        if (!formData.firstName.trim()) {
+            toast.error("First name is required");
+            return false;
+        }
+        if (!formData.lastName.trim()) {
+            toast.error("Last name is required");
             return false;
         }
         if (!formData.email.trim()) {
@@ -104,6 +112,8 @@ const ProfileInformation = () => {
         if (user) {
             setFormData({
                 Name: user.Name || "",
+                firstName: user.additionalDetails?.firstName || "",
+                lastName: user.additionalDetails?.lastName || "",
                 gender: user.additionalDetails?.gender || "",
                 email: user.email || "",
                 contactNo: user.additionalDetails?.contactNo || "",
@@ -122,7 +132,9 @@ const ProfileInformation = () => {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            {user?.Name ? `${user.Name.split(' ')[0]}'s Personal Information` : 'Personal Information'}
+                            {user?.additionalDetails?.firstName || (user?.Name ? user.Name.split(' ')[0] : null) 
+                                ? `${user?.additionalDetails?.firstName || user.Name.split(' ')[0]}'s Personal Information` 
+                                : 'Personal Information'}
                         </h1>
                         <p className="text-gray-600">Manage your account details and preferences</p>
                     </div>
@@ -172,12 +184,12 @@ const ProfileInformation = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Full Name *
+                                            First Name *
                                         </label>
                                         <input
                                             type="text"
-                                            name="Name"
-                                            value={formData.Name}
+                                            name="firstName"
+                                            value={formData.firstName}
                                             onChange={handleChange}
                                             disabled={!isEditing}
                                             className={`w-full px-4 py-3 border rounded-xl transition-colors duration-200 ${
@@ -185,7 +197,25 @@ const ProfileInformation = () => {
                                                     ? 'border-gray-300 focus:border-mizoram-500 focus:ring-2 focus:ring-mizoram-200' 
                                                     : 'border-gray-200 bg-gray-50'
                                             }`}
-                                            placeholder="Enter your full name"
+                                            placeholder="Enter your first name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Last Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="lastName"
+                                            value={formData.lastName}
+                                            onChange={handleChange}
+                                            disabled={!isEditing}
+                                            className={`w-full px-4 py-3 border rounded-xl transition-colors duration-200 ${
+                                                isEditing 
+                                                    ? 'border-gray-300 focus:border-mizoram-500 focus:ring-2 focus:ring-mizoram-200' 
+                                                    : 'border-gray-200 bg-gray-50'
+                                            }`}
+                                            placeholder="Enter your last name"
                                         />
                                     </div>
                                     <div>
