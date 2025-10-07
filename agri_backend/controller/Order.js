@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Cart = require('../models/CartItem');
 const { asyncHandler } = require('../utils/error');
 const { createNotification } = require('./Notification'); // IMPORT THIS
+const { invalidateAnalyticsCache } = require('./Analytics'); // Import cache invalidation
 
 function getPriceArray(product, sellerId) {
   if (sellerId) {
@@ -159,6 +160,20 @@ exports.createOrder = asyncHandler(async (req, res) => {
     }
 
     console.log('=== Order Creation Completed ===');
+
+    // Invalidate analytics cache for real-time updates
+    try {
+        // Invalidate cache for all sellers involved in this order
+        const sellerIds = orderItems.map(item => item.sellerId.toString());
+        sellerIds.forEach(sellerId => {
+            invalidateAnalyticsCache(sellerId);
+        });
+        // Also invalidate admin analytics cache
+        invalidateAnalyticsCache();
+        console.log('📊 Analytics cache invalidated for real-time updates');
+    } catch (cacheError) {
+        console.warn('⚠️ Failed to invalidate analytics cache:', cacheError.message);
+    }
 
     res.status(201).json({
       success: true,

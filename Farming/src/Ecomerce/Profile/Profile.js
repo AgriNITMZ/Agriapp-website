@@ -159,7 +159,7 @@ const ProfileLayout = ({ children }) => {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold">
-                            Hello, {user?.Name ? user.Name.split(' ')[0] : 'Guest'}!
+                            Hello, {user?.additionalDetails?.firstName || (user?.Name ? user.Name.split(' ')[0] : 'Guest')}!
                         </h2>
                         <p className="text-mizoram-100 font-medium">
                             {user?.Name || 'PERCI AGRI Customer'}

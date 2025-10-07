@@ -82,6 +82,7 @@ const CustomerRoutes = () => {
         <Route path="/server" element={<Server/>} />
         <Route path="/profile/pan-card" element={<PanCard/>} />
         <Route path="/payment/callback" element={<PaymentCallback/>} />
+      {/* //  <Route path="/analytics-demo" element={<AnalyticsDemo/>} /> */}
 
       </Routes>
       {!isProductPage && <Footer/>}

@@ -55,7 +55,6 @@ const Cart = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response?.data) {
-          console.log(response.data);
           setAddresses(response?.data);
           const validAddress = response.data.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
           if (validAddress) {
@@ -75,14 +74,11 @@ const Cart = () => {
   }, [token]);
 
   // Handle address selection
-  const handleAddressSelect = (addressId) => {
-    const selected = addresses.find(addr => addr._id === addressId);
-    if (selected) {
-      setSelectedAddress(selected);
-      setIsAddressPopupVisible(false);
-      toast.success('Address selected successfully.');
-    }
-  };
+ const handleAddressSelect = (address) => {
+  setSelectedAddress(address);
+  setIsAddressPopupVisible(false);
+  toast.success('Address selected successfully.');
+};
 
   // Handle payment processing
   const handlePayment = async (totalAmount) => {

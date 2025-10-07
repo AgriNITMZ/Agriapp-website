@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import ProfileLayout from './Profile';
-import { 
-    Bell, 
-    Package, 
-    CreditCard, 
-    Gift, 
-    Star, 
-    AlertCircle, 
-    Check, 
+import {
+    Bell,
+    Package,
+    CreditCard,
+    Gift,
+    Star,
+    AlertCircle,
+    Check,
     Trash2,
     Filter,
     MoreVertical,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
+import { notificationService } from '../../services/notificationService';
 
 const AllNotifications = () => {
     const user = useSelector((state) => state.profile.user);
@@ -23,83 +24,136 @@ const AllNotifications = () => {
     const [filter, setFilter] = useState('all'); // all, unread, read, orders, promotions, system
     const [loading, setLoading] = useState(false);
 
-    // Mock data for demonstration
-    useEffect(() => {
-        setNotifications([
-            {
-                id: '1',
-                type: 'order',
-                title: 'Order Delivered Successfully',
-                message: 'Your order #ORD123456 has been delivered successfully. Thank you for shopping with us!',
-                timestamp: '2024-03-15T10:30:00Z',
-                read: false,
-                icon: <Package className="w-5 h-5" />,
-                color: 'text-green-600',
-                bgColor: 'bg-green-100',
-                actionUrl: '/product/profile/orders'
-            },
-            {
-                id: '2',
-                type: 'promotion',
-                title: 'Special Offer: 20% Off Seeds',
-                message: 'Limited time offer! Get 20% off on all organic seeds. Use code SEEDS20 at checkout.',
-                timestamp: '2024-03-14T15:45:00Z',
-                read: true,
-                icon: <Gift className="w-5 h-5" />,
-                color: 'text-purple-600',
-                bgColor: 'bg-purple-100',
-                actionUrl: '/product'
-            },
-            {
-                id: '3',
-                type: 'payment',
-                title: 'Payment Successful',
-                message: 'Your payment of ₹1,250 for order #ORD123455 has been processed successfully.',
-                timestamp: '2024-03-13T09:15:00Z',
-                read: false,
-                icon: <CreditCard className="w-5 h-5" />,
-                color: 'text-blue-600',
-                bgColor: 'bg-blue-100',
-                actionUrl: '/product/profile/orders'
-            },
-            {
-                id: '4',
-                type: 'review',
-                title: 'Review Request',
-                message: 'How was your experience with Organic Tomato Seeds? Share your review to help other customers.',
-                timestamp: '2024-03-12T14:20:00Z',
-                read: true,
-                icon: <Star className="w-5 h-5" />,
-                color: 'text-yellow-600',
-                bgColor: 'bg-yellow-100',
-                actionUrl: '/product/profile/reviews'
-            },
-            {
-                id: '5',
-                type: 'system',
-                title: 'Account Security Update',
-                message: 'Your account password was successfully updated. If this wasn\'t you, please contact support immediately.',
-                timestamp: '2024-03-11T11:00:00Z',
-                read: false,
-                icon: <AlertCircle className="w-5 h-5" />,
-                color: 'text-red-600',
-                bgColor: 'bg-red-100',
-                actionUrl: '/product/profile/information'
-            },
-            {
-                id: '6',
-                type: 'order',
-                title: 'Order Shipped',
-                message: 'Great news! Your order #ORD123454 is on its way. Track your package for real-time updates.',
-                timestamp: '2024-03-10T16:30:00Z',
-                read: true,
-                icon: <Package className="w-5 h-5" />,
-                color: 'text-blue-600',
-                bgColor: 'bg-blue-100',
-                actionUrl: '/product/profile/orders'
+    // Get token from localStorage
+    const getToken = () => {
+        const storedTokenData = JSON.parse(localStorage.getItem("token"));
+        if (storedTokenData && Date.now() < storedTokenData.expires) {
+            return storedTokenData.value;
+        }
+        localStorage.removeItem("token");
+        return null;
+    };
+
+    // Fetch notifications from API
+    const fetchNotifications = async () => {
+        setLoading(true);
+        try {
+            const params = {};
+            if (filter !== 'all') {
+                if (filter === 'orders') params.type = 'order';
+                else if (filter === 'promotions') params.type = 'promotion';
+                else if (filter === 'system') params.type = 'system';
+                else if (filter === 'unread') params.read = false;
+                else if (filter === 'read') params.read = true;
             }
-        ]);
-    }, []);
+
+            const response = await notificationService.getUserNotifications(params);
+
+            if (response.success) {
+                const fetchedNotifications = response.notifications.map(notification => ({
+                    ...notification,
+                    id: notification._id,
+                    timestamp: notification.createdAt,
+                    icon: getNotificationIcon(notification.type),
+                    color: getNotificationColor(notification.type),
+                    bgColor: getNotificationBgColor(notification.type)
+                }));
+                setNotifications(fetchedNotifications);
+            }
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+            // Fallback to mock data if API fails
+            setNotifications([
+                {
+                    id: '1',
+                    type: 'order',
+                    title: 'Order Delivered Successfully',
+                    message: 'Your order #ORD123456 has been delivered successfully. Thank you for shopping with us!',
+                    timestamp: '2024-03-15T10:30:00Z',
+                    read: false,
+                    icon: <Package className="w-5 h-5" />,
+                    color: 'text-green-600',
+                    bgColor: 'bg-green-100',
+                    actionUrl: '/product/profile/orders'
+                },
+                {
+                    id: '2',
+                    type: 'payment',
+                    title: 'Payment Received',
+                    message: 'We have received your payment of ₹1,250. Your order is being processed.',
+                    timestamp: '2024-03-13T09:15:00Z',
+                    read: false,
+                    icon: <CreditCard className="w-5 h-5" />,
+                    color: 'text-blue-600',
+                    bgColor: 'bg-blue-100',
+                    actionUrl: '/product/profile/orders'
+                }
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Get notification icon based on type
+    const getNotificationIcon = (type) => {
+        switch (type) {
+            case 'order':
+            case 'delivery':
+                return <Package className="w-5 h-5" />;
+            case 'payment':
+                return <CreditCard className="w-5 h-5" />;
+            case 'promotion':
+                return <Gift className="w-5 h-5" />;
+            case 'review':
+                return <Star className="w-5 h-5" />;
+            case 'system':
+                return <AlertCircle className="w-5 h-5" />;
+            default:
+                return <Bell className="w-5 h-5" />;
+        }
+    };
+
+    // Get notification color based on type
+    const getNotificationColor = (type) => {
+        switch (type) {
+            case 'order':
+            case 'delivery':
+                return 'text-green-600';
+            case 'payment':
+                return 'text-blue-600';
+            case 'promotion':
+                return 'text-purple-600';
+            case 'review':
+                return 'text-yellow-600';
+            case 'system':
+                return 'text-red-600';
+            default:
+                return 'text-gray-600';
+        }
+    };
+
+    // Get notification background color based on type
+    const getNotificationBgColor = (type) => {
+        switch (type) {
+            case 'order':
+            case 'delivery':
+                return 'bg-green-100';
+            case 'payment':
+                return 'bg-blue-100';
+            case 'promotion':
+                return 'bg-purple-100';
+            case 'review':
+                return 'bg-yellow-100';
+            case 'system':
+                return 'bg-red-100';
+            default:
+                return 'bg-gray-100';
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [filter]);
 
     const filteredNotifications = notifications.filter(notification => {
         switch (filter) {
@@ -120,42 +174,67 @@ const AllNotifications = () => {
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    const handleMarkAsRead = (notificationId) => {
-        setNotifications(prev => 
-            prev.map(notification => 
-                notification.id === notificationId 
-                    ? { ...notification, read: true }
-                    : notification
-            )
-        );
+    const handleMarkAsRead = async (notificationId) => {
+        try {
+            await notificationService.markAsRead(notificationId);
+            setNotifications(prev =>
+                prev.map(notification =>
+                    notification.id === notificationId
+                        ? { ...notification, read: true }
+                        : notification
+                )
+            );
+            toast.success('Notification marked as read');
+        } catch (error) {
+            console.error("Error marking notification as read:", error);
+            toast.error('Failed to update notification');
+        }
     };
 
     const handleMarkAsUnread = (notificationId) => {
-        setNotifications(prev => 
-            prev.map(notification => 
-                notification.id === notificationId 
+        setNotifications(prev =>
+            prev.map(notification =>
+                notification.id === notificationId
                     ? { ...notification, read: false }
                     : notification
             )
         );
     };
 
-    const handleDeleteNotification = (notificationId) => {
-        if (window.confirm('Are you sure you want to delete this notification?')) {
+    const handleDeleteNotification = async (notificationId) => {
+        if (!window.confirm('Are you sure you want to delete this notification?')) return;
+
+        try {
+            await notificationService.deleteNotification(notificationId);
             setNotifications(prev => prev.filter(n => n.id !== notificationId));
             toast.success('Notification deleted');
+        } catch (error) {
+            console.error("Error deleting notification:", error);
+            toast.error('Failed to delete notification');
         }
     };
 
-    const handleMarkAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-        toast.success('All notifications marked as read');
+    const handleMarkAllAsRead = async () => {
+        try {
+            await notificationService.markAllAsRead();
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            toast.success('All notifications marked as read');
+        } catch (error) {
+            console.error("Error marking all as read:", error);
+            toast.error('Failed to update notifications');
+        }
     };
 
-    const handleClearAll = () => {
-        if (window.confirm('Are you sure you want to clear all notifications?')) {
+    const handleClearAll = async () => {
+        if (!window.confirm('Are you sure you want to clear all notifications?')) return;
+
+        try {
+            await notificationService.clearAllNotifications();
             setNotifications([]);
             toast.success('All notifications cleared');
+        } catch (error) {
+            console.error("Error clearing notifications:", error);
+            toast.error('Failed to clear notifications');
         }
     };
 
@@ -163,7 +242,7 @@ const AllNotifications = () => {
         const date = new Date(timestamp);
         const now = new Date();
         const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-        
+
         if (diffInHours < 1) {
             return 'Just now';
         } else if (diffInHours < 24) {
@@ -198,7 +277,7 @@ const AllNotifications = () => {
                                 Stay updated with your orders, promotions, and account activities
                             </p>
                         </div>
-                        
+
                         {/* Actions */}
                         <div className="mt-4 sm:mt-0 flex items-center space-x-3">
                             {unreadCount > 0 && (
@@ -252,18 +331,16 @@ const AllNotifications = () => {
                                 <button
                                     key={option.key}
                                     onClick={() => setFilter(option.key)}
-                                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
-                                        filter === option.key
-                                            ? 'bg-mizoram-100 text-mizoram-700 border border-mizoram-300'
-                                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                                    }`}
+                                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 whitespace-nowrap ${filter === option.key
+                                        ? 'bg-mizoram-100 text-mizoram-700 border border-mizoram-300'
+                                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                        }`}
                                 >
                                     <span>{option.label}</span>
-                                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                                        filter === option.key
-                                            ? 'bg-mizoram-200 text-mizoram-800'
-                                            : 'bg-gray-200 text-gray-600'
-                                    }`}>
+                                    <span className={`px-2 py-0.5 rounded-full text-xs ${filter === option.key
+                                        ? 'bg-mizoram-200 text-mizoram-800'
+                                        : 'bg-gray-200 text-gray-600'
+                                        }`}>
                                         {option.count}
                                     </span>
                                 </button>
@@ -278,11 +355,10 @@ const AllNotifications = () => {
                         {filteredNotifications.map((notification) => (
                             <div
                                 key={notification.id}
-                                className={`bg-white rounded-2xl shadow-lg border transition-all duration-200 hover:shadow-xl ${
-                                    notification.read 
-                                        ? 'border-gray-200' 
-                                        : 'border-mizoram-200 bg-mizoram-50/30'
-                                }`}
+                                className={`bg-white rounded-2xl shadow-lg border transition-all duration-200 hover:shadow-xl ${notification.read
+                                    ? 'border-gray-200'
+                                    : 'border-mizoram-200 bg-mizoram-50/30'
+                                    }`}
                             >
                                 <div className="p-6">
                                     <div className="flex items-start space-x-4">
@@ -296,18 +372,16 @@ const AllNotifications = () => {
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
                                                     <div className="flex items-center space-x-2 mb-1">
-                                                        <h3 className={`font-semibold ${
-                                                            notification.read ? 'text-gray-900' : 'text-gray-900'
-                                                        }`}>
+                                                        <h3 className={`font-semibold ${notification.read ? 'text-gray-900' : 'text-gray-900'
+                                                            }`}>
                                                             {notification.title}
                                                         </h3>
                                                         {!notification.read && (
                                                             <div className="w-2 h-2 bg-mizoram-500 rounded-full"></div>
                                                         )}
                                                     </div>
-                                                    <p className={`text-sm leading-relaxed ${
-                                                        notification.read ? 'text-gray-600' : 'text-gray-700'
-                                                    }`}>
+                                                    <p className={`text-sm leading-relaxed ${notification.read ? 'text-gray-600' : 'text-gray-700'
+                                                        }`}>
                                                         {notification.message}
                                                     </p>
                                                     <div className="flex items-center justify-between mt-3">
@@ -316,7 +390,7 @@ const AllNotifications = () => {
                                                         </span>
                                                         <div className="flex items-center space-x-2">
                                                             <button
-                                                                onClick={() => notification.read 
+                                                                onClick={() => notification.read
                                                                     ? handleMarkAsUnread(notification.id)
                                                                     : handleMarkAsRead(notification.id)
                                                                 }
@@ -361,7 +435,7 @@ const AllNotifications = () => {
                             {filter === 'all' ? 'No notifications' : `No ${filter} notifications`}
                         </h3>
                         <p className="text-gray-600 mb-6">
-                            {filter === 'all' 
+                            {filter === 'all'
                                 ? 'You\'re all caught up! New notifications will appear here.'
                                 : `You don't have any ${filter} notifications at the moment.`
                             }
