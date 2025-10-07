@@ -9,7 +9,9 @@ const SearchTopBar = ({ navigation, setSearch, inputRef }) => {
     const [searchText, setSearchText] = useState('');
     const handleSearch = (text) => {
         setSearchText(text);
-        setSearch(text); // Update category state in ShopPage
+        if (setSearch) {
+            setSearch(text); // Update category state in ShopPage
+        }
     };
     const handleDone = async () => {
         try {
