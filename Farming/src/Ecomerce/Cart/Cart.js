@@ -229,7 +229,7 @@ const Cart = () => {
                           <div className="flex items-center gap-2 mt-2">
                             <span className="font-medium">Price:</span>
                             <span className="line-through text-gray-500">₹{item?.selectedPrice}</span>
-                            <span className="text-green-600 font-semibold">₹{item?.selecetedDiscountedPrice}</span>
+                            <span className="text-green-600 font-semibold">₹{item?.selectedDiscountedPrice}</span>
                           </div>
                         </div>
                       </div>

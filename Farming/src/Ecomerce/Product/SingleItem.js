@@ -112,7 +112,7 @@ const SingleItem = () => {
       return;
     }
     const selectedsize = selectedSize.size;
-    const selecetedDiscountedPrice = selectedSize.discountedPrice;
+    const selectedDiscountedPrice = selectedSize.discountedPrice;
     const selectedPrice = selectedSize.price;
     const sellerId = selectedProduct.sellers[selectedSeller].sellerId;
 
@@ -123,7 +123,7 @@ const SingleItem = () => {
           productId: id,
           quantity,
           selectedsize,
-          selecetedDiscountedPrice,
+          selectedDiscountedPrice,
           selectedPrice,
           sellerId,
         },
