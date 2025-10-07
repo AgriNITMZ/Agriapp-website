@@ -8,6 +8,7 @@ const { uploadUmageToCloudinary } = require('../utils/ImageUploader')
 const{asyncHandler}=require('../utils/error')
 
 
+
 exports.createProduct = asyncHandler(async (req, res) => {
             const userId = req.user.id;
            
@@ -28,6 +29,8 @@ exports.createProduct = asyncHandler(async (req, res) => {
             if (!categoryExists) {
                 return res.status(404).json({ success: false, msg: 'Category not found' });
             }
+
+   
     
             const uploadedImages = [];
             for (const imageFile of images) {
@@ -209,6 +212,9 @@ exports.getProductById = asyncHandler(async (req, res) => {
         const productId = req.params.productId;
 
         const product = await Product.findById(productId)
+            .populate('category')
+            .populate('sellers.sellerId', 'firstName lastName email accountType')
+        
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -216,10 +222,11 @@ exports.getProductById = asyncHandler(async (req, res) => {
             })
         }
 
+   
         res.status(200).json({
             success: true,
             msg: 'Product found successfully',
-            product
+            product: productWithEnhancedSellers
         })  
 })
 
@@ -234,6 +241,70 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
             products
         })
 
+})
+
+// get grouped products by exact name match
+exports.getGroupedProducts = asyncHandler(async (req, res) => {
+    const products = await Product.find().populate('category');
+    
+    // Group products by exact name match (case insensitive)
+    const groupedProducts = {};
+    
+    products.forEach(product => {
+        const groupKey = product.name.toLowerCase().trim();
+        
+        if (!groupedProducts[groupKey]) {
+            // First product with this name
+            groupedProducts[groupKey] = {
+                _id: product._id,
+                name: product.name,
+                category: product.category,
+                description: product.description,
+                images: [...product.images],
+                sellers: [...product.sellers],
+                avgRating: product.avgRating,
+                badges: product.badges,
+                tag: product.tag,
+                createdAt: product.createdAt,
+                updatedAt: product.updatedAt,
+                sellerCount: product.sellers.length
+            };
+        } else {
+            // Merge sellers from products with same name
+            groupedProducts[groupKey].sellers.push(...product.sellers);
+            groupedProducts[groupKey].sellerCount = groupedProducts[groupKey].sellers.length;
+            
+            // Merge images (remove duplicates)
+            const existingImages = new Set(groupedProducts[groupKey].images);
+            product.images.forEach(img => {
+                if (!existingImages.has(img)) {
+                    groupedProducts[groupKey].images.push(img);
+                    existingImages.add(img);
+                }
+            });
+        }
+    });
+    
+    // Convert to array and add price ranges
+    const result = Object.values(groupedProducts).map(product => {
+        const allPrices = product.sellers.flatMap(seller => 
+            seller.price_size.map(ps => ps.discountedPrice)
+        );
+        
+        return {
+            ...product,
+            priceRange: {
+                min: Math.min(...allPrices),
+                max: Math.max(...allPrices)
+            }
+        };
+    });
+    
+    res.status(200).json({
+        success: true,
+        msg: 'Grouped products found successfully',
+        products: result
+    });
 })
 
 // get product by parent category
@@ -449,7 +520,11 @@ exports.getFilteredProducts = async (req, res) => {
             sort = 'newest',
             page = 1,
             limit = 10
+        // New parameter to enable/disable grouping
         } = req.query;
+
+        // If grouping is enabled, use the new grouped products logic
+      
         // Build the filter object
         const filter = {};
 

@@ -31,6 +31,7 @@ import PaymentCallback from '../Ecomerce/Payment/PaymentCallback'
 import SingleNews from '../Component/HomePage/SingleNews'
 import SingleScheme from '../Component/HomePage/SingleScheme'
 import PanCard from '../Ecomerce/Profile/PanCardInfo'
+import AnalyticsDemo from '../Component/Analytics/AnalyticsDemo'
 
 
 const CustomerRoutes = () => {
@@ -65,6 +66,7 @@ const CustomerRoutes = () => {
         <Route path="/server" element={<Server/>} />
         <Route path="/profile/pan-card" element={<PanCard/>} />
         <Route path="/payment/callback" element={<PaymentCallback/>} />
+        <Route path="/analytics-demo" element={<AnalyticsDemo/>} />
 
       </Routes>
       <Footer/>

@@ -37,7 +37,7 @@ const Address = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            setAddresses(response.data.addresses);
+            setAddresses(response.data);
         } catch (error) {
             console.error("Error fetching addresses:", error);
         }

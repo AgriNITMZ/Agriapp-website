@@ -9,6 +9,8 @@ const ProductCard = ({ product }) => {
 
   const primarySeller = product?.sellers?.[0];
   const priceDetails = primarySeller?.price_size?.[0];
+  const sellerCount = product?.sellerCount || product?.sellers?.length || 1;
+  const hasMultipleSellers = sellerCount > 1;
 
   const calculateDiscount = () => {
     const originalPrice = priceDetails?.price;
@@ -49,9 +51,8 @@ const ProductCard = ({ product }) => {
             key={index}
             src={image}
             alt={`${product.name} view ${index + 1}`}
-            className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 ${
-              currentImageIndex === index ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 ${currentImageIndex === index ? "opacity-100" : "opacity-0"
+              }`}
             onClick={() => goToProduct(product._id)}
           />
         ))}
@@ -61,7 +62,23 @@ const ProductCard = ({ product }) => {
         <h3 className="text-sm sm:text-lg text-[#28410d] mb-1 truncate font-bold hover:underline">
           {product.name}
         </h3>
-        {priceDetails ? (
+
+        {/* Show seller count if multiple sellers */}
+        {hasMultipleSellers && (
+          <div className="text-xs text-blue-600 mb-1">
+            {sellerCount} sellers available
+          </div>
+        )}
+
+        {/* Price display */}
+        {hasMultipleSellers && product.priceRange ? (
+          <div className="flex flex-wrap items-center gap-2 mb-2 text-sm sm:text-base">
+            <span className="font-bold text-[#3a5e14]">
+              Rs. {product.priceRange.min} - Rs. {product.priceRange.max}
+            </span>
+            <span className="text-xs text-[#28410d]">(Price range)</span>
+          </div>
+        ) : priceDetails ? (
           <div className="flex flex-wrap items-center gap-2 mb-2 text-sm sm:text-base">
             <span className="font-bold text-[#3a5e14]">
               Rs. {priceDetails.discountedPrice}
@@ -69,8 +86,6 @@ const ProductCard = ({ product }) => {
             <span className="text-[#28410d] line-through opacity-40">
               Rs. {priceDetails.price}
             </span>
-            {/* Uncomment if needed */}
-            {/* <span className="font-bold text-green-500">{calculateDiscount()}% off</span> */}
             <span className="text-xs text-[#28410d]">({priceDetails.size})</span>
           </div>
         ) : (

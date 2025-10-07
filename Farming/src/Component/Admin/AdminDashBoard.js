@@ -12,19 +12,26 @@ const AdminDashBoard = () => {
         orders, and handle other administrative tasks.
       </p>
 
-      <div className="flex justify-center gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link
           to="adminproducts"
-          className="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transition"
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transition text-center"
         >
           Manage Products
         </Link>
 
         <Link
           to="addnews"
-          className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-green-600 transition"
+          className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-green-600 transition text-center"
         >
           Manage News
+        </Link>
+
+        <Link
+          to="analytics"
+          className="bg-purple-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-purple-600 transition text-center"
+        >
+          📊 Analytics Dashboard
         </Link>
       </div>
     </div>

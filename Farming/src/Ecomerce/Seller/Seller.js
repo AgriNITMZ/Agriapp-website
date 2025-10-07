@@ -4,6 +4,7 @@ import OrdersTable from './Component/OrdersTable';
 import ProductTable from './Component/ProductTable';
 import DashBoard from './Component/DashBoard';
 import BulkUpload from './Component/AddBulkProduct';
+import { useNavigate } from 'react-router-dom';
 
 // Placeholder components for dashboard views
 
@@ -16,10 +17,12 @@ const Seller = () => {
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [currentRoute, setCurrentRoute] = useState('/');
+  const navigate = useNavigate();
 
   // Menu items with routes
   const menuItems = [
     { name: "Dashboard", path: "/", icon: "📊" },
+    { name: "Analytics", path: "/analytics", icon: "📈" },
     { name: "Products", path: "/products", icon: "📦" },
     { name: "Customers", path: "/customers", icon: "👥" },
     { name: "Orders", path: "/orders", icon: "🛒" },
@@ -85,7 +88,11 @@ const Seller = () => {
           <div 
             key={item.path}
             onClick={() => {
-              setCurrentRoute(item.path);
+              if (item.path === '/analytics') {
+                navigate('/seller/analytics');
+              } else {
+                setCurrentRoute(item.path);
+              }
               if (!isLargeScreen) setSidebarVisible(false);
             }}
             className="flex items-center p-3 hover:bg-gray-700 cursor-pointer"
