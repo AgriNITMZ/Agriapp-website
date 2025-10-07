@@ -55,8 +55,8 @@ const Cart = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response?.data) {
-          setAddresses(response?.data);
-          const validAddress = response.data.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
+          setAddresses(response?.data.addresses);
+          const validAddress = response.data.addresses.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
           if (validAddress) {
             setSelectedAddress(validAddress);
           } else {

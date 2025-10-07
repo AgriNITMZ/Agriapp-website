@@ -19,9 +19,7 @@ const productSchema = new mongoose.Schema({
         }
     ],
   name: {
-  en: { type: String, required: true },
-  mizo: { type: String, default: "" }
-},
+type: String, required: true },
 
     category: {
         type: String,

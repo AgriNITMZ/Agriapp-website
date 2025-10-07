@@ -47,6 +47,7 @@ const productRoute = require('./routes/Product')
 const orderRoute = require('./routes/Order')
 const newsRoute = require('./routes/News')
 const schemeRoute = require('./routes/Scheme')
+const analyticsRoute = require('./routes/Analytics')
 
 const chatRoute = require("./routes/chat");
 app.use("/api/v1/chat", chatRoute);
@@ -61,6 +62,7 @@ app.use("/api/v1/products", productRoute)
 app.use("/api/v1/order", orderRoute)
 app.use("/api/v1/news", newsRoute)
 app.use("/api/v1/scheme", schemeRoute)
+app.use("/api/v1/analytics", analyticsRoute)
 
 
 app.get('/', (req, res) => {
