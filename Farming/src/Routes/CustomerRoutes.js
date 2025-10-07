@@ -1,6 +1,6 @@
 import React from 'react'
 import NavBar from '../Component/Common/NavBar'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import Product from '../Ecomerce/Pages/Product'
 import Home from '../Component/HomePage/Home'
 import News from '../Component/HomePage/News'
@@ -31,10 +31,19 @@ import PaymentCallback from '../Ecomerce/Payment/PaymentCallback'
 import SingleNews from '../Component/HomePage/SingleNews'
 import SingleScheme from '../Component/HomePage/SingleScheme'
 import PanCard from '../Ecomerce/Profile/PanCardInfo'
-import AnalyticsDemo from '../Component/Analytics/AnalyticsDemo'
+import GiftCards from '../Ecomerce/Profile/GiftCards'
+import SavedUPI from '../Ecomerce/Profile/SavedUPI'
+import SavedCards from '../Ecomerce/Profile/SavedCards'
+import MyCoupons from '../Ecomerce/Profile/MyCoupons'
+import MyReviewsRatings from '../Ecomerce/Profile/MyReviewsRatings'
+import AllNotifications from '../Ecomerce/Profile/AllNotifications'
+import ContactUs from '../Ecomerce/Profile/ContactUs'
 
 
 const CustomerRoutes = () => {
+  const location = useLocation();
+  const isProductPage = location.pathname.startsWith('/product');
+
   return (
     <>
       <NavBar />
@@ -62,6 +71,13 @@ const CustomerRoutes = () => {
         <Route path="/product/profile/information" element={<ProfileInformation/>} />
         <Route path="/product/profile/addresses" element={<Address/>} />
         <Route path="/product/profile/orders" element={<Order/>} />
+        <Route path="/product/profile/gift-cards" element={<GiftCards/>} />
+        <Route path="/product/profile/saved-upi" element={<SavedUPI/>} />
+        <Route path="/product/profile/saved-cards" element={<SavedCards/>} />
+        <Route path="/product/profile/coupons" element={<MyCoupons/>} />
+        <Route path="/product/profile/reviews" element={<MyReviewsRatings/>} />
+        <Route path="/product/profile/notifications" element={<AllNotifications/>} />
+        <Route path="/product/profile/contact-us" element={<ContactUs/>} />
         <Route path="/product/checkout" element={<CheckoutProduct/>} />
         <Route path="/server" element={<Server/>} />
         <Route path="/profile/pan-card" element={<PanCard/>} />
@@ -69,7 +85,7 @@ const CustomerRoutes = () => {
         <Route path="/analytics-demo" element={<AnalyticsDemo/>} />
 
       </Routes>
-      <Footer/>
+      {!isProductPage && <Footer/>}
     </>
   )
 }

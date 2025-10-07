@@ -6,7 +6,7 @@ import CustomerRoutes from './Routes/CustomerRoutes';
 
 function App() {
   return (
-    <div className='bg-[#cefad0]'>
+    <div className='bg-gradient-to-br from-mizoram-50 to-earth-50 min-h-screen'>
       <Routes>
         <Route path="/*" element={<CustomerRoutes />} />
         <Route path="seller/*" element={<SellerRoutes />} />

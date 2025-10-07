@@ -1,42 +1,49 @@
-// backend/models/Notification.js
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
-        index: true
+        required: true
     },
     type: {
         type: String,
-        enum: ['order_placed', 'order_confirmed', 'order_shipped', 'order_delivered', 'order_cancelled', 'payment_success', 'payment_failed'],
+        enum: ['order', 'payment', 'delivery', 'promotion', 'system', 'review'],
         required: true
     },
     title: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     message: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
-    orderId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order'
-    },
-    isRead: {
+    read: {
         type: Boolean,
         default: false
     },
-    data: {
+    orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+        required: false
+    },
+    actionUrl: {
+        type: String,
+        required: false
+    },
+    metadata: {
         type: mongoose.Schema.Types.Mixed,
+        default: {}
     }
 }, {
     timestamps: true
 });
 
-notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+// Index for efficient queries
+notificationSchema.index({ userId: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, read: 1 });
 
-const Notification = mongoose.model('Notification', notificationSchema);
-module.exports = Notification;
+module.exports = mongoose.model("Notification", notificationSchema);

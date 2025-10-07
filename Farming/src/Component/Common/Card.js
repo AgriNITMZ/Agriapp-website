@@ -1,67 +1,48 @@
 import React, { useState } from 'react'
 
-const Card = ({imageUrl,Title,Desc}) => {
-    const [isHovered, setIsHovered] = useState(false);
-  const [coordinates, setCoordinates] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    const card = e.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    
-    const rotateX = (y - centerY) / 20;
-    const rotateY = -(x - centerX) / 20;
-
-    setCoordinates({ x: rotateX, y: rotateY });
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setCoordinates({ x: 0, y: 0 });
-  };
+const Card = ({imageUrl, Title, Desc}) => {
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="p-8">
-    <div
-      className="relative w-64 bg-white rounded-xl shadow-lg transition-all duration-300 ease-out cursor-pointer overflow-hidden"
-      style={{
-        transform: isHovered 
-          ? `scale(1.2) rotateX(${coordinates.x}deg) rotateY(${coordinates.y}deg)`
-          : 'scale(1) rotateX(0) rotateY(0)',
-        transformStyle: 'preserve-3d',
-        perspective: '1000px'
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Image */}
-      <img
-        src={imageUrl}
-        alt="Card Image"
-        className="w-full h-48 object-cover"
-      />
+    <div className="group">
+      <div
+        className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-out cursor-pointer overflow-hidden border border-mizoram-100 h-full"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Image Container */}
+        <div className="relative overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={Title}
+            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110 image-professional"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-mizoram-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        </div>
 
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="text-xl font-bold mb-2">{Title}</h3>
-        
-        {/* Description - Only visible on hover */}
-        <div 
-          className="transition-opacity duration-300"
-          style={{ opacity: isHovered ? 1 : 0 }}
-        >
-          <p className="text-gray-600">
-           {Desc}
-          </p>
+        {/* Content */}
+        <div className="p-5 space-y-3">
+          <h3 className="text-lg font-bold text-gray-900 group-hover:text-mizoram-600 transition-colors duration-200 professional-text">
+            {Title}
+          </h3>
+          
+          {/* Description */}
+          <div className={`transition-all duration-300 ${isHovered ? 'max-h-32 opacity-100' : 'max-h-14 opacity-70'} overflow-hidden`}>
+            <p className="text-gray-600 leading-relaxed text-sm body-text">
+              {Desc}
+            </p>
+          </div>
+
+          {/* Hover indicator */}
+          <div className={`flex items-center text-mizoram-600 font-medium transition-all duration-300 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+            <span className="text-xs professional-text">Learn more</span>
+            <svg className="w-3 h-3 ml-2 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
-  </div>
   )
 }
 

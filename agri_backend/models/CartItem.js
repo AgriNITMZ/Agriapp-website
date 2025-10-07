@@ -28,7 +28,7 @@ const cartSchema = new mongoose.Schema({
                 required: true,
                 default: 0,
             },
-            selecetedDiscountedPrice: {
+            selectedDiscountedPrice: {
                 type: Number,
                 required: true,
                 default: 0,
@@ -63,7 +63,7 @@ cartSchema.pre('save', function (next) {
 
     // Iterate over each item in the cart and calculate totals based on selectedPrice
     for (const item of this.items) {
-        totalDiscountedPrice += item.selecetedDiscountedPrice * item.quantity;
+        totalDiscountedPrice += item.selectedDiscountedPrice * item.quantity;
         total += item.selectedPrice * item.quantity;
     }
 

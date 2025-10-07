@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ProfileLayout from './Profile'
 import axios from 'axios';
-import { X, MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { X, MoreVertical, Edit2, Trash2, Plus, MapPin, Phone, Home, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Address = () => {
     const [addresses, setAddresses] = useState([]);
@@ -92,10 +93,11 @@ const Address = () => {
                         Authorization: `Bearer ${token}`,
                     },
                 });
+                toast.success('Address deleted successfully');
                 fetchAddresses();
             } catch (error) {
                 console.error("Error deleting address:", error);
-                setError("Failed to delete address");
+                toast.error("Failed to delete address");
             }
         }
         setActiveDropdown(null);
@@ -135,6 +137,9 @@ const Address = () => {
                 );
             }
 
+            // Show success message
+            toast.success(isEditing ? 'Address updated successfully' : 'Address added successfully');
+            
             // Reset form and close modal
             setFormData({ 
                 Name: '',
@@ -151,7 +156,9 @@ const Address = () => {
             // Refresh addresses list
             fetchAddresses();
         } catch (error) {
-            setError(error.response?.data?.message || "Error saving address");
+            const errorMessage = error.response?.data?.message || "Error saving address";
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -173,9 +180,13 @@ const Address = () => {
 
     return (
         <ProfileLayout>
-            <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">My Addresses</h2>
+            <div className="max-w-6xl mx-auto">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Addresses</h1>
+                        <p className="text-gray-600">Manage your delivery addresses</p>
+                    </div>
                     <button
                         onClick={() => {
                             setIsEditing(false);
@@ -190,193 +201,272 @@ const Address = () => {
                             });
                             setShowModal(true);
                         }}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                        className="flex items-center space-x-2 bg-mizoram-600 text-white px-6 py-3 rounded-xl hover:bg-mizoram-700 transition-colors duration-200 shadow-lg mt-4 sm:mt-0"
                     >
-                        Add New Address
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Address</span>
                     </button>
                 </div>
 
                 {/* Addresses Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {addresses.map((address) => (
-                        <div
-                            key={address._id}
-                            className="p-4 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow relative"
-                        >
-                            <div className="dropdown-container absolute top-4 right-4">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveDropdown(activeDropdown === address._id ? null : address._id);
-                                    }}
-                                    className="p-1 hover:bg-gray-100 rounded-full"
-                                >
-                                    <MoreVertical size={20} className="text-gray-500" />
-                                </button>
-                                
-                                {activeDropdown === address._id && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                                        <div className="py-1">
+                {addresses.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {addresses.map((address) => (
+                            <div
+                                key={address._id}
+                                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-200 relative group"
+                            >
+                                {/* Actions Dropdown */}
+                                <div className="dropdown-container absolute top-4 right-4">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveDropdown(activeDropdown === address._id ? null : address._id);
+                                        }}
+                                        className="p-2 hover:bg-gray-100 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    >
+                                        <MoreVertical size={18} className="text-gray-500" />
+                                    </button>
+                                    
+                                    {activeDropdown === address._id && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg z-10 border border-gray-200 overflow-hidden">
                                             <button
                                                 onClick={() => handleEditClick(address)}
-                                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                                                className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 w-full transition-colors duration-200"
                                             >
-                                                <Edit2 size={16} className="mr-2" />
+                                                <Edit2 size={16} className="mr-3 text-mizoram-600" />
                                                 Edit Address
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteClick(address._id)}
-                                                className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full"
+                                                className="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 w-full transition-colors duration-200"
                                             >
-                                                <Trash2 size={16} className="mr-2" />
+                                                <Trash2 size={16} className="mr-3" />
                                                 Delete Address
                                             </button>
                                         </div>
+                                    )}
+                                </div>
+                                
+                                {/* Address Content */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 bg-mizoram-100 rounded-full flex items-center justify-center">
+                                            <Home className="w-5 h-5 text-mizoram-600" />
+                                        </div>
+                                        <h3 className="font-bold text-lg text-gray-900">{address.Name}</h3>
                                     </div>
-                                )}
+                                    
+                                    <div className="space-y-2">
+                                        <div className="flex items-start space-x-3">
+                                            <MapPin className="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" />
+                                            <div className="text-gray-600">
+                                                <p>{address.streetAddress}</p>
+                                                <p>{`${address.city}, ${address.state} ${address.zipCode}`}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {address.mobile && (
+                                            <div className="flex items-center space-x-3">
+                                                <Phone className="w-4 h-4 text-gray-400" />
+                                                <p className="text-gray-600">{address.mobile}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <p className="font-semibold text-lg">{address.Name}</p>
-                            <p className="text-gray-600 mt-2">{address.streetAddress}</p>
-                            <p className="text-gray-600">{`${address.city}, ${address.state}, ${address.zipCode}`}</p>
-                            <p className="text-gray-600 mt-2">Mobile: {address.mobile}</p>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16">
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <MapPin className="w-12 h-12 text-gray-400" />
                         </div>
-                    ))}
-                </div>
-
-                {addresses.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                        No addresses found. Please add a new address.
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No addresses found</h3>
+                        <p className="text-gray-600 mb-6">Add your first delivery address to get started</p>
+                        <button
+                            onClick={() => {
+                                setIsEditing(false);
+                                setEditingAddressId(null);
+                                setFormData({
+                                    Name: '',
+                                    streetAddress: '',
+                                    city: '',
+                                    state: '',
+                                    zipCode: '',
+                                    mobile: ''
+                                });
+                                setShowModal(true);
+                            }}
+                            className="flex items-center space-x-2 bg-mizoram-600 text-white px-6 py-3 rounded-xl hover:bg-mizoram-700 transition-colors duration-200 shadow-lg mx-auto"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Your First Address</span>
+                        </button>
                     </div>
                 )}
 
                 {/* Add/Edit Address Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg w-full max-w-md">
-                            <div className="flex justify-between items-center p-4 border-b">
-                                <h3 className="text-xl font-semibold">
-                                    {isEditing ? 'Edit Address' : 'Add New Address'}
-                                </h3>
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">
+                                        {isEditing ? 'Edit Address' : 'Add New Address'}
+                                    </h3>
+                                    <p className="text-gray-600 mt-1">
+                                        {isEditing ? 'Update your delivery address' : 'Add a new delivery address'}
+                                    </p>
+                                </div>
                                 <button
                                     onClick={() => setShowModal(false)}
-                                    className="text-gray-500 hover:text-gray-700"
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
                                 >
-                                    <X size={24} />
+                                    <X size={24} className="text-gray-500" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-4">
+                            <form onSubmit={handleSubmit} className="p-6">
                                 {error && (
-                                    <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-                                        {error}
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3">
+                                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-red-800">Error</h4>
+                                            <p className="text-sm text-red-700">{error}</p>
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="space-y-4">
+                                <div className="space-y-6">
+                                    {/* Personal Information */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Full Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="Name"
-                                            value={formData.Name}
-                                            onChange={handleInputChange}
-                                            className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Enter your full name"
-                                        />
+                                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                            <Home className="w-5 h-5 mr-2 text-mizoram-600" />
+                                            Personal Information
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Full Name *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="Name"
+                                                    value={formData.Name}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 transition-colors duration-200"
+                                                    placeholder="Enter your full name"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Mobile Number *
+                                                </label>
+                                                <input
+                                                    type="tel"
+                                                    name="mobile"
+                                                    value={formData.mobile}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 transition-colors duration-200"
+                                                    placeholder="Enter mobile number"
+                                                    maxLength="10"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
+                                    {/* Address Information */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Street Address
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="streetAddress"
-                                            value={formData.streetAddress}
-                                            onChange={handleInputChange}
-                                            className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Enter street address"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                City
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="city"
-                                                value={formData.city}
-                                                onChange={handleInputChange}
-                                                className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Enter city"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                State
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="state"
-                                                value={formData.state}
-                                                onChange={handleInputChange}
-                                                className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Enter state"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                ZIP Code
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="zipCode"
-                                                value={formData.zipCode}
-                                                onChange={handleInputChange}
-                                                className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Enter ZIP code"
-                                                maxLength="6"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Mobile Number
-                                            </label>
-                                            <input
-                                                type="tel"
-                                                name="mobile"
-                                                value={formData.mobile}
-                                                onChange={handleInputChange}
-                                                className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
-                                                placeholder="Enter mobile number"
-                                                maxLength="10"
-                                            />
+                                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                            <MapPin className="w-5 h-5 mr-2 text-mizoram-600" />
+                                            Address Information
+                                        </h4>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Street Address *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="streetAddress"
+                                                    value={formData.streetAddress}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 transition-colors duration-200"
+                                                    placeholder="House no, Building name, Street name"
+                                                />
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        City *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="city"
+                                                        value={formData.city}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 transition-colors duration-200"
+                                                        placeholder="Enter city"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        State *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="state"
+                                                        value={formData.state}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 transition-colors duration-200"
+                                                        placeholder="Enter state"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        ZIP Code *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="zipCode"
+                                                        value={formData.zipCode}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 transition-colors duration-200"
+                                                        placeholder="Enter ZIP code"
+                                                        maxLength="6"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 flex justify-end space-x-3">
+                                {/* Modal Footer */}
+                                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 mt-8 pt-6 border-t border-gray-200">
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                        className="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200 font-medium"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className="px-6 py-3 bg-mizoram-600 text-white rounded-xl hover:bg-mizoram-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                                     >
-                                        {loading ? (isEditing ? 'Updating...' : 'Adding...') : (isEditing ? 'Update Address' : 'Add Address')}
+                                        {loading && (
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        )}
+                                        <span>
+                                            {loading 
+                                                ? (isEditing ? 'Updating...' : 'Adding...') 
+                                                : (isEditing ? 'Update Address' : 'Add Address')
+                                            }
+                                        </span>
                                     </button>
                                 </div>
                             </form>
