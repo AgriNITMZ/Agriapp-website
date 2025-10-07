@@ -210,48 +210,48 @@ const ProfileLayout = ({ children }) => {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20">
-            <div className="max-w-7xl mx-auto p-4 lg:p-6">
-                <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Mobile Menu Button */}
-                    <div className="lg:hidden">
-                        <button
-                            onClick={() => setIsMobileMenuOpen(true)}
-                            className="flex items-center space-x-2 bg-white p-3 rounded-xl shadow-md"
-                        >
-                            <Menu className="w-5 h-5" />
-                            <span className="font-medium">Account Menu</span>
-                        </button>
-                    </div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
+            <div className="flex flex-col lg:flex-row">
+                {/* Mobile Menu Button */}
+                <div className="lg:hidden p-4">
+                    <button
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="flex items-center space-x-2 bg-white p-3 rounded-xl shadow-md w-full justify-center"
+                    >
+                        <Menu className="w-5 h-5" />
+                        <span className="font-medium">Account Menu</span>
+                    </button>
+                </div>
 
-                    {/* Desktop Sidebar */}
-                    <div className="hidden lg:block">
-                        <Sidebar />
-                    </div>
+                {/* Desktop Sidebar - Fixed to left edge */}
+                <div className="hidden lg:block lg:w-80 lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto bg-white shadow-xl">
+                    <Sidebar />
+                </div>
 
-                    {/* Mobile Sidebar Overlay */}
-                    {isMobileMenuOpen && (
-                        <div className="fixed inset-0 z-50 lg:hidden">
-                            <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-                            <div className="absolute left-0 top-0 h-full w-80 max-w-[90vw] bg-white shadow-2xl">
-                                <div className="flex items-center justify-between p-4 border-b">
-                                    <h2 className="text-lg font-bold">Account Menu</h2>
-                                    <button
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="overflow-y-auto h-full pb-20">
-                                    <Sidebar isMobile={true} />
-                                </div>
+                {/* Mobile Sidebar Overlay */}
+                {isMobileMenuOpen && (
+                    <div className="fixed inset-0 z-50 lg:hidden">
+                        <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
+                        <div className="absolute left-0 top-0 h-full w-80 max-w-[90vw] bg-white shadow-2xl">
+                            <div className="flex items-center justify-between p-4 border-b">
+                                <h2 className="text-lg font-bold">Account Menu</h2>
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="overflow-y-auto h-full pb-20">
+                                <Sidebar isMobile={true} />
                             </div>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Main Content */}
-                    <div className="flex-1">
+                {/* Main Content - Adjusted for fixed sidebar */}
+                <div className="flex-1 lg:ml-80">
+                    <div className="p-4 lg:p-6">
                         <div className="bg-white rounded-2xl shadow-xl min-h-[600px]">
                             <div className="p-6 lg:p-8">
                                 {children}
