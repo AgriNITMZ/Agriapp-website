@@ -7,6 +7,8 @@ const {
     getUserById,
     getUserByToken,
     getUserProfile,
+    updateProfile,
+    getUserProfileDetails,
 } = require("../controller/Auth");
 const { createAddress, getAllAddresses, editAddress, deleteAddress, updateAddress } = require('../controller/Address');
 const { auth, isUser } = require('../middleware/auth');
@@ -28,6 +30,8 @@ router.delete('/deleteaddress/:id', auth, isUser, deleteAddress)
 router.get('/getuserbyid/:userId', auth,  getUserById)
 router.get('/getuserbytoken', auth, getUserByToken)
 router.get('/getuserprofile', auth, getUserProfile)
+router.put('/updateProfile', auth, updateProfile)
+router.get('/getProfileDetails', auth, getUserProfileDetails)
 
 
 // reset Password

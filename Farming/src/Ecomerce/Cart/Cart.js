@@ -49,14 +49,15 @@ const Cart = () => {
   // Fetch addresses
   useEffect(() => {
     const fetchAddresses = async () => {
-     
+
       try {
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response?.data) {
-          setAddresses(response?.data.addresses);
-          const validAddress = response.data.addresses.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
+          console.log(response.data);
+          setAddresses(response?.data);
+          const validAddress = response.data.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
           if (validAddress) {
             setSelectedAddress(validAddress);
           } else {
@@ -67,7 +68,7 @@ const Cart = () => {
         }
       } catch (error) {
         console.error('Error fetching addresses:', error);
-      //  toast.error('Failed to load addresses. Please try again.');
+        //  toast.error('Failed to load addresses. Please try again.');
       }
     };
     fetchAddresses();
