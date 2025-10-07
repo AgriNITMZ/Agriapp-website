@@ -95,7 +95,7 @@ const ShowAddressPage = ({ navigation }) => {
             setError(null);
             const response = await customFetch.get('/auth/getaddress');
             if (response.status === 200) {
-                setAddresses(response.data);
+                setAddresses(response.data.addresses||response.data);
             }
         } catch (err) {
             console.error('Error fetching addresses:', err);
