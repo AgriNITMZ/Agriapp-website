@@ -1,12 +1,10 @@
-// controller/Payment.js
+// backend/controller/Payment.js
 const razorpay = require('../config/razorpay');
 const crypto = require('crypto');
 const Order = require('../models/Order');
 const Cart = require('../models/CartItem');
+const { createNotification } = require('./Notification'); // IMPORT THIS
 
-/* -------------------------------------------------- *
- *  Create Razorpay payment order for app
- * -------------------------------------------------- */
 exports.createPaymentOrder = async (req, res) => {
     try {
         const { amount } = req.body;
@@ -20,12 +18,11 @@ exports.createPaymentOrder = async (req, res) => {
             });
         }
 
-        // Create Razorpay order
         const options = {
-            amount: amount * 100, // Convert to paise (1 rupee = 100 paise)
+            amount: amount * 100,
             currency: 'INR',
             receipt: `receipt_${Date.now()}`,
-            payment_capture: 1 // Auto capture payment
+            payment_capture: 1
         };
 
         const razorpayOrder = await razorpay.orders.create(options);
@@ -48,16 +45,13 @@ exports.createPaymentOrder = async (req, res) => {
     }
 };
 
-/* -------------------------------------------------- *
- *  Verify payment signature from app
- * -------------------------------------------------- */
 exports.verifyPayment = async (req, res) => {
     try {
         const { 
             razorpay_order_id, 
             razorpay_payment_id, 
             razorpay_signature,
-            orderId  // Your internal order ID
+            orderId
         } = req.body;
 
         console.log('=== Payment Verification Started ===');
@@ -65,7 +59,6 @@ exports.verifyPayment = async (req, res) => {
         console.log('Razorpay Payment ID:', razorpay_payment_id);
         console.log('Internal Order ID:', orderId);
 
-        // Validate required fields
         if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
             return res.status(400).json({
                 success: false,
@@ -73,14 +66,12 @@ exports.verifyPayment = async (req, res) => {
             });
         }
 
-        // Generate expected signature
         const body = razorpay_order_id + '|' + razorpay_payment_id;
         const expectedSignature = crypto
             .createHmac('sha256', process.env.RAZORPAY_SECRET)
             .update(body.toString())
             .digest('hex');
 
-        // Verify signature
         const isValid = expectedSignature === razorpay_signature;
 
         if (!isValid) {
@@ -93,7 +84,6 @@ exports.verifyPayment = async (req, res) => {
 
         console.log('✓ Payment signature verified successfully');
 
-        // Update order in database if orderId is provided
         if (orderId) {
             const order = await Order.findById(orderId);
             
@@ -105,14 +95,12 @@ exports.verifyPayment = async (req, res) => {
                 });
             }
 
-            // Update order status
             order.paymentStatus = 'Completed';
             order.orderStatus = 'Processing';
             order.paymentId = razorpay_payment_id;
             await order.save();
             console.log('✓ Order updated with payment details');
 
-            // Clear the cart after successful payment
             const cart = await Cart.findOne({ userId: order.userId });
             if (cart && cart.items.length > 0) {
                 cart.items = [];
@@ -121,6 +109,19 @@ exports.verifyPayment = async (req, res) => {
                 await cart.save();
                 console.log('✓ Cart cleared after successful payment');
             }
+
+            // CREATE NOTIFICATION FOR SUCCESSFUL PAYMENT
+            await createNotification(
+                order.userId,
+                'payment_success',
+                'Payment Successful! 🎉',
+                `Your payment of ₹${order.totalAmount} was successful. Your order is being processed.`,
+                order._id,
+                {
+                    amount: order.totalAmount,
+                    paymentId: razorpay_payment_id
+                }
+            );
         }
 
         console.log('=== Payment Verification Completed ===');

@@ -1,12 +1,10 @@
-// controller/Order.js
-const Order   = require('../models/Order');
+// backend/controller/Order.js
+const Order = require('../models/Order');
 const Product = require('../models/Product');
-const Cart    = require('../models/CartItem');
-const {asyncHandler}=require('../utils/error')
+const Cart = require('../models/CartItem');
+const { asyncHandler } = require('../utils/error');
+const { createNotification } = require('./Notification'); // IMPORT THIS
 
-/* -------------------------------------------------- *
- *  Helper: return price_size array for a seller
- * -------------------------------------------------- */
 function getPriceArray(product, sellerId) {
   if (sellerId) {
     const block = product.sellers.find(
@@ -14,23 +12,19 @@ function getPriceArray(product, sellerId) {
     );
     return block ? block.price_size : null;
   }
-  return product.price_size;           // default seller
+  return product.price_size;
 }
 
-/* -------------------------------------------------- *
- *  POST /createorder
- * -------------------------------------------------- */
 exports.createOrder = asyncHandler(async (req, res) => {
-
     const userId = req.user.id;
     const {
       productId,
       size,
       quantity,
       addressId,
-      paymentMethod,      // 'online' | 'cod'
-      paymentLinkId,      // online only
-      paymentLink,        // online only
+      paymentMethod,
+      paymentLinkId,
+      paymentLink,
       sellerId
     } = req.body;
 
@@ -39,10 +33,9 @@ exports.createOrder = asyncHandler(async (req, res) => {
     console.log('Request body:', req.body);
 
     const orderItems = [];
-    let   totalAmount = 0;
-    let   cart = null; // Store cart reference
+    let totalAmount = 0;
+    let cart = null;
 
-    /* ---------- 1. single-product checkout ---------- */
     if (productId) {
       console.log('Processing single product checkout');
       
@@ -53,26 +46,22 @@ exports.createOrder = asyncHandler(async (req, res) => {
       if (!priceArr) return res.status(404).json({ message: 'Seller not linked to product' });
 
       const sizeDetail = priceArr.find(p => p.size === size);
-      if (!sizeDetail)  return res.status(400).json({ message: 'Size not available' });
+      if (!sizeDetail) return res.status(400).json({ message: 'Size not available' });
       if (sizeDetail.quantity < quantity)
         return res.status(400).json({ message: 'Insufficient stock' });
 
       orderItems.push({
-        product   : productId,
-        sellerId  : sellerId || product.sellerId,
+        product: productId,
+        sellerId: sellerId || product.sellerId,
         size,
-        selectedprice           : sizeDetail.price,
-        selectedDiscountedPrice : sizeDetail.discountedPrice,
+        selectedprice: sizeDetail.price,
+        selectedDiscountedPrice: sizeDetail.discountedPrice,
         quantity
       });
       totalAmount = sizeDetail.discountedPrice * quantity;
-    }
-
-    /* ---------- 2. cart checkout ---------- */
-    else {
+    } else {
       console.log('Processing cart checkout');
       
-      // Fetch cart from database with populated product details
       cart = await Cart.findOne({ userId }).populate('items.product');
       
       console.log('Cart found:', cart ? 'Yes' : 'No');
@@ -84,7 +73,6 @@ exports.createOrder = asyncHandler(async (req, res) => {
         });
       }
 
-      // Process each cart item
       for (const item of cart.items) {
         const product = item.product;
         
@@ -117,12 +105,12 @@ exports.createOrder = asyncHandler(async (req, res) => {
         }
 
         orderItems.push({
-          product   : product._id,
-          sellerId  : item.sellerId || product.sellerId,
-          size      : item.selectedsize,
-          selectedprice           : sizeDetail.price,
-          selectedDiscountedPrice : sizeDetail.discountedPrice,
-          quantity  : item.quantity
+          product: product._id,
+          sellerId: item.sellerId || product.sellerId,
+          size: item.selectedsize,
+          selectedprice: sizeDetail.price,
+          selectedDiscountedPrice: sizeDetail.discountedPrice,
+          quantity: item.quantity
         });
         
         totalAmount += sizeDetail.discountedPrice * item.quantity;
@@ -132,28 +120,40 @@ exports.createOrder = asyncHandler(async (req, res) => {
       console.log('Total amount:', totalAmount);
     }
 
-    /* ---------- 3. create Order document ---------- */
     const newOrder = await Order.create({
       userId,
-      items        : orderItems,
+      items: orderItems,
       totalAmount,
       paymentMethod,
       shippingAddress: addressId,
-      paymentStatus : paymentMethod === 'cod' ? 'Pending' : 'Pending',
-      orderStatus   : paymentMethod === 'cod' ? 'Processing' : 'Pending',
-      paymentId     : paymentLinkId || null,
-      paymentLink   : paymentLink   || null
+      paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
+      orderStatus: paymentMethod === 'cod' ? 'Processing' : 'Pending',
+      paymentId: paymentLinkId || null,
+      paymentLink: paymentLink || null
     });
 
     console.log('Order created successfully:', newOrder._id);
 
-    /* Clear cart only for COD. For online payment, clear after verification */
     if (paymentMethod === 'cod' && cart) {
       cart.items = [];
       cart.totalPrice = 0;
       cart.totalDiscountedPrice = 0;
       await cart.save();
       console.log('Cart cleared for COD order');
+
+      // CREATE NOTIFICATION FOR COD ORDER
+      await createNotification(
+        userId,
+        'order_placed',
+        'Order Placed Successfully! 🎉',
+        `Your order of ₹${totalAmount} has been placed successfully. Order ID: ${newOrder._id}`,
+        newOrder._id,
+        {
+          amount: totalAmount,
+          itemCount: orderItems.length,
+          paymentMethod: 'COD'
+        }
+      );
     } else if (paymentMethod === 'online') {
       console.log('Cart NOT cleared - waiting for payment confirmation');
     }
@@ -163,14 +163,10 @@ exports.createOrder = asyncHandler(async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      order  : newOrder
+      order: newOrder
     });
- 
 });
 
-/* -------------------------------------------------- *
- *  GET /order/:orderId
- * -------------------------------------------------- */
 exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId).populate('items.product');
@@ -183,11 +179,7 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-/* -------------------------------------------------- *
- *  GET /order/history (buyer)
- * -------------------------------------------------- */
 exports.getOrderHistory = asyncHandler(async (req, res) => {
-
     const orders = await Order.find({ userId: req.user.id })
                               .populate('items.product')
                               .populate({
@@ -196,17 +188,11 @@ exports.getOrderHistory = asyncHandler(async (req, res) => {
                               })
                               .sort({ createdAt: -1 });
     res.status(200).json({ message:'Orders retrieved', orders });
-  
 });
 
-/* -------------------------------------------------- *
- *  GET /seller/orders (seller)
- * -------------------------------------------------- */
 exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
-
     const orders = await Order.find({ 'items.sellerId': req.user.id })
                               .populate('items.product')
                               .sort({ createdAt: -1 });
     res.status(200).json({ message:'Seller orders retrieved', orders });
-  
 });
