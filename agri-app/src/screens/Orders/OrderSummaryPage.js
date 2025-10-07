@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, SafeAreaView } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import Toast from 'react-native-toast-message';
 import CustomTopBar from '../../components/topBar/CustomTopBar';
@@ -14,8 +14,8 @@ const OrderItem = ({ item }) => (
             <Text style={styles.productName}>{item.productName}</Text>
             <Text style={styles.productSize}>{item.selectedsize}</Text>
             <Text style={styles.productPrice}>
-                ₹ {item.selecetedDiscountedPrice}
-                {item.selectedPrice > item.selecetedDiscountedPrice && (
+                ₹ {item.selectedDiscountedPrice}
+                {item.selectedPrice > item.selectedDiscountedPrice && (
                     <Text style={styles.originalPrice}> ₹ {item.selectedPrice}</Text>
                 )}
             </Text>
@@ -42,18 +42,18 @@ const PaymentMethodSelector = ({ selectedMethod, onSelect }) => (
             <TouchableOpacity
                 style={[
                     styles.paymentOption,
-                    selectedMethod === 'COD' && styles.selectedPaymentOption
+                    selectedMethod === 'cod' && styles.selectedPaymentOption
                 ]}
-                onPress={() => onSelect('COD')}
+                onPress={() => onSelect('cod')}
             >
                 <Text style={styles.paymentOptionText}>Cash on Delivery</Text>
             </TouchableOpacity>
             <TouchableOpacity
                 style={[
                     styles.paymentOption,
-                    selectedMethod === 'ONLINE' && styles.selectedPaymentOption
+                    selectedMethod === 'online' && styles.selectedPaymentOption
                 ]}
-                onPress={() => onSelect('ONLINE')}
+                onPress={() => onSelect('online')}
             >
                 <Text style={styles.paymentOptionText}>Pay Online</Text>
             </TouchableOpacity>
@@ -89,7 +89,7 @@ const OrderSummaryPage = ({ navigation, route }) => {
     const { clearCart } = useContext(CartContext);
     const { cart, selectedAddress } = route.params;
     const [isLoading, setIsLoading] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState(''); // Default to COD
+    const [paymentMethod, setPaymentMethod] = useState('');
     const [orderError, setOrderError] = useState(null);
 
     // Function to handle order creation
@@ -98,32 +98,67 @@ const OrderSummaryPage = ({ navigation, route }) => {
         setOrderError(null);
 
         try {
+            // Validate payment method
             if (paymentMethod === '') {
                 Toast.show({
                     type: 'error',
                     text1: 'Please select a Payment Method',
                 });
-                setIsLoading(false)
-                return
+                setIsLoading(false);
+                return;
             }
+
+            // Validate cart has items
+            if (!cart || !cart.items || cart.items.length === 0) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Cart is empty',
+                    text2: 'Please add items to your cart first'
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            // Validate address
+            if (!selectedAddress || !selectedAddress._id) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Invalid Address',
+                    text2: 'Please select a delivery address'
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            // Prepare order data
             const orderData = {
                 addressId: selectedAddress._id,
                 paymentMethod,
                 paymentLinkId: '',
             };
 
+            console.log('Sending order data:', orderData);
+            console.log('Cart items count:', cart.items.length);
+
             const response = await customFetch.post('order/createorder', orderData);
+
+            console.log('Order creation response:', response.data);
 
             if (response.data && response.data.success) {
                 // For COD orders, navigate to success page
-                if (paymentMethod === 'COD') {
+                if (paymentMethod === 'cod') {
                     Toast.show({
                         type: 'success',
                         text1: 'Order Placed Successfully',
                         text2: 'Your order will be delivered soon!'
                     });
                     clearCart();
-                    navigation.navigate('OrderSuccess', { orderId: response.data.order._id, amount: 0, paymentId: '', orderDate: response.data.order.updatedAt });
+                    navigation.navigate('OrderSuccess', { 
+                        orderId: response.data.order._id, 
+                        amount: 0, 
+                        paymentId: '', 
+                        orderDate: response.data.order.updatedAt 
+                    });
                 } else {
                     // For online payment, initiate Razorpay
                     initiateRazorpayPayment(response.data.order._id);
@@ -133,13 +168,22 @@ const OrderSummaryPage = ({ navigation, route }) => {
             }
         } catch (error) {
             console.error('Order creation error:', error);
-            setOrderError(error.message || 'Something went wrong. Please try again.');
+            console.error('Error response:', error.response?.data);
+            
+            const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
+            
+            setOrderError(errorMessage);
             Toast.show({
                 type: 'error',
                 text1: 'Order Failed',
-                text2: error.message || 'Please try again later'
+                text2: errorMessage
             });
-            navigation.navigate('OrderFailed', { cart, selectedAddress, errorMessage: error.message })
+            
+            navigation.navigate('OrderFailed', { 
+                cart, 
+                selectedAddress, 
+                errorMessage 
+            });
         } finally {
             setIsLoading(false);
         }
@@ -148,42 +192,43 @@ const OrderSummaryPage = ({ navigation, route }) => {
     // Create Razorpay payment order
     const createPaymentOrder = async (amount) => {
         try {
-            setIsLoading(true);
+            console.log('Creating payment order for amount:', amount);
 
             const response = await customFetch.post('order/create-payment-app', {
-                amount: amount, // amount in rupees
+                amount: amount,
             });
 
             if (!response.data || !response.data.order) {
                 throw new Error('Invalid response from payment service');
             }
 
+            console.log('Payment order created:', response.data.order);
             return response.data.order;
         } catch (error) {
             console.error('Error creating payment order:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Payment Error',
-                text2: 'Failed to create payment order'
+                text2: error.response?.data?.message || 'Failed to create payment order'
             });
             throw error;
-        } finally {
-            setIsLoading(false);
         }
     };
 
     // Verify payment with backend
     const verifyPayment = async (paymentData, orderId) => {
         try {
-            // Add the order ID to associate the payment with your order
+            console.log('Verifying payment with backend...');
+            
             const verificationData = {
                 ...paymentData,
                 orderId: orderId
             };
 
-            const response = await customFetch.post('/order/verify-payment-app', verificationData);
+            const response = await customFetch.post('order/verify-payment-app', verificationData);
 
             if (response.data && response.data.success) {
+                console.log('Payment verified successfully');
                 return true;
             } else {
                 throw new Error(response.data?.message || 'Payment verification failed');
@@ -193,7 +238,7 @@ const OrderSummaryPage = ({ navigation, route }) => {
             Toast.show({
                 type: 'error',
                 text1: 'Verification Failed',
-                text2: error.message || 'Payment could not be verified'
+                text2: error.response?.data?.message || 'Payment could not be verified'
             });
             return false;
         }
@@ -218,12 +263,12 @@ const OrderSummaryPage = ({ navigation, route }) => {
                 description: 'PreciAgri Order Payment',
                 image: 'https://res.cloudinary.com/daon246ck/image/upload/c_thumb,w_200,g_face/v1742024476/app_icon_lcrihw.png',
                 currency: 'INR',
-                key: 'rzp_test_bCwRAS88ZwEfxA', // Should be stored in environment variables
-                amount: (cart.totalDiscountedPrice * 100).toString(), // Razorpay expects amount in paise
+                key: 'rzp_test_bCwRAS88ZwEfxA',
+                amount: (cart.totalDiscountedPrice * 100).toString(),
                 name: 'PreciAgri',
-                order_id: paymentOrder.id, // Use the payment order ID from Razorpay, not your internal order ID
+                order_id: paymentOrder.id,
                 prefill: {
-                    email: '', // You can add user email if available
+                    email: '',
                     contact: selectedAddress.mobile,
                     name: selectedAddress.Name
                 },
@@ -243,8 +288,7 @@ const OrderSummaryPage = ({ navigation, route }) => {
                     };
 
                     // Verify payment with backend
-                    // const isVerified = await verifyPayment(verificationData, orderId);
-                    var isVerified = true
+                    const isVerified = await verifyPayment(verificationData, orderId);
 
                     if (isVerified) {
                         // Payment verified successfully
@@ -254,7 +298,12 @@ const OrderSummaryPage = ({ navigation, route }) => {
                             text2: `Payment ID: ${data.razorpay_payment_id}`
                         });
                         clearCart();
-                        navigation.navigate('OrderSuccess', { orderId: orderId, amount: cart.totalDiscountedPrice, paymentId: data.razorpay_payment_id, orderDate: Date.now() });
+                        navigation.navigate('OrderSuccess', { 
+                            orderId: orderId, 
+                            amount: cart.totalDiscountedPrice, 
+                            paymentId: data.razorpay_payment_id, 
+                            orderDate: Date.now() 
+                        });
                     } else {
                         // Payment verification failed
                         Toast.show({
@@ -262,7 +311,11 @@ const OrderSummaryPage = ({ navigation, route }) => {
                             text1: 'Payment Failed',
                             text2: 'Payment verification failed'
                         });
-                        navigation.navigate('OrderFailed', { cart, selectedAddress, errorMessage: 'Payment verification failed' })
+                        navigation.navigate('OrderFailed', { 
+                            cart, 
+                            selectedAddress, 
+                            errorMessage: 'Payment verification failed' 
+                        });
                     }
                 })
                 .catch((error) => {
@@ -273,7 +326,11 @@ const OrderSummaryPage = ({ navigation, route }) => {
                         text1: 'Payment Failed',
                         text2: error.description || 'Please try again later'
                     });
-                    navigation.navigate('OrderFailed', { cart, selectedAddress, errorMessage: error.description })
+                    navigation.navigate('OrderFailed', { 
+                        cart, 
+                        selectedAddress, 
+                        errorMessage: error.description 
+                    });
                 });
         } catch (error) {
             console.error('Error initiating payment:', error);
@@ -282,11 +339,15 @@ const OrderSummaryPage = ({ navigation, route }) => {
                 text1: 'Payment Error',
                 text2: error.message || 'Failed to initiate payment'
             });
-            navigation.navigate('OrderFailed', { cart, selectedAddress, errorMessage: error.message })
+            navigation.navigate('OrderFailed', { 
+                cart, 
+                selectedAddress, 
+                errorMessage: error.message 
+            });
         }
     };
 
-    // Render the order items using FlatList but made scrollable
+    // Render the order items
     const renderOrderItems = () => (
         <View style={styles.orderItemsContainer}>
             {cart.items.map(item => (
@@ -302,33 +363,20 @@ const OrderSummaryPage = ({ navigation, route }) => {
         <SafeAreaView style={styles.safeArea}>
             <CustomTopBar navigation={navigation} title="Order Summary" />
             <View style={styles.rootContainer}>
-                {/* Scrollable Content */}
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-                    {/* Address Section */}
                     <AddressCard address={selectedAddress} />
-
-                    {/* Order Items */}
                     {renderOrderItems()}
-
-                    {/* Order Summary */}
                     <OrderSummaryDetails cart={cart} />
-
-                    {/* Payment Method Selection */}
                     <PaymentMethodSelector
                         selectedMethod={paymentMethod}
                         onSelect={setPaymentMethod}
                     />
-
-                    {/* Error Display */}
                     {orderError && (
                         <Text style={styles.errorText}>{orderError}</Text>
                     )}
-
-                    {/* Bottom padding to ensure scrolling past the fixed button */}
                     <View style={styles.bottomPadding} />
                 </ScrollView>
 
-                {/* Fixed Button at Bottom */}
                 <View style={styles.fixedButtonContainer}>
                     <TouchableOpacity
                         style={styles.actionButton}
@@ -339,7 +387,7 @@ const OrderSummaryPage = ({ navigation, route }) => {
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
                             <Text style={styles.actionButtonText}>
-                                {paymentMethod === 'COD'
+                                {paymentMethod === 'cod'
                                     ? 'Confirm Order'
                                     : `Pay ₹${cart.totalDiscountedPrice}`}
                             </Text>
@@ -366,7 +414,7 @@ const styles = StyleSheet.create({
     },
     scrollViewContent: {
         padding: 5,
-        paddingBottom: 24, // Extra padding at the bottom
+        paddingBottom: 24,
     },
     orderItemsContainer: {
         marginBottom: 10,
@@ -392,9 +440,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: '#ffffff',
         padding: 12,
-        // borderRadius: 8,
         marginBottom: 4,
-        // elevation: 1,
     },
     productImage: {
         width: 80,
@@ -524,7 +570,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     bottomPadding: {
-        height: 50, // Add extra padding at the bottom to ensure scrolling works nicely
+        height: 50,
     }
 });
 

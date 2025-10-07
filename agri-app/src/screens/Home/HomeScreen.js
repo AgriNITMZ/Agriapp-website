@@ -8,6 +8,7 @@ import Services from '../../components/home/Services';
 import ProductList from '../../components/product/ProductList';
 import customFetch from '../../utils/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Bot from '../../components/Bot';
 
 const HomePage = ({ navigation }) => {
     const [productSections, setProductSections] = useState({
@@ -80,6 +81,7 @@ const HomePage = ({ navigation }) => {
                         <ProductList title="🔄 Continue Your Search.." products={productSections.searched} navigation={navigation} />
                     )}
                 </ScrollView>
+                <Bot/>
                 <FooterNavigation navigation={navigation} activePage="Home" />
             </View>
         </>

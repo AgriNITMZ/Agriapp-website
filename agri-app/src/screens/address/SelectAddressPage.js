@@ -28,7 +28,7 @@ const SelectAddressPage = ({ navigation, route }) => {
             setError(null);
             try {
                 const response = await customFetch.get('/auth/getaddress');
-                setAddresses(response.data);
+                setAddresses(response.data.addresses||response.data);
             } catch (error) {
                 console.error('Error fetching addresses:', error);
                 setError('Failed to load addresses. Please try again.');

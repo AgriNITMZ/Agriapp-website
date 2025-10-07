@@ -44,7 +44,8 @@ const ProductTable = () => {
   }
   // Handle delete product
   const handleDeleteProduct = (productId) => {
-   deleteProduct(productId)
+      if (!window.confirm('Are you sure you want to delete this product?')) return;
+   dispatch(deleteProduct(productId))
   };
   const handleEditProduct = (id) => {
     navigate(`/seller/edit-product/${id}`);
@@ -113,7 +114,7 @@ console.log("seller product is",sellerProducts)
                       </div>
                     </td>
                     <td className="px-4 py-4 w-[100px] text-sm text-gray-500">
-                      ${product?.price?.toFixed(2) || "N/A"}
+                      ₹{product?.price?.toFixed(2) || "N/A"}
                     </td>
                     <td className="px-4 py-4 w-[120px]">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 truncate">

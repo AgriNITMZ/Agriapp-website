@@ -12,7 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "newArchEnabled": true
+    },
+    "experiments": {
+      "newArchEnabled": true
     },
     "android": {
       "adaptiveIcon": {
@@ -20,30 +24,36 @@
         "backgroundColor": "#ffffff"
       },
       "splash": {
-      "image": "./src/assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-      "package": "com.vicky1001.PreciAgriapp"
+        "image": "./src/assets/images/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vicky1001.PreciAgriapp",
+      "newArchEnabled": true
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
       [
-      "expo-splash-screen",
-      {
-        "backgroundColor": "#ffffff",
-        "image": "./src/assets/images/splash.png",
-        "imageWidth": 200
-      }
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./src/assets/images/splash.png",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
+      ]
     ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "8637ae67-f09d-4d3b-83ab-30e55063dbf0"
-      }
-    },
-    "owner": "vicky1001"
   }
 }

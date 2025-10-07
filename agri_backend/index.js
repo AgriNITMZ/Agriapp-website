@@ -13,14 +13,23 @@ const PORT = process.env.PORT || 5000;
 app.use(morgan('tiny')) // only for development purpose
 app.use(express.json());
 app.use(cookieParser());
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.CORS_ORIGIN, // for web
+  "http://192.168.0.101:19000", // Expo Go dev server (adjust IP accordingly)
+];
 app.use(cors(
     {
-        origin: "http://localhost:3000",
-        credentials: true
-
+    origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
     }
+  },
+  credentials: true,
 
-));
+}));
 database.connect()
 
 app.use(
@@ -38,6 +47,18 @@ const productRoute = require('./routes/Product')
 const orderRoute = require('./routes/Order')
 const newsRoute = require('./routes/News')
 const schemeRoute = require('./routes/Scheme')
+const analyticsRoute = require('./routes/Analytics')
+
+const chatRoute = require("./routes/chat");
+app.use("/api/v1/chat", chatRoute);
+
+// app chatBot
+const appChatRoute = require("./routes/appChat");
+app.use("/api/v1/appChat", appChatRoute);
+
+// notification routes
+const notificationRoutes = require('./routes/notification');
+app.use('/api/v1/notifications', notificationRoutes);
 
 // Routes
 app.use("/api/v1/auth", userRoute)
@@ -45,6 +66,7 @@ app.use("/api/v1/products", productRoute)
 app.use("/api/v1/order", orderRoute)
 app.use("/api/v1/news", newsRoute)
 app.use("/api/v1/scheme", schemeRoute)
+app.use("/api/v1/analytics", analyticsRoute)
 
 
 app.get('/', (req, res) => {

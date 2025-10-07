@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router()
+const { auth, isAdmin, isUser, isSeller } = require('../middleware/auth');
 const {
     createCategory,
     getCategories,
@@ -10,8 +11,9 @@ const {
     getParentCategoriesList
 
 } = require('../controller/Category');
-const { auth, isAdmin, isUser, isSeller } = require('../middleware/auth');
+
 const { createProduct,
+    createBulkUpload,
     getProductById,
     getAllProducts,
     getProductsByParentCategory,
@@ -22,6 +24,7 @@ const { createProduct,
     editProduct,
     addSellerToProduct,
     getAllProductBySeller,
+    deleteProduct,
     } = require('../controller/Product');
 
 
@@ -29,16 +32,20 @@ router.post('/createparentcategory', auth, isAdmin, createParentCategory)
 router.get('/getallparentcategory', getAllParentCategories)
 router.get('/getcategorylist', getParentCategoriesList)
 router.post('/getonecategory', getParentCategoryById)
-router.post("/createcategory", auth, isAdmin, createCategory)
+//router.post("/createcategory", auth, isAdmin, createCategory)
+router.post("/createcategory", auth, createCategory)
 router.get('/getCategory', getCategories)
 router.post('/particularcreatecategory', getCategoryById)
 
 
 router.post("/createproduct", auth, isSeller, createProduct)
+router.post("/bulk-upload", auth, isSeller, createBulkUpload)
 router.get('/getproductbyId/:productId', getProductById)
-router.get('/getallproduct', getAllProducts)
+// router.get('/getallproduct',auth,isAdmin, getAllProducts)
+router.get('/getallproduct',auth, getAllProducts)
 router.get('/getproductbyparentcategory', getProductsByParentCategory)
 router.get('/getproductbycategory', getProductsByCategory)
+router.delete('/product/delete/:productId', auth, isSeller, deleteProduct) // Assuming you want to delete a product by its ID
 
 
 
@@ -66,7 +73,7 @@ router.get('/wishlistid', auth, getWishList)
 
 router.get('/searchProducts/search',seachProduct)
 router.get('/sellerProductt',auth,isSeller,getAllProductBySeller)
-router.get('/searchProducts/search', seachProduct)
+// router.get('/searchProducts/search', seachProduct)
 router.get('/filteredproducts', getFilteredProducts)
 
 

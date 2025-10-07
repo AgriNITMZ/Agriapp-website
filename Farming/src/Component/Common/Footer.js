@@ -1,83 +1,79 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { ArrowUp } from 'lucide-react'
 
 const Footer = () => {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
  
   return (
-    <footer className="bg-green-600 text-white py-8">
-      <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Industries Column */}
-        <div>
-          <h3 className="text-lg font-bold mb-4 uppercase">Industries</h3>
-          <ul className="space-y-2">
-            <li>Farms</li>
-            <li>Enterprise Farms</li>
-            <li>Cooperatives</li>
-            <li>Food & Beverages</li>
-            <li>Banks</li>
-            <li>Input Manufacturers</li>
-            <li>Agronomic Advisory</li>
-            <li>Retail</li>
-            <li>Public Sector</li>
-          </ul>
-        </div>
+    <footer className="bg-gradient-to-br from-mizoram-800 to-mizoram-900 text-white">
+      {/* Main Footer Content */}
+      <div className="container mx-auto px-6 py-16">
+        <div className="text-center max-w-4xl mx-auto">
+          
+          {/* Company Branding */}
+          <div className="mb-8">
+            <h2 className="text-4xl lg:text-5xl font-display font-bold mb-4 tracking-wide hero-text">
+              PERCI AGRI
+            </h2>
+            <h3 className="text-xl lg:text-2xl font-display font-semibold text-mizoram-200 mb-6 professional-text">
+              Smart Farming Marketplace
+            </h3>
+          </div>
 
-        {/* Products Column */}
-        <div>
-          <h3 className="text-lg font-bold mb-4 uppercase">Products</h3>
-          <ul className="space-y-2">
-            <li>AGRIVI 360 FMS</li>
-            <li>Farm Insights</li>
-            <li>Farm Enterprise</li>
-            <li>Farm Advisory</li>
-            <li>Agriculture Supply Chain</li>
-            <li>AGRIVI AI Engage</li>
-            <li>Inputs</li>
-            <li>Ed</li>
-            <li>Local Advisor</li>
-            <li>AGRIVI Food</li>
-            <li>Traceability</li>
-            <li>AGRIVI Connect</li>
-            <li>Fleet</li>
-            <li>Meteo</li>
-            <li>Soil</li>
-          </ul>
-        </div>
+          {/* Company Description */}
+          <div className="mb-12">
+            <p className="text-lg lg:text-xl text-mizoram-100 leading-relaxed font-body max-w-3xl mx-auto body-text">
+              Connecting agricultural sellers with Mizoram farmers through IoT-based smart farming solutions and modern marketplace technology.
+            </p>
+          </div>
 
-        {/* Company Column */}
-        <div>
-          <h3 className="text-lg font-bold mb-4 uppercase">Company</h3>
-          <ul className="space-y-2">
-            <li>About Us</li>
-            <li>Careers</li>
-            <li>Contact Us</li>
-            <li>Partner Program</li>
-          </ul>
-        </div>
+          {/* Quick Links */}
+          <div className="flex flex-wrap justify-center gap-8 mb-12">
+            <Link to="/" className="text-mizoram-200 hover:text-white transition-colors duration-200 font-medium">
+              Home
+            </Link>
+            <Link to="/about" className="text-mizoram-200 hover:text-white transition-colors duration-200 font-medium">
+              About Us
+            </Link>
+            <Link to="/news" className="text-mizoram-200 hover:text-white transition-colors duration-200 font-medium">
+              News
+            </Link>
+            <Link to="/product" className="text-mizoram-200 hover:text-white transition-colors duration-200 font-medium">
+              Marketplace
+            </Link>
+            <Link to="/contact" className="text-mizoram-200 hover:text-white transition-colors duration-200 font-medium">
+              Contact
+            </Link>
+          </div>
 
-        {/* Resources Column */}
-        <div>
-          <h3 className="text-lg font-bold mb-4 uppercase">Resources</h3>
-          <ul className="space-y-2">
-            <li>ROI Calculator</li>
-            <li>Farm Digitalization Score</li>
-            <li>Blog</li>
-            <li>News</li>
-            <li>Case Studies</li>
-            <li>eBooks</li>
-            <li>Book a Meeting</li>
-            <li>Log In</li>
-          </ul>
         </div>
       </div>
-      <div className="mt-8 text-center">
-        <button
-          className="bg-white text-green-600 rounded-full p-2 shadow-md"
-          aria-label="Scroll to Top"
-          
-        >
-          ↑
-        </button>
+
+      {/* Bottom Bar */}
+      <div className="border-t border-mizoram-700">
+        <div className="container mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center">
+          <p className="text-mizoram-300 text-sm font-medium">
+            © 2024 PERCI AGRI. All rights reserved. Smart farming marketplace for Mizoram.
+          </p>
+          <div className="flex items-center space-x-6 mt-4 md:mt-0">
+            <Link to="/privacy" className="text-mizoram-300 hover:text-white text-sm transition-colors font-medium">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="text-mizoram-300 hover:text-white text-sm transition-colors font-medium">
+              Terms of Service
+            </Link>
+            <button
+              onClick={scrollToTop}
+              className="bg-mizoram-600 hover:bg-mizoram-500 text-white rounded-full p-2 shadow-lg transition-colors duration-200"
+              aria-label="Scroll to Top"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </footer>
   )

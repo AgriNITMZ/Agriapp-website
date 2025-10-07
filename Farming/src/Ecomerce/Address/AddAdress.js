@@ -23,7 +23,7 @@ const AddAddress = () => {
         try {
             const token = localStorage.getItem("token");
             await axios.post(
-                "http://localhost:4000/api/v1/auth/addaddress",
+                `${process.env.REACT_APP_BASE_URL}/auth/addaddress`,
                 formData,
                 {
                     headers: {

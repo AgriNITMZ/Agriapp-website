@@ -44,14 +44,15 @@ const CheckoutProduct = () => {
       }
 
       try {
-        const response = await axios.get("http://localhost:4000/api/v1/auth/getaddress", {
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         if (response?.data) {
-          setAddresses(response?.data);
+          console.log(response.data)
+          setAddresses(response?.data.addresses);
 
           // Set the first valid address as default
           const validAddress = response.data.find(addr => addr.streetAddress && addr.city && addr.state && addr.zipCode);
@@ -72,14 +73,12 @@ const CheckoutProduct = () => {
   }, [token]);
 
   // Handle address selection
-  const handleAddressSelect = (addressId) => {
-    const selected = addresses.find(addr => addr._id === addressId);
-    if (selected) {
-      setSelectedAddress(selected);
-      setIsAddressPopupVisible(false);
-      toast.success('Address selected successfully.');
-    }
-  };
+// After ✅
+const handleAddressSelect = (address) => {
+  setSelectedAddress(address);
+  setIsAddressPopupVisible(false);
+  toast.success('Address selected successfully.');
+};
 
   // Handle payment processing
   const handlePayment = async () => {
@@ -98,7 +97,7 @@ const CheckoutProduct = () => {
 
         if (paymentMethod === 'cod') {
       const orderResp = await axios.post(
-        'http://localhost:4000/api/v1/order/createorder',
+        `${process.env.REACT_APP_BASE_URL}/order/createorder`,
         {
           productId,
           sellerId,
@@ -127,8 +126,8 @@ const CheckoutProduct = () => {
 
       // Step 1: Create payment link
       const paymentResponse = await axios.post(
-        'http://localhost:4000/api/v1/order/create-payment-link-before-order/',
-        { totalAmount: totalAmount},
+        `${process.env.REACT_APP_BASE_URL}/order/create-payment-link-before-order/`,
+        { totalAmount: totalAmount,addressId:selectedAddress._id},
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -141,8 +140,7 @@ const CheckoutProduct = () => {
 
         // Step 2: Create order with payment details
         // In handlePayment()
-        const orderResponse = await axios.post(
-          'http://localhost:4000/api/v1/order/createorder',
+        const orderResponse = await axios.post( `${process.env.REACT_APP_BASE_URL}/order/createorder`,
           { 
             productId: productId,
             sellerId,       // from query param

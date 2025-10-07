@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Provider } from 'react-native-paper';
-import { StyleSheet, Platform, StatusBar } from 'react-native';
+import { StyleSheet, Platform, StatusBar, View, ActivityIndicator } from 'react-native'; // ✅ CHANGED: combined imports
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { theme } from './src/core/theme';
 import Toast from 'react-native-toast-message';
 import AppProviders from './src/context/AppProviders';
+
 import {
   StartScreen,
   LoginScreen,
@@ -36,7 +37,6 @@ import {
   EditAddress,
   CategoryScreen,
   LoanPage
-
 } from './src/screens';
 import AppNavigator from './AppNavigator';
 import WeatherPage from './src/screens/services/WeatherPage';
@@ -52,16 +52,22 @@ import ContactUs from './src/screens/General/ContactUs';
 import OrderSuccessScreen from './src/screens/Orders/OrderSuccessScreen';
 import OrderFailedScreen from './src/screens/Orders/OrderFailedScreen';
 import OrderHistoryScreen from './src/screens/Orders/MyOrdersPage';
-import AuthChecker from './src/screens/auth/AuthChecker';
+// import AuthChecker from './src/screens/auth/AuthChecker'; // ❌ REMOVED
 import customFetch from './src/utils/axios';
 import SensorDropdownScreen from './src/screens/Sensor/Sensor';
-
-// Keep splash screen visible until fonts are loaded
+import {
+  getUserFromLocalStorage,
+  removeUserFromLocalStorage
+} from './src/utils/localStorage';
+import checkTokenExpiration from './src/utils/checkTokenExpiration';
+import NotificationScreen from './src/components/topBar/NotificationScreen';
+// Prevent auto-hide
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({
   duration: 1000,
   fade: true,
 });
+
 const loadFonts = async () => {
   await Font.loadAsync({
     'Lobster-Regular': require('./src/assets/fonts/Lobster-Regular.ttf'),
@@ -70,8 +76,8 @@ const loadFonts = async () => {
 
 const StackNav = ({ route }) => {
   const { isAuthenticated } = route.params;
-  console.log("isAuthenticated", isAuthenticated);
   const Stack = createStackNavigator();
+
   return (
     <Stack.Navigator
       initialRouteName={isAuthenticated ? 'HomePage' : 'StartScreen'}
@@ -103,8 +109,8 @@ const StackNav = ({ route }) => {
       <Stack.Screen name="Logout" component={LogoutScreen} />
       <Stack.Screen name="UserProducts" component={UserProducts} />
       <Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen} />
-      <Stack.Screen name="News" component={NewsAndSchemesTabView} options={{ title: 'News & Schemes' }} />
-      <Stack.Screen name="ArticleDetail" component={ArticleDetail} options={{ headerShown: false }} />
+      <Stack.Screen name="News" component={NewsAndSchemesTabView} />
+      <Stack.Screen name="ArticleDetail" component={ArticleDetail} />
       <Stack.Screen name="SelectAddress" component={SelectAddressPage} />
       <Stack.Screen name="OrderSummary" component={OrderSummaryPage} />
       <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} />
@@ -113,14 +119,21 @@ const StackNav = ({ route }) => {
       <Stack.Screen name="SellerOrder" component={SellerOrdersPage} />
       <Stack.Screen name="FarmingTips" component={FarmingTipsPage} />
       <Stack.Screen name="Sensor" component={SensorDropdownScreen} />
+      <Stack.Screen 
+          name="Notification" 
+          component={NotificationScreen} 
+          options={{ headerShown: false }}
+      />
     </Stack.Navigator>
-  )
-}
+  );
+};
+
 const App = () => {
   const Drawer = createDrawerNavigator();
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const handleFontsLoaded = useCallback(async () => {
     await loadFonts();
@@ -129,7 +142,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const checkFirstLaunch = async () => {
+    handleFontsLoaded(); // ✅ CHANGED: moved into useEffect
+  }, []);
+
+  useEffect(() => {
+    const initializeApp = async () => {
       try {
         const hasLaunched = await AsyncStorage.getItem('hasLaunched');
         if (hasLaunched === null) {
@@ -139,34 +156,39 @@ const App = () => {
           setIsFirstLaunch(false);
         }
 
-        const user = await AsyncStorage.getItem('user');
-        if (user) {
-          const resp = await customFetch.get("/auth/getuserbytoken")
-          console.log(resp.status)
-          if (resp.status === 200) {
-            console.log("Logged innn..")
+        const user = await getUserFromLocalStorage();
+        if (user && user.token) {
+          const isValidToken = await checkTokenExpiration();
+          if (isValidToken) {
+            console.log("User is authenticated with valid token");
             setIsAuthenticated(true);
           } else {
+            console.log("Token expired, cleaning up");
+            await removeUserFromLocalStorage();
             setIsAuthenticated(false);
           }
         } else {
+          console.log("No user found");
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Error checking launch or authentication status', error);
+        console.error('Error during app initialization:', error);
+        await removeUserFromLocalStorage();
+        setIsAuthenticated(false);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
 
-    checkFirstLaunch();
+    initializeApp();
   }, []);
 
-  if (!fontsLoaded) {
-    handleFontsLoaded();
-    return null; // Prevent rendering until fonts are loaded
-  }
-
-  if (isFirstLaunch === null) {
-    return null; // Add a loading spinner here if necessary
+  if (!fontsLoaded || isFirstLaunch === null || isCheckingAuth) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
   }
 
   return (
@@ -175,22 +197,26 @@ const App = () => {
         <Provider theme={theme}>
           <AppProviders>
             <NavigationContainer>
-              <AuthChecker />
               {isFirstLaunch ? (
                 <AppNavigator
                   isFirstLaunch={isFirstLaunch}
                   setIsFirstLaunch={setIsFirstLaunch}
                   isAuthenticated={isAuthenticated}
                 />
-              ) : (<Drawer.Navigator screenOptions={{ headerShown: false }} >
-                <Drawer.Screen name="Home" component={StackNav} initialParams={{ isAuthenticated }} />
-                <Drawer.Screen name="Profile" component={ProfilePage} />
-                <Drawer.Screen name="Wishlist" component={Wishlist} />
-                <Drawer.Screen name="Cart" component={CartPage} />
-                <Drawer.Screen name="About" component={AboutUs} />
-                <Drawer.Screen name="Contact-Us" component={ContactUs} />
-                <Drawer.Screen name="Logout" component={LogoutScreen} />
-              </Drawer.Navigator>
+              ) : (
+                <Drawer.Navigator screenOptions={{ headerShown: false }}>
+                  <Drawer.Screen
+                    name="Home"
+                    component={StackNav}
+                    initialParams={{ isAuthenticated }}
+                  />
+                  <Drawer.Screen name="Profile" component={ProfilePage} />
+                  <Drawer.Screen name="Wishlist" component={Wishlist} />
+                  <Drawer.Screen name="Cart" component={CartPage} />
+                  <Drawer.Screen name="About" component={AboutUs} />
+                  <Drawer.Screen name="Contact-Us" component={ContactUs} />
+                  <Drawer.Screen name="Logout" component={LogoutScreen} />
+                </Drawer.Navigator>
               )}
               <Toast />
             </NavigationContainer>
@@ -200,4 +226,14 @@ const App = () => {
     </SafeAreaProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+});
+
 export default App;

@@ -26,7 +26,7 @@ const OrderHistoryScreen = ({ navigation }) => {
     const fetchOrders = useCallback(async () => {
         try {
             setError(null);
-            const response = await customFetch.get('/order/orderhistoryapp');
+            const response = await customFetch.get('/order/orderhistory');
             setOrders(response.data.orders);
             console.log(response.data.orders)
         } catch (err) {

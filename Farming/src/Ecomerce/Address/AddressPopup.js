@@ -23,14 +23,16 @@ const AddressPopup = ({ isVisible, onClose, onAddressSelect }) => {
     }
 
     // Fetch addresses from the backend
+
     const fetchAddresses = async () => {
         try {
            
-            const response = await axios.get("http://localhost:4000/api/v1/auth/getaddress", {
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
+      console.log(response.data)
             setAddresses(response.data);
         } catch (error) {
             console.error("Error fetching addresses:", error);
@@ -53,7 +55,7 @@ const AddressPopup = ({ isVisible, onClose, onAddressSelect }) => {
         try {
            
             await axios.post(
-                "http://localhost:4000/api/v1/auth/addaddress",
+                `${process.env.REACT_APP_BASE_URL}/auth/addaddress`,
                 formData,
                 {
                     headers: {
@@ -155,14 +157,15 @@ const AddressPopup = ({ isVisible, onClose, onAddressSelect }) => {
                 {!isAddingAddress && (
                     <>
                         <div className="space-y-2">
-                            {addresses.map((address) => (
+                            {addresses&& addresses.map((address) => (
                                 <div
                                     key={address._id}
                                     className="p-3 border rounded cursor-pointer hover:bg-gray-100"
-                                    onClick={() => {
-                                        onAddressSelect(address._id);
-                                        onClose();
-                                    }}
+                                   onClick={() => {
+  onAddressSelect(address); // ✅ send entire address object
+  onClose();
+}}
+
                                 >
                                     <p className="font-semibold">{address.Name}</p>
                                     <p>{`${address.streetAddress}, ${address.city}, ${address.state}, ${address.zipCode}`}</p>

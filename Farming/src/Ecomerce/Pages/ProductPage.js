@@ -17,7 +17,7 @@ const ProductPage = () => {
   const fetchCategory = async () => {
     try {
       setLoading(true);
-      let response = await axios.post("http://localhost:4000/api/v1/products/getonecategory", { parentCategoryId: id });
+      let response = await axios.post(`${process.env.REACT_APP_BASE_URL}/products/getonecategory`, { parentCategoryId: id });
       setSecondLevecategory(response?.data?.data?.subcategories);
       setLoading(false);
     } catch (error) {
@@ -34,7 +34,7 @@ const ProductPage = () => {
   const handleClick = async (id) => {
     try {
       setSecondLevecategorydata(false);
-      let response = await axios.post("http://localhost:4000/api/v1/products/particularcreatecategory", { categoryId: id });
+      let response = await axios.post(`${process.env.REACT_APP_BASE_URL}/products/particularcreatecategory`, { categoryId: id });
       setProduct(response?.data?.data?.product);
       setSecondLevecategorydata(true);
     } catch (error) {

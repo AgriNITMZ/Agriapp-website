@@ -35,12 +35,20 @@ export function deleteProduct(productId){
         const toastId=toast.loading("Loading...")
         dispatch(setLoading(true))
         try{
-            const response=await apiConnector("DELETE",`${ DELETE_PRODUCT_API}${productId}`)
+                   const storedTokenData = JSON.parse(localStorage.getItem("token"));
+            const response=await apiConnector("DELETE",`${ DELETE_PRODUCT_API}${productId}`,
+                 null, // no body
+  { Authorization: `Bearer ${storedTokenData?.value}` }
+              
+            )
             
             if(!response.data.success){
                 throw new Error(response.data.message)
+            }if(response.data.success){
+                toast.success("Product deleted successfully")
+                   dispatch(setSelectedProduct(null)) // Clear selected product after deletion
             }
-            dispatch(setSelectedProduct(response?.data?.product))
+         
             console.log("SELECTED PRODUCT............",response?.data?.product)
         }catch(error){
             console.log("GET_PRODUCT_BY_ID_API ERROR............",error)

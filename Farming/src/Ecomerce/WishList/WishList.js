@@ -17,8 +17,8 @@ const WishList = () => {
   // const fetchProduct = async () => {
   
   //   try {
-  //     const response = await axios.get("http://localhost:4000/api/v1/products/getdetailswishlist", {
-  //       headers: { Authorization: `Bearer ${token}` },
+//     const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/products/getdetailswishlist`, {
+//       headers: { Authorization: `Bearer ${token}` },
 
   //     })
   //     setwishListProduct(response.data.products)
@@ -39,8 +39,8 @@ const WishList = () => {
     
   
     // try {
-    //   let response=await axios.post("http://localhost:4000/api/v1/products/removewishlist",{
-    //     productId:id
+//   let response=await axios.post(`${process.env.REACT_APP_BASE_URL}/products/removewishlist`,{
+//     productId:id
     //   },
     // {
     //   headers: { Authorization: `Bearer ${token}` },

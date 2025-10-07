@@ -3,7 +3,7 @@ import { View, Text, Image, FlatList, StyleSheet, ScrollView, ActivityIndicator,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import CustomTopBar from '../../components/topBar/CustomTopBar';
-const SellerOrdersPage = (navigation) => {
+const SellerOrdersPage = ({navigation}) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,7 +17,7 @@ const SellerOrdersPage = (navigation) => {
                     return;
                 }
 
-                const response = await axios.get('http://172.16.1.240:4000/api/seller/orders', {
+                const response = await axios.get('http://192.168.0.103:4000/api/seller/orders', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 

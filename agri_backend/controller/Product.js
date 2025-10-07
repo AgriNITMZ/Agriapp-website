@@ -1,7 +1,9 @@
+
 const Product = require('../models/Product')
 const Category = require('../models/Category')
 const ParenstCategory = require('../models/ParentCategory');
 const User = require('../models/Users')
+const mongoose = require('mongoose')
 const { uploadUmageToCloudinary } = require('../utils/ImageUploader')
 const{asyncHandler}=require('../utils/error')
 
@@ -58,6 +60,147 @@ exports.createProduct = asyncHandler(async (req, res) => {
             console.log("Newly created product:", savedProduct);
             res.status(201).json({ success: true, msg: 'Product created successfully', product: savedProduct });
     });
+
+
+
+
+exports.createBulkUpload = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  console.log(req.body.bulkData);
+  console.log(req.files);
+  const folder = process.env.FOLDER_NAME || 'products';
+
+  // 1. Parse bulk data
+  let bulkData;
+  if (Array.isArray(req.body.bulkData)) {
+    bulkData = req.body.bulkData;
+  } else {
+    try {
+      bulkData = JSON.parse(req.body.bulkData);
+    } catch (error) {
+      return res.status(400).json({ success: false, msg: 'Invalid bulkData JSON' });
+    }
+  }
+
+  if (!bulkData || !Array.isArray(bulkData)) {
+    return res.status(400).json({ success: false, msg: 'Invalid bulk data' });
+  }
+
+  // 2. Validate seller
+  const user = await User.findById(userId);
+  if (!user || user.accountType !== 'Seller') {
+    return res.status(401).json({ success: false, msg: 'Only sellers can upload products' });
+  }
+
+  const createdProducts = [];
+
+  for (let i = 0; i < bulkData.length; i++) {
+    const row = bulkData[i];
+    try {
+      const {
+        name,
+        uniqueKey, // Get the uniqueKey from frontend
+        price_size,
+        category,
+        description,
+        tag,
+        badges,
+        fullShopDetails = "",
+      } = row;
+
+      const trimmedName = name?.trim();
+
+      if (
+        !trimmedName ||
+        !Array.isArray(price_size) || price_size.length === 0 ||
+        !description
+      ) {
+        console.log(`Skipping invalid product: ${trimmedName}`);
+        continue;
+      }
+
+      const categoryDoc = await Category.findById(category);
+      if (!categoryDoc) {
+        console.log(`Category not found: ${category}`);
+        continue;
+      }
+
+      // 3. Handle Image Uploads - UPDATED to use uniqueKey
+      let uploadedImages = [];
+      
+      // Look for images with the uniqueKey format
+      const imageFieldName = `images_${uniqueKey}[]`;
+      
+      if (req.files && req.files[imageFieldName]) {
+        const files = Array.isArray(req.files[imageFieldName])
+          ? req.files[imageFieldName]
+          : [req.files[imageFieldName]];
+
+        for (const file of files) {
+          const uploaded = await uploadUmageToCloudinary(file, folder, 1000, 1000);
+          uploadedImages.push(uploaded.secure_url);
+        }
+      }
+      
+      // FALLBACK: Also check for old index-based format for backward compatibility
+      if (uploadedImages.length === 0) {
+        const oldImageFieldName = `image_${i}`;
+        if (req.files && req.files[oldImageFieldName]) {
+          const files = Array.isArray(req.files[oldImageFieldName])
+            ? req.files[oldImageFieldName]
+            : [req.files[oldImageFieldName]];
+
+          for (const file of files) {
+            const uploaded = await uploadUmageToCloudinary(file, folder, 1000, 1000);
+            uploadedImages.push(uploaded.secure_url);
+          }
+        }
+      }
+      
+      console.log(`Product: ${trimmedName}, Images found: ${uploadedImages.length}`);
+
+      const parsedTag = typeof tag === "string" ? JSON.parse(tag) : tag;
+
+      // 4. Create product
+      const newProduct = new Product({
+        name: trimmedName,
+        category,
+        description,
+        tag: parsedTag,
+        images: uploadedImages,
+        badges,
+        sellers: [
+          {
+            sellerId: userId,
+            price_size,
+            fullShopDetails,
+          },
+        ],
+      });
+
+      const savedProduct = await newProduct.save();
+
+      // 5. Push product into user and category
+      await User.findByIdAndUpdate(userId, { $push: { products: savedProduct._id } });
+      await Category.findByIdAndUpdate(category, { $push: { product: savedProduct._id } });
+
+      createdProducts.push(savedProduct);
+    } catch (err) {
+      console.error(`Error uploading product "${row.name || 'Unnamed'}":`, err);
+    }
+  }
+
+  res.status(201).json({
+    success: true,
+    msg: `${createdProducts.length} products uploaded successfully`,
+    products: createdProducts,
+  });
+});
+
+
+
+
+
 
 // find product by id
 
@@ -231,51 +374,65 @@ exports.getAllProductBySeller = async (req, res) => {
 
 // delete products
 exports.deleteProduct = async (req, res) => {
-    try {
-        const userId = req.user.id
-        const productId = req.params.productId
-        const product = await Product.findById(productId)
-        if (!product) {
-            return res.status(404).json({
-                success: false,
-                msg: 'Product not found'
-            })
-        }
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const userId = req.user.id;
+    const { productId } = req.params;
 
-        if (product.sellerId != userId) {
-            return res.status(401).json({
-                success: false,
-                msg: 'You are not authorized to delete this product'
-            })
-        }
+    const product = await Product.findOneAndDelete(
+      { _id: productId },
+      { session }
+    );
 
-        await Product.findByIdAndDelete(productId)
-        // also remove from category and user schema
-        await Category.findByIdAndUpdate(product.category, {
-            $pull: {
-                product: productId
-            }
-        })
-        await User.findByIdAndUpdate(userId, {
-            $pull: {
-                products: productId
-            }
-        })
-        // send notification to admin
-
-        res.status(200).json({
-            success: true,
-            msg: 'Product deleted successfully'
-        })
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            msg: 'Some thing error while deleting product'
-        })
+    if (!product) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, msg: 'Product not found' });
     }
+
+
+          // string
+const isSeller = product.sellers.some(
+  (s) => s.sellerId.toString() === userId
+);
+
+if (!isSeller) {
+  await session.abortTransaction();
+  return res.status(403).json({
+    success: false,
+    msg: 'You are not authorized to delete this product',
+  });
 }
+
+
+    await Category.updateOne(
+      { _id: product.category },
+      { $pull: { products: productId } },
+      { session }
+    );
+
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { products: productId } },
+      { session }
+    );
+
+    // TODO: send notification to admin here (email/queue) if needed
+
+    await session.commitTransaction();
+    res.status(200).json({ success: true, msg: 'Product deleted successfully' });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      msg: 'Something went wrong while deleting the product',
+    });
+  } finally {
+    session.endSession();
+  }
+};
+
 exports.getFilteredProducts = async (req, res) => {
 
     try {
@@ -523,125 +680,164 @@ exports.getFilteredProducts = async (req, res) => {
     }
 };
 
+
+
 exports.editProduct = asyncHandler(async (req, res) => {
-    
-      const userId = req.user.id;
-      const productId = req.params.productId;
-      const product = await Product.findById(productId);
-  
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          msg: 'Product not found',
-        });
-      }
-  
-      // Find the seller's entry in the sellers array
-      const sellerIndex = product.sellers.findIndex(
-        (seller) => seller.sellerId.toString() === userId
+  const userId = req.user.id;
+  const productId = req.params.productId;
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      msg: "Product not found",
+    });
+  }
+
+  // Find seller index
+  const sellerIndex = product.sellers.findIndex(
+    (seller) => seller.sellerId.toString() === userId
+  );
+
+  if (sellerIndex === -1) {
+    return res.status(401).json({
+      success: false,
+      msg: "You are not authorized to edit this product",
+    });
+  }
+
+  const {
+    name,
+    price_size,
+    category,
+    description,
+    tag: _tag,
+    badges,
+    fullShopDetails,
+    deletedImages, // array of URLs or publicIds from frontend
+  } = req.body;
+
+  // ✅ Parse price_size safely
+  let parsedPriceSize;
+  try {
+    parsedPriceSize = Array.isArray(price_size)
+      ? price_size
+      : JSON.parse(price_size);
+
+    const validatePriceSize = (priceSizeArray) => {
+      console.log(priceSizeArray);
+      if (!Array.isArray(priceSizeArray)) return false;
+      return priceSizeArray.every(
+        (item) =>
+          typeof item.price === "number" &&
+          typeof item.discountedPrice === "number" &&
+          typeof item.size === "string" &&
+          typeof item.quantity === "number"
       );
-  
-      if (sellerIndex === -1) {
-        return res.status(401).json({
-          success: false,
-          msg: 'You are not authorized to edit this product',
-        });
-      }
-  
-      const { name, price_size, category, description, tag: _tag, badges, fullShopDetails } = req.body;
-  
-      // Validate and parse price_size
-      let parsedPriceSize;
-      try {
-        parsedPriceSize = Array.isArray(price_size)
-          ? price_size
-          : JSON.parse(price_size);
-  
-        const validatePriceSize = (priceSizeArray) => {
-          if (!Array.isArray(priceSizeArray)) return false;
-          return priceSizeArray.every(
-            (item) =>
-              typeof item.price === 'number' &&
-              typeof item.discountedPrice === 'number' &&
-              typeof item.size === 'string' &&
-              typeof item.quantity === 'number'
-          );
-        };
-  
-        if (!validatePriceSize(parsedPriceSize)) {
-          return res.status(400).json({
-            success: false,
-            msg: 'Invalid price_size format',
-          });
-        }
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          msg: 'Error parsing price_size',
-        });
-      }
-  
-      // Handle image updates
-      let updatedImages = product.images;
-      if (req.files && req.files.image) {
-        const images = Array.isArray(req.files.image) ? req.files.image : [req.files.image];
-        const uploadedImages = await Promise.all(
-          images.map(async (image) => {
-            const uploadResult = await uploadUmageToCloudinary(
-              image,
-              process.env.FOLDER_NAME,
-              1000,
-              1000
-            );
-            return uploadResult.secure_url;
-          })
-        );
-        updatedImages = [...product.images, ...uploadedImages]; // Append new images
-      }
-  
-      // Handle category change
-      if (category && category !== product.category.toString()) {
-        const categoryExists = await Category.findById(category);
-        if (!categoryExists) {
-          return res.status(404).json({
-            success: false,
-            msg: 'New category not found',
-          });
-        }
-  
-        // Remove from old category
-        await Category.findByIdAndUpdate(product.category, {
-          $pull: { product: productId },
-        });
-  
-        // Add to new category
-        await Category.findByIdAndUpdate(category, {
-          $push: { product: productId },
-        });
-      }
-  
-      // Update seller-specific data
-      product.sellers[sellerIndex].price_size = parsedPriceSize || product.sellers[sellerIndex].price_size;
-      product.sellers[sellerIndex].fullShopDetails = fullShopDetails || product.sellers[sellerIndex].fullShopDetails;
-  
-      // Update common product-level data
-      product.name = name || product.name;
-      product.description = description || product.description;
-      product.category = category || product.category;
-      product.tag = _tag ? JSON.parse(_tag) : product.tag;
-      product.badges = badges || product.badges;
-      product.images = updatedImages;
-  
-      // Save the updated product
-      await product.save();
-  
-      res.status(200).json({
-        success: true,
-        msg: 'Product updated successfully',
-        product,
+    };
+
+    if (!validatePriceSize(parsedPriceSize)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid price_size format",
       });
-   
+    }
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      msg: "Error parsing price_size",
+    });
+  }
+
+  // ✅ Handle images
+  let updatedImages = [...product.images];
+
+  // 🔹 Delete selected images
+  if (deletedImages && Array.isArray(deletedImages)) {
+    await Promise.all(
+      deletedImages.map(async (img) => {
+        try {
+          // If you store publicId in DB, use directly
+          // Otherwise extract publicId from URL
+          const publicId = img.includes("/")
+            ? img.split("/").pop().split(".")[0]
+            : img;
+
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.error("Cloudinary deletion error:", err);
+        }
+      })
+    );
+
+    // Remove from DB
+    updatedImages = updatedImages.filter((img) => !deletedImages.includes(img));
+  }
+
+  // 🔹 Add new images
+  if (req.files && req.files.image) {
+    const images = Array.isArray(req.files.image)
+      ? req.files.image
+      : [req.files.image];
+
+    const uploadedImages = await Promise.all(
+      images.map(async (image) => {
+        const uploadResult = await uploadUmageToCloudinary(
+          image,
+          process.env.FOLDER_NAME,
+          1000,
+          1000
+        );
+        return uploadResult.secure_url;
+      })
+    );
+
+    updatedImages = [...updatedImages, ...uploadedImages];
+  }
+
+  // ✅ Handle category change
+  if (category && category !== product.category.toString()) {
+    const categoryExists = await Category.findById(category);
+    if (!categoryExists) {
+      return res.status(404).json({
+        success: false,
+        msg: "New category not found",
+      });
+    }
+
+    await Category.findByIdAndUpdate(product.category, {
+      $pull: { product: productId },
+    });
+
+    await Category.findByIdAndUpdate(category, {
+      $push: { product: productId },
+    });
+  }
+
+  // ✅ Update seller-specific fields
+  product.sellers[sellerIndex].price_size =
+    parsedPriceSize || product.sellers[sellerIndex].price_size;
+  product.sellers[sellerIndex].fullShopDetails =
+    fullShopDetails || product.sellers[sellerIndex].fullShopDetails;
+
+  // ✅ Update common product fields
+  product.name = name || product.name;
+  product.description = description || product.description;
+  product.category = category || product.category;
+  product.tag = _tag ? JSON.parse(_tag) : product.tag;
+  product.badges = badges || product.badges;
+  product.images = updatedImages;
+
+  // ✅ Save changes
+  await product.save();
+
+  res.status(200).json({
+    success: true,
+    msg: "Product updated successfully",
+    product,
   });
+});
+
 
  
 

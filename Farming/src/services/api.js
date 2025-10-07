@@ -12,7 +12,7 @@ export const productEndpoint={
     GET_PRODUCTS_API: BASE_URL + "/products",
     GET_PRODUCT_API: BASE_URL + "/product",
     ADD_PRODUCT_API: BASE_URL + "/product/add",
-    DELETE_PRODUCT_API: BASE_URL + "/product/delete",
+    DELETE_PRODUCT_API: BASE_URL + "/products/product/delete/",
     UPDATE_PRODUCT_API: BASE_URL + "/product/update",
     GET_PRODUCT_BY_ID_API: BASE_URL + "/products/getproductbyId/",
     GET_PRODUCT_BY_CATEGORY_API: BASE_URL + "/products/category/",
@@ -33,4 +33,9 @@ export const paymentEndpoint ={
     PRODUCT_PAYMENT_API: BASE_URL + "/order/createorder",
     PRODUCT_VERIFY_API: BASE_URL + "/",
     SEND_PAYMENT_SUCCESS_EMAIL_API: BASE_URL +"",
+}
+
+export const AdminEndpoint ={
+    GET_PRODUCTS: BASE_URL + "/products/getallproduct",
+    
 }

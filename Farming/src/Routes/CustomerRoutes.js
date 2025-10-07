@@ -1,6 +1,6 @@
 import React from 'react'
 import NavBar from '../Component/Common/NavBar'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import Product from '../Ecomerce/Pages/Product'
 import Home from '../Component/HomePage/Home'
 import News from '../Component/HomePage/News'
@@ -30,9 +30,13 @@ import Server from '../Server/Server'
 import PaymentCallback from '../Ecomerce/Payment/PaymentCallback'
 import SingleNews from '../Component/HomePage/SingleNews'
 import SingleScheme from '../Component/HomePage/SingleScheme'
+import PanCard from '../Ecomerce/Profile/PanCardInfo'
 
 
 const CustomerRoutes = () => {
+  const location = useLocation();
+  const isProductPage = location.pathname.startsWith('/product');
+
   return (
     <>
       <NavBar />
@@ -51,7 +55,8 @@ const CustomerRoutes = () => {
         <Route path="/product/:id" element={<ProductPage />} />
         <Route path='/product/item/:productId' element={<SingleItem/>} />
         <Route path='/product/cart' element={<Cart/>} />
-        <Route path='/product/profile' element={<ProfileLayout/>} /> 
+       <Route path="/product/profile" element={<ProfileLayout />} />
+<Route path="/profile" element={<ProfileLayout />} />
         <Route path='/product/wishlist' element={<WishList/>} />   
         <Route path='/product/search' element={<Search/>} /> 
         <Route path='/update-password/:token' element={<UpdatePassword/>} /> 
@@ -61,10 +66,11 @@ const CustomerRoutes = () => {
         <Route path="/product/profile/orders" element={<Order/>} />
         <Route path="/product/checkout" element={<CheckoutProduct/>} />
         <Route path="/server" element={<Server/>} />
+        <Route path="/profile/pan-card" element={<PanCard/>} />
         <Route path="/payment/callback" element={<PaymentCallback/>} />
 
       </Routes>
-      <Footer/>
+      {!isProductPage && <Footer/>}
     </>
   )
 }

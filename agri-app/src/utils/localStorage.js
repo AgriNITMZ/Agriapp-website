@@ -6,6 +6,7 @@ export const addUserToLocalStorage = async (user) => {
         await AsyncStorage.setItem('user', JSON.stringify(user));
     } catch (error) {
         console.error('Error saving user to storage:', error);
+        throw error;
     }
 };
 
@@ -13,6 +14,7 @@ export const addUserToLocalStorage = async (user) => {
 export const removeUserFromLocalStorage = async () => {
     try {
         await AsyncStorage.removeItem('user');
+        console.log('User removed from storage');
     } catch (error) {
         console.error('Error removing user from storage:', error);
     }
