@@ -142,8 +142,8 @@ const Order = () => {
                         Size: {item.size} | Qty: {item.quantity}
                       </p>
                       <p className="text-sm">
-                        Price: ₹{item.selectedDiscountedPrice.toFixed(2)}
-                        {item.selectedDiscountedPrice < item.selectedprice && (
+                        Price: ₹{(item.selectedDiscountedPrice || 0).toFixed(2)}
+                          {(item.selectedDiscountedPrice || 0) < (item.selectedprice || 0) && (
                           <span className="line-through text-gray-500 ml-2">
                             ₹{item.selectedprice.toFixed(2)}
                           </span>
