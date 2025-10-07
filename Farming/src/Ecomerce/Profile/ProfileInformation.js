@@ -121,7 +121,9 @@ const ProfileInformation = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Personal Information</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                            {user?.Name ? `${user.Name.split(' ')[0]}'s Personal Information` : 'Personal Information'}
+                        </h1>
                         <p className="text-gray-600">Manage your account details and preferences</p>
                     </div>
                     {!isEditing ? (

@@ -49,7 +49,7 @@ const Cart = () => {
   // Fetch addresses
   useEffect(() => {
     const fetchAddresses = async () => {
-     
+
       try {
         const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -68,7 +68,7 @@ const Cart = () => {
         }
       } catch (error) {
         console.error('Error fetching addresses:', error);
-      //  toast.error('Failed to load addresses. Please try again.');
+        //  toast.error('Failed to load addresses. Please try again.');
       }
     };
     fetchAddresses();

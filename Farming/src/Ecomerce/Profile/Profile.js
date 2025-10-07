@@ -17,7 +17,8 @@ import {
     LogOut,
     ChevronRight,
     Menu,
-    X
+    X,
+    MessageCircle
 } from "lucide-react";
 
 const ProfileLayout = ({ children }) => {
@@ -42,6 +43,7 @@ const ProfileLayout = ({ children }) => {
         else if (path.includes('/coupons')) setActivePage("My Coupons");
         else if (path.includes('/reviews')) setActivePage("My Reviews & Ratings");
         else if (path.includes('/notifications')) setActivePage("All Notifications");
+        else if (path.includes('/contact-us')) setActivePage("Contact Us");
     }, [location.pathname]);
 
     const handleNavigation = (page) => {
@@ -81,6 +83,9 @@ const ProfileLayout = ({ children }) => {
                 break;
             case "All Notifications":
                 navigate("/product/profile/notifications");
+                break;
+            case "Contact Us":
+                navigate("/product/profile/contact-us");
                 break;
             default:
                 navigate("/product/profile/information");
@@ -126,6 +131,13 @@ const ProfileLayout = ({ children }) => {
                 { name: "All Notifications", key: "All Notifications", icon: <Bell className="w-4 h-4" /> },
                 { name: "My Wishlist", key: "My Wishlist", icon: <Heart className="w-4 h-4" /> }
             ]
+        },
+        {
+            category: "SUPPORT",
+            icon: <MessageCircle className="w-5 h-5" />,
+            items: [
+                { name: "Contact Us", key: "Contact Us", icon: <MessageCircle className="w-4 h-4" /> }
+            ]
         }
     ];
 
@@ -146,7 +158,9 @@ const ProfileLayout = ({ children }) => {
                         )}
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold">Hello,</h2>
+                        <h2 className="text-xl font-bold">
+                            Hello, {user?.Name ? user.Name.split(' ')[0] : 'Guest'}!
+                        </h2>
                         <p className="text-mizoram-100 font-medium">
                             {user?.Name || 'PERCI AGRI Customer'}
                         </p>
@@ -213,7 +227,7 @@ const ProfileLayout = ({ children }) => {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
             <div className="flex flex-col lg:flex-row">
                 {/* Mobile Menu Button */}
-                <div className="lg:hidden p-4">
+                <div className="lg:hidden px-4 py-2">
                     <button
                         onClick={() => setIsMobileMenuOpen(true)}
                         className="flex items-center space-x-2 bg-white p-3 rounded-xl shadow-md w-full justify-center"
@@ -223,8 +237,8 @@ const ProfileLayout = ({ children }) => {
                     </button>
                 </div>
 
-                {/* Desktop Sidebar - Fixed to left edge */}
-                <div className="hidden lg:block lg:w-80 lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto bg-white shadow-xl">
+                {/* Desktop Sidebar - Fixed to left edge with no gap */}
+                <div className="hidden lg:block lg:w-80 lg:fixed lg:left-0 lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto bg-white shadow-xl border-r border-gray-200">
                     <Sidebar />
                 </div>
 
@@ -249,11 +263,12 @@ const ProfileLayout = ({ children }) => {
                     </div>
                 )}
 
-                {/* Main Content - Adjusted for fixed sidebar */}
+                {/* Main Content - Properly aligned with sidebar */}
                 <div className="flex-1 lg:ml-80">
                     <div className="p-4 lg:p-6">
                         <div className="bg-white rounded-2xl shadow-xl min-h-[600px]">
-                            <div className="p-6 lg:p-8">
+                            {/* Fixed header spacing to prevent overlap */}
+                            <div className="p-6 lg:p-8 pt-8">
                                 {children}
                             </div>
                         </div>

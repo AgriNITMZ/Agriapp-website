@@ -37,6 +37,7 @@ import SavedCards from '../Ecomerce/Profile/SavedCards'
 import MyCoupons from '../Ecomerce/Profile/MyCoupons'
 import MyReviewsRatings from '../Ecomerce/Profile/MyReviewsRatings'
 import AllNotifications from '../Ecomerce/Profile/AllNotifications'
+import ContactUs from '../Ecomerce/Profile/ContactUs'
 
 
 const CustomerRoutes = () => {
@@ -76,6 +77,7 @@ const CustomerRoutes = () => {
         <Route path="/product/profile/coupons" element={<MyCoupons/>} />
         <Route path="/product/profile/reviews" element={<MyReviewsRatings/>} />
         <Route path="/product/profile/notifications" element={<AllNotifications/>} />
+        <Route path="/product/profile/contact-us" element={<ContactUs/>} />
         <Route path="/product/checkout" element={<CheckoutProduct/>} />
         <Route path="/server" element={<Server/>} />
         <Route path="/profile/pan-card" element={<PanCard/>} />
