@@ -1,9 +1,9 @@
-// backend/controller/Notification.js
+// controller/Notification.js
 const Notification = require('../models/Notification');
 const { asyncHandler } = require('../utils/error');
 
-// Helper function to create notification
-exports.createNotification = async (userId, type, title, message, orderId = null, data = {}) => {
+// ✅ Helper function - called from other controllers (like Payment)
+exports.createNotification = async (userId, type, title, message, orderId = null, metadata = {}) => {
     try {
         const notification = await Notification.create({
             userId,
@@ -11,7 +11,7 @@ exports.createNotification = async (userId, type, title, message, orderId = null
             title,
             message,
             orderId,
-            data
+            metadata
         });
         console.log('✓ Notification created:', notification._id);
         return notification;
@@ -25,17 +25,17 @@ exports.createNotification = async (userId, type, title, message, orderId = null
 exports.getNotifications = asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { unreadOnly } = req.query;
-
+    
     const query = { userId };
     if (unreadOnly === 'true') {
         query.isRead = false;
     }
-
+    
     const notifications = await Notification.find(query)
-        .populate('orderId', 'totalAmount orderStatus paymentStatus items')
+        .populate('orderId', 'totalAmount orderStatus paymentStatus items orderNumber')
         .sort({ createdAt: -1 })
         .limit(50);
-
+    
     res.status(200).json({
         success: true,
         notifications
@@ -45,12 +45,12 @@ exports.getNotifications = asyncHandler(async (req, res) => {
 // GET unread notification count
 exports.getUnreadCount = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-
+    
     const count = await Notification.countDocuments({
         userId,
         isRead: false
     });
-
+    
     res.status(200).json({
         success: true,
         count
@@ -61,20 +61,20 @@ exports.getUnreadCount = asyncHandler(async (req, res) => {
 exports.markAsRead = asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { notificationId } = req.params;
-
+    
     const notification = await Notification.findOneAndUpdate(
         { _id: notificationId, userId },
         { isRead: true },
         { new: true }
     );
-
+    
     if (!notification) {
         return res.status(404).json({
             success: false,
             message: 'Notification not found'
         });
     }
-
+    
     res.status(200).json({
         success: true,
         notification
@@ -84,12 +84,12 @@ exports.markAsRead = asyncHandler(async (req, res) => {
 // Mark all notifications as read
 exports.markAllAsRead = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-
+    
     await Notification.updateMany(
         { userId, isRead: false },
         { isRead: true }
     );
-
+    
     res.status(200).json({
         success: true,
         message: 'All notifications marked as read'
@@ -100,21 +100,33 @@ exports.markAllAsRead = asyncHandler(async (req, res) => {
 exports.deleteNotification = asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { notificationId } = req.params;
-
+    
     const notification = await Notification.findOneAndDelete({
         _id: notificationId,
         userId
     });
-
+    
     if (!notification) {
         return res.status(404).json({
             success: false,
             message: 'Notification not found'
         });
     }
-
+    
     res.status(200).json({
         success: true,
         message: 'Notification deleted'
+    });
+});
+
+// Clear all notifications
+exports.clearAllNotifications = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    
+    await Notification.deleteMany({ userId });
+    
+    res.status(200).json({
+        success: true,
+        message: 'All notifications cleared'
     });
 });
