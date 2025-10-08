@@ -10,6 +10,7 @@ const User = require("../models/Users");
 const Product = require("../models/Product");
 const Address = require("../models/Address");
 const Cart = require("../models/CartItem");
+const { createNotification } = require("./Notification");
 
 /* =======================================================
    1️⃣  WEBSITE: Create Razorpay Payment Link (for checkout)
@@ -111,18 +112,34 @@ exports.handleWebhook = async (req, res) => {
       .update(req.rawBody)
       .digest("hex");
 
-    if (digest !== req.headers["x-razorpay-signature"])
+    if (digest !== req.headers["x-razorpay-signature"]) {
       return res.status(400).send("Invalid webhook signature");
+    }
 
     const { payload } = req.body;
+    
+    // Validate payload structure
+    if (!payload || !payload.payment_link) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid webhook payload" 
+      });
+    }
+
     const { payment_link } = payload;
 
     const order = await Order.findOne({ paymentId: payment_link.id });
-    if (!order)
-      return res.status(404).json({ success: false, message: "Order not found" });
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Order not found" 
+      });
+    }
 
-    if (order.paymentStatus === "Completed" || order.orderStatus === "Cancelled")
-      return res.json({ received: true }); // already processed
+    // Skip if already processed
+    if (order.paymentStatus === "Completed" || order.orderStatus === "Cancelled") {
+      return res.json({ received: true });
+    }
 
     switch (payment_link.status) {
       case "paid":
@@ -167,24 +184,45 @@ exports.verifyPayment = async (req, res) => {
       const order = await Order.findOne({
         paymentId: razorpay_payment_link_id,
       });
-      if (!order)
-        return res.status(404).json({ success: false, message: "Order not found" });
+      
+      if (!order) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Order not found" 
+        });
+      }
 
       const payment = await razorpay.paymentLink.fetch(razorpay_payment_link_id);
-      if (order.paymentStatus === "Completed")
-        return res.status(200).json({ success: true, message: "Payment already verified", order });
+      
+      if (order.paymentStatus === "Completed") {
+        return res.status(200).json({ 
+          success: true, 
+          message: "Payment already verified", 
+          order 
+        });
+      }
 
       if (payment.status === "paid" && order.paymentStatus !== "Completed") {
         await handleSuccessfulPayment(order);
-        return res.status(200).json({ success: true, message: "Payment verified successfully", order });
+        return res.status(200).json({ 
+          success: true, 
+          message: "Payment verified successfully", 
+          order 
+        });
       }
 
       if (["cancelled", "expired", "failed"].includes(payment.status)) {
         await handleFailedPayment(order, payment.status);
-        return res.status(400).json({ success: false, message: `Payment ${payment.status}` });
+        return res.status(400).json({ 
+          success: false, 
+          message: `Payment ${payment.status}` 
+        });
       }
 
-      return res.status(202).json({ success: false, message: "Payment status pending" });
+      return res.status(202).json({ 
+        success: false, 
+        message: "Payment status pending" 
+      });
     }
 
     // ───────── APP Verification (Razorpay order based)
@@ -195,11 +233,12 @@ exports.verifyPayment = async (req, res) => {
         .update(body.toString())
         .digest("hex");
 
-      if (expectedSignature !== razorpay_signature)
+      if (expectedSignature !== razorpay_signature) {
         return res.status(400).json({
           success: false,
           message: "Payment verification failed - Invalid signature",
         });
+      }
 
       if (orderId) {
         const order = await Order.findById(orderId);
@@ -209,6 +248,7 @@ exports.verifyPayment = async (req, res) => {
           order.paymentId = razorpay_payment_id;
           await order.save();
 
+          // Clear cart after successful payment
           const cart = await Cart.findOne({ userId: order.userId });
           if (cart) {
             cart.items = [];
@@ -216,6 +256,19 @@ exports.verifyPayment = async (req, res) => {
             cart.totalDiscountedPrice = 0;
             await cart.save();
           }
+
+          // Send success notification
+          await createNotification(
+            order.userId,
+            'payment_success',
+            'Payment Successful! 🎉',
+            `Your payment of ₹${order.totalAmount} was successful. Your order is being processed.`,
+            order._id,
+            {
+              amount: order.totalAmount,
+              paymentId: razorpay_payment_id
+            }
+          );
         }
       }
 
@@ -247,50 +300,106 @@ async function handleSuccessfulPayment(order) {
   if (order.stockAdjusted) return;
 
   const session = await mongoose.startSession();
-  await session.withTransaction(async () => {
-    order.paymentStatus = "Completed";
-    order.orderStatus = "Processing";
+  
+  try {
+    await session.withTransaction(async () => {
+      order.paymentStatus = "Completed";
+      order.orderStatus = "Processing";
 
-    for (const item of order.items) {
-      const product = await Product.findById(item.product);
-      if (!product) continue;
+      // Adjust stock for each item
+      for (const item of order.items) {
+        const product = await Product.findById(item.product);
+        if (!product) continue;
 
-      let priceArray;
-      if (item.sellerId) {
-        const sellerEntry = product.sellers.find(
-          (s) => s.sellerId.toString() === item.sellerId.toString()
-        );
-        if (!sellerEntry)
-          throw new Error(`Seller not linked to product ${product.name}`);
-        priceArray = sellerEntry.price_size;
-      } else {
-        priceArray = product.price_size;
+        let priceArray;
+        
+        // Handle seller-specific pricing
+        if (item.sellerId) {
+          const sellerEntry = product.sellers.find(
+            (s) => s.sellerId.toString() === item.sellerId.toString()
+          );
+          if (!sellerEntry) {
+            throw new Error(`Seller not linked to product ${product.name}`);
+          }
+          priceArray = sellerEntry.price_size;
+        } else {
+          priceArray = product.price_size;
+        }
+
+        // Find size and validate stock
+        const sizeIndex = priceArray.findIndex((p) => p.size === item.size);
+        if (sizeIndex === -1) {
+          throw new Error(`Size ${item.size} not available for product ${product.name}`);
+        }
+
+        if (priceArray[sizeIndex].quantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${product.name} (Size: ${item.size})`);
+        }
+
+        // Deduct stock
+        priceArray[sizeIndex].quantity -= item.quantity;
+        
+        item.sellerId
+          ? product.markModified("sellers")
+          : product.markModified("price_size");
+          
+        await product.save({ session });
       }
 
-      const sizeIndex = priceArray.findIndex((p) => p.size === item.size);
-      if (sizeIndex === -1)
-        throw new Error(`Size ${item.size} not available for product ${product.name}`);
+      order.stockAdjusted = true;
+      await order.save({ session });
+    });
 
-      if (priceArray[sizeIndex].quantity < item.quantity)
-        throw new Error(`Insufficient stock for ${product.name} (Size: ${item.size})`);
-
-      priceArray[sizeIndex].quantity -= item.quantity;
-      item.sellerId
-        ? product.markModified("sellers")
-        : product.markModified("price_size");
-      await product.save({ session });
+    // Clear cart after successful payment (for web flow)
+    const cart = await Cart.findOne({ userId: order.userId });
+    if (cart) {
+      cart.items = [];
+      cart.totalPrice = 0;
+      cart.totalDiscountedPrice = 0;
+      await cart.save();
     }
 
-    order.stockAdjusted = true;
-    await order.save({ session });
-  });
-
-  session.endSession();
+    // Send success notification
+    await createNotification(
+      order.userId,
+      'payment_success',
+      'Payment Successful! 🎉',
+      `Your payment of ₹${order.totalAmount} was successful. Your order is being processed.`,
+      order._id,
+      {
+        amount: order.totalAmount,
+        paymentId: order.paymentId
+      }
+    );
+  } catch (error) {
+    console.error("Error in handleSuccessfulPayment:", error);
+    throw error;
+  } finally {
+    session.endSession();
+  }
 }
 
 async function handleFailedPayment(order, status) {
-  order.paymentStatus = "Failed";
-  order.orderStatus = "Cancelled";
-  order.failureReason = `Payment ${status}`;
-  await order.save();
+  try {
+    order.paymentStatus = "Failed";
+    order.orderStatus = "Cancelled";
+    order.failureReason = `Payment ${status}`;
+    await order.save();
+
+    // Send failure notification
+    await createNotification(
+      order.userId,
+      'payment_failed',
+      'Payment Failed ❌',
+      `Your payment of ₹${order.totalAmount} was unsuccessful. Retry Now!`,
+      order._id,
+      {
+        amount: order.totalAmount,
+        paymentId: order.paymentId
+      }
+    );
+  } catch (error) {
+    console.error("Error in handleFailedPayment:", error);
+    throw error;
+  }
 }
