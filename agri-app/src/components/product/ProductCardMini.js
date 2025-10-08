@@ -5,7 +5,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 const ProductCardMini = ({ navigation, product }) => {
     if (!product) return null; // Handle if product is null or undefined
 
-    const defaultSize = product?.price_size?.[0];
+    // Get price/size data - filtered products API returns direct price_size, individual product API returns sellers.price_size
+    const defaultSize = product?.price_size?.[0] || product?.sellers?.[0]?.price_size?.[0];
 
     if (!defaultSize) {
         return (
@@ -15,7 +16,10 @@ const ProductCardMini = ({ navigation, product }) => {
         );
     }
 
-    const primaryImageUrl = product?.images || 'https://via.placeholder.com/150';
+    // Handle images - filtered products API returns single image string, individual product API returns array
+    const primaryImageUrl = Array.isArray(product?.images) 
+        ? product.images[0] 
+        : product?.images || 'https://via.placeholder.com/150';
     const discountPercentage = defaultSize.discountedPrice && defaultSize.price
         ? Math.ceil(((defaultSize.price - defaultSize.discountedPrice) / defaultSize.price) * 100)
         : 0;
