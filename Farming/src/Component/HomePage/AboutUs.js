@@ -16,7 +16,7 @@ const AboutUs = () => {
         {/* Section Header */}
         <div className='text-center mb-12'>
           <h2 className='text-4xl lg:text-5xl font-display font-bold text-gray-900 mb-6 hero-text'>
-            Why Choose <span className='text-mizoram-600'>PERCI AGRI</span>
+            Why Choose <span className='text-mizoram-600'>PRECI AGRI</span>
           </h2>
           <p className='text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-body body-text'>
             The premier marketplace connecting agricultural sellers with Mizoram farmers through smart technology
@@ -33,7 +33,7 @@ const AboutUs = () => {
               </h3>
               
               <p className='text-lg text-gray-600 leading-relaxed body-text'>
-                PERCI AGRI is a revolutionary marketplace platform that connects agricultural sellers 
+                PRECI AGRI is a revolutionary marketplace platform that connects agricultural sellers 
                 with farmers across Mizoram. We provide a comprehensive ecosystem where sellers can 
                 offer seeds, fertilizers, farming instruments, and IoT-based smart farming solutions 
                 to enhance traditional agricultural practices.
@@ -79,7 +79,7 @@ const AboutUs = () => {
               <p className="text-gray-700 italic mb-2 text-sm body-text">
                 "Connecting sellers with farmers through smart technology and traditional wisdom."
               </p>
-              <p className="text-xs font-semibold text-mizoram-600 professional-text">- PERCI AGRI Team</p>
+              <p className="text-xs font-semibold text-mizoram-600 professional-text">- PRECI AGRI Team</p>
             </div>
           </div>
         </div>
@@ -87,7 +87,7 @@ const AboutUs = () => {
         {/* Stats Section */}
         <div className='bg-white rounded-2xl shadow-xl p-8 lg:p-10 border border-mizoram-100'>
           <h3 className='text-3xl font-bold text-center text-gray-900 mb-10 professional-text'>
-            PERCI AGRI Marketplace Impact
+            PRECI AGRI Marketplace Impact
           </h3>
           
           <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6'>
@@ -111,7 +111,7 @@ const AboutUs = () => {
             Join the Agricultural Revolution
           </h3>
           <p className='text-lg text-gray-600 max-w-2xl mx-auto body-text'>
-            PERCI AGRI connects sellers and farmers across Mizoram through smart farming technology and traditional agricultural wisdom.
+            PRECI AGRI connects sellers and farmers across Mizoram through smart farming technology and traditional agricultural wisdom.
           </p>
         </div>
       </div>
