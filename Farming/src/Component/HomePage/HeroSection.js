@@ -6,14 +6,14 @@ const HeroSection = () => {
     <div className="py-16 bg-gradient-to-br from-white to-mizoram-50">
       <div className="container mx-auto px-6 lg:px-12">
 
-        {/* About PERCI AGRI Section */}
+        {/* About PRECI AGRI Section */}
         <div className="text-center mb-12">
           <h2 className="text-4xl lg:text-5xl font-display font-bold text-gray-900 mb-6 hero-text">
-            About <span className="text-mizoram-600">PERCI AGRI</span>
+            About <span className="text-mizoram-600">PRECI AGRI</span>
           </h2>
           <div className="max-w-4xl mx-auto">
             <p className="text-xl text-gray-600 leading-relaxed mb-10 font-body body-text">
-              PERCI AGRI is a revolutionary smart farming platform that bridges traditional Mizoram
+              PRECI AGRI is a revolutionary smart farming platform that bridges traditional Mizoram
               agricultural practices with cutting-edge IoT technology. Our marketplace empowers
               agricultural sellers to provide farmers with essential products and modern solutions.
             </p>

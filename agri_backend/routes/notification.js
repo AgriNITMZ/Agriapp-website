@@ -1,10 +1,10 @@
-// backend/routes/notification.js
+// routes/notification.js
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth'); // Your auth middleware
+const { auth } = require('../middleware/auth');
 const notificationController = require('../controller/Notification');
 
-// Get all notifications
+// Get all notifications for logged-in user
 router.get('/', auth, notificationController.getNotifications);
 
 // Get unread count
@@ -18,5 +18,8 @@ router.patch('/mark-all-read', auth, notificationController.markAllAsRead);
 
 // Delete notification
 router.delete('/:notificationId', auth, notificationController.deleteNotification);
+
+// Clear all notifications
+router.delete('/clear-all', auth, notificationController.clearAllNotifications);
 
 module.exports = router;

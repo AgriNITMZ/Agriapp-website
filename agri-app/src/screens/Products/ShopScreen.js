@@ -179,7 +179,11 @@ const ShopScreen = ({ navigation, route }) => {
             const response = await customFetch.get(`/products/filteredProducts?${queryParams.toString()}`);
 
             if (response.data.data.products.length > 0) {
-                setProducts(prev => [...prev, ...response.data.data.products]);
+                setProducts(prev => {
+                    const existingIds = new Set(prev.map(p => p._id));
+                    const newProducts = response.data.data.products.filter(p => !existingIds.has(p._id));
+                    return [...prev, ...newProducts];
+                });
                 setHasMore(response.data.data.pagination.page < response.data.data.pagination.totalPages);
             } else {
                 setHasMore(false);
@@ -469,7 +473,7 @@ const ShopScreen = ({ navigation, route }) => {
                         <FlatList
                             ref={flatListRef}
                             data={products}
-                            keyExtractor={item => item._id}
+                            keyExtractor={(item, index) => item._id ? item._id : `product-${index}`}
                             renderItem={renderProductItem}
                             numColumns={2}
                             contentContainerStyle={styles.productList}
