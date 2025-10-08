@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { sendEmail, validateEmailJSConfig } from '../../services/emailService'
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +11,7 @@ const Contact = () => {
     subject: '',
     message: ''
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -17,18 +20,47 @@ const Contact = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
+    
+    // Validate required fields
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Validate EmailJS configuration
+    if (!validateEmailJSConfig()) {
+      toast.error('Email service is not configured. Please contact the administrator.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await sendEmail({
+        ...formData,
+        category: formData.subject // Map subject to category for consistency
+      });
+      
+      if (result.success) {
+        toast.success('Your message has been sent successfully!');
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const contactInfo = [
@@ -36,9 +68,9 @@ const Contact = () => {
       icon: <MapPin className="w-6 h-6" />,
       title: "Visit Us",
       details: [
-        "National Institute of Technology",
-        "Aizawl, Mizoram 796012",
-        "India"
+        "National Institute of Technology Mizoram",
+        "Chaltlang Road, Aizawl",
+        "Mizoram 796012, India"
       ]
     },
     {
@@ -54,7 +86,7 @@ const Contact = () => {
       icon: <Mail className="w-6 h-6" />,
       title: "Email Us",
       details: [
-        "info@agrinitmz.edu.in",
+        "preciagri.mz@gmail.com",
         "support@agrinitmz.edu.in",
         "admin@agrinitmz.edu.in"
       ]
@@ -186,10 +218,15 @@ const Contact = () => {
 
               <button
                 type="submit"
-                className="w-full bg-mizoram-600 hover:bg-mizoram-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors duration-200 shadow-lg flex items-center justify-center space-x-2"
+                disabled={loading}
+                className="w-full bg-mizoram-600 hover:bg-mizoram-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors duration-200 shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send className="w-5 h-5" />
-                <span>Send Message</span>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+                <span>{loading ? 'Sending...' : 'Send Message'}</span>
               </button>
             </form>
           </div>
@@ -248,9 +285,22 @@ const Contact = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
             Find Us on Map
           </h2>
-          <div className="bg-gray-200 rounded-xl h-96 flex items-center justify-center">
-            <p className="text-gray-600 text-lg">
-              Interactive map showing NIT Mizoram location would be embedded here
+          <div className="rounded-xl overflow-hidden h-96 shadow-lg">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3652.8234567890123!2d92.7173!3d23.7367!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x374d9a0b1234567%3A0x1234567890abcdef!2sNational%20Institute%20of%20Technology%20Mizoram!5e0!3m2!1sen!2sin!4v1234567890123!5m2!1sen!2sin"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="NIT Mizoram Location"
+            ></iframe>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-gray-600">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              National Institute of Technology Mizoram, Chaltlang Road, Aizawl, Mizoram, India
             </p>
           </div>
         </div>

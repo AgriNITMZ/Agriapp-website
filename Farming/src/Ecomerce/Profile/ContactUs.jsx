@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
+import { sendEmail, validateEmailJSConfig } from '../../services/emailService';
 
 const ContactUs = () => {
     const user = useSelector((state) => state.profile.user);
@@ -41,17 +42,28 @@ const ContactUs = () => {
             return;
         }
 
+        // Validate EmailJS configuration
+        if (!validateEmailJSConfig()) {
+            toast.error('Email service is not configured. Please contact the administrator.');
+            return;
+        }
+
         setLoading(true);
         try {
-            // In a real app, make API call to submit feedback
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Mock API call
-            toast.success('Your message has been sent successfully!');
-            setFormData(prev => ({
-                ...prev,
-                subject: '',
-                message: ''
-            }));
+            const result = await sendEmail(formData);
+            
+            if (result.success) {
+                toast.success('Your message has been sent successfully!');
+                setFormData(prev => ({
+                    ...prev,
+                    subject: '',
+                    message: ''
+                }));
+            } else {
+                toast.error(result.message);
+            }
         } catch (error) {
+            console.error('Error sending email:', error);
             toast.error('Failed to send message. Please try again.');
         } finally {
             setLoading(false);
@@ -63,7 +75,7 @@ const ContactUs = () => {
             icon: <Mail className="w-6 h-6" />,
             title: "Email Support",
             description: "Get help via email",
-            contact: "support@perciagri.com",
+            contact: "preciagri.mz@gmail.com",
             availability: "24/7 Response"
         },
         {
@@ -138,9 +150,9 @@ const ContactUs = () => {
                                 <h3 className="font-semibold text-gray-900">Our Office</h3>
                             </div>
                             <div className="text-sm text-gray-700 space-y-1">
-                                <p>PERCI AGRI Headquarters</p>
-                                <p>123 Agriculture Street</p>
-                                <p>Green Valley, State 123456</p>
+                                <p>National Institute of Technology Mizoram</p>
+                                <p>Chaltlang Road</p>
+                                <p>Aizawl, Mizoram 796012</p>
                                 <p>India</p>
                             </div>
                         </div>
