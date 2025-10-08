@@ -63,7 +63,7 @@ const ContactUs = () => {
             icon: <Mail className="w-6 h-6" />,
             title: "Email Support",
             description: "Get help via email",
-            contact: "support@perciagri.com",
+            contact: "preciagri.mz@gmail.com",
             availability: "24/7 Response"
         },
         {
@@ -138,7 +138,7 @@ const ContactUs = () => {
                                 <h3 className="font-semibold text-gray-900">Our Office</h3>
                             </div>
                             <div className="text-sm text-gray-700 space-y-1">
-                                <p>PERCI AGRI Headquarters</p>
+                                <p>PRECI AGRI Headquarters</p>
                                 <p>123 Agriculture Street</p>
                                 <p>Green Valley, State 123456</p>
                                 <p>India</p>

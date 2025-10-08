@@ -55,7 +55,7 @@ const Home = () => {
         <div className='absolute inset-0 flex items-center justify-center z-10'>
           <div className='text-center px-6 md:px-12 max-w-5xl'>
             <h1 className='text-5xl md:text-7xl font-display font-bold text-white mb-8 leading-tight hero-text text-rendering-optimized'>
-              PERCI AGRI
+              PRECI AGRI
               <span className='block text-mizoram-300 mt-2'>Smart Farming Marketplace</span>
             </h1>
             <p className='text-xl md:text-2xl text-white mb-10 font-body body-text max-w-3xl mx-auto'>
