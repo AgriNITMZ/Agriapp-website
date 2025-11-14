@@ -11,10 +11,13 @@ import {
     ActivityIndicator,
     RefreshControl,
     Alert,
+    Modal,
+    ScrollView,
 } from 'react-native';
 import { format } from 'date-fns';
 import customFetch from '../../utils/axios';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import ShipmentTrackingButton from '../../components/ShipmentTrackingButton';
 
 const OrderHistoryScreen = ({ navigation }) => {
     const [orders, setOrders] = useState([]);
@@ -28,7 +31,13 @@ const OrderHistoryScreen = ({ navigation }) => {
             setError(null);
             const response = await customFetch.get('/order/orderhistory');
             setOrders(response.data.orders);
-            console.log(response.data.orders)
+            
+            // Debug: Log order structure
+            if (response.data.orders && response.data.orders.length > 0) {
+                console.log('First Order:', JSON.stringify(response.data.orders[0], null, 2));
+                console.log('First Item:', response.data.orders[0].items?.[0]);
+                console.log('First Product:', response.data.orders[0].items?.[0]?.product);
+            }
         } catch (err) {
             setError(err?.response?.data?.message || 'Failed to fetch orders');
             Alert.alert('Error', 'Something went wrong while fetching your orders.');
@@ -83,120 +92,111 @@ const OrderHistoryScreen = ({ navigation }) => {
         }
     };
 
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+
+    const openOrderDetails = (order) => {
+        setSelectedOrder(order);
+        setDetailsModalVisible(true);
+    };
+
+    const closeOrderDetails = () => {
+        setDetailsModalVisible(false);
+        setSelectedOrder(null);
+    };
+
     const renderOrderItem = ({ item }) => {
-        const isExpanded = expandedOrder === item._id;
+        const firstItem = item.items && item.items.length > 0 ? item.items[0] : null;
+        const firstProduct = firstItem?.product;
+        const itemCount = item.items?.length || 0;
+
+        // Get product image - try multiple possible fields
+        const getProductImage = () => {
+            if (!firstProduct) return null;
+            return firstProduct.thumbnail || 
+                   firstProduct.image || 
+                   firstProduct.images?.[0] || 
+                   (firstProduct.images && firstProduct.images.length > 0 ? firstProduct.images[0] : null);
+        };
+
+        const productImage = getProductImage();
 
         return (
             <TouchableOpacity
-                style={[styles.orderCard, isExpanded && styles.expandedCard]}
-                onPress={() => toggleOrderExpand(item._id)}
-                activeOpacity={0.9}
+                style={styles.orderCard}
+                onPress={() => openOrderDetails(item)}
+                activeOpacity={0.7}
             >
-                <View style={styles.orderHeader}>
-                    <View>
-                        <Text style={styles.orderId}>Order #{item._id.slice(-8)}</Text>
-                        <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
-                    </View>
-                    <View style={styles.statusContainer}>
-                        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.orderStatus) }]}>
-                            <Text style={styles.statusText}>{item.orderStatus}</Text>
+                {/* Status Banner */}
+                <View style={[styles.statusBanner, { backgroundColor: getStatusColor(item.orderStatus) }]}>
+                    <Ionicons 
+                        name={
+                            item.orderStatus === 'Delivered' ? 'checkmark-circle' :
+                            item.orderStatus === 'Shipped' ? 'airplane' :
+                            item.orderStatus === 'Processing' ? 'time' :
+                            item.orderStatus === 'Cancelled' ? 'close-circle' : 'ellipse'
+                        } 
+                        size={16} 
+                        color="#FFF" 
+                    />
+                    <Text style={styles.statusBannerText}>{item.orderStatus}</Text>
+                </View>
+
+                {/* Product Preview */}
+                <View style={styles.productPreview}>
+                    {productImage ? (
+                        <Image
+                            source={{ uri: productImage }}
+                            style={styles.productThumbnail}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View style={[styles.productThumbnail, styles.placeholderImage]}>
+                            <Ionicons name="image-outline" size={32} color="#9CA3AF" />
                         </View>
-                        <Text style={styles.paymentMethod}>
-                            {getPaymentStatusIcon(item.paymentMethod)} {item.paymentMethod}
+                    )}
+                    <View style={styles.productDetails}>
+                        <Text style={styles.productTitle} numberOfLines={2}>
+                            {firstProduct?.name || 'Product'}
+                        </Text>
+                        {itemCount > 1 && (
+                            <View style={styles.moreItemsBadge}>
+                                <Text style={styles.moreItemsText}>+{itemCount - 1} more item{itemCount > 2 ? 's' : ''}</Text>
+                            </View>
+                        )}
+                        <Text style={styles.orderDateText}>
+                            Ordered on {formatDate(item.createdAt)}
                         </Text>
                     </View>
                 </View>
 
-                <View style={styles.divider} />
-
-                {!isExpanded ? (
-                    <View style={styles.previewContainer}>
-                        <Image
-                            source={{ uri: item.items[0].imageUrl }}
-                            style={styles.previewImage}
-                            defaultSource={require('../../assets/images/placeholder/product.png')}
-                        />
-                        <View style={styles.previewInfo}>
-                            <Text style={styles.previewProduct} numberOfLines={1}>
-                                {item.items[0].productName}
-                            </Text>
-                            <Text style={styles.previewSize}>
-                                {item.items.length > 1 ? `+${item.items.length - 1} more items` : `Size: ${item.items[0].size}`}
-                            </Text>
-                        </View>
-                        <View style={styles.previewAmount}>
-                            <Text style={styles.totalAmount}>₹{item.totalAmount}</Text>
-                            <Text style={styles.expandIndicator}>▼</Text>
-                        </View>
+                {/* Order Info Row */}
+                <View style={styles.orderInfoRow}>
+                    <View style={styles.infoItem}>
+                        <Ionicons name="pricetag" size={16} color="#666" />
+                        <Text style={styles.infoLabel}>₹{item.totalAmount}</Text>
                     </View>
-                ) : (
-                    <View style={styles.expandedContent}>
-                        <FlatList
-                            data={item.items}
-                            keyExtractor={(product, index) => `${product.productId}-${index}`}
-                            renderItem={({ item: product }) => (
-                                <View style={styles.productItem}>
-                                    <Image
-                                        source={{ uri: product.imageUrl }}
-                                        style={styles.productImage}
-                                        defaultSource={require('../../assets/images/placeholder/product.png')}
-                                    />
-                                    <View style={styles.productInfo}>
-                                        <Text style={styles.productName} numberOfLines={2}>{product.productName}</Text>
-                                        <Text style={styles.productSize}>Size: {product.size}</Text>
-                                        <View style={styles.priceContainer}>
-                                            <Text style={styles.discountedPrice}>₹{product.discountedPrice}</Text>
-                                            {product.price !== product.discountedPrice && (
-                                                <Text style={styles.originalPrice}>₹{product.price}</Text>
-                                            )}
-                                            <Text style={styles.quantity}>Qty: {product.quantity}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
-                            ItemSeparatorComponent={() => <View style={styles.itemDivider} />}
-                            scrollEnabled={false}
-                        />
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.addressContainer}>
-                            <Text style={styles.addressTitle}>Delivery Address</Text>
-                            <Text style={styles.addressName}>{item.shippingAddress.Name}</Text>
-                            <Text style={styles.addressText}>
-                                {item.shippingAddress.streetAddress}, {item.shippingAddress.city}, {'\n'}
-                                {item.shippingAddress.state} - {item.shippingAddress.zipCode}
-                            </Text>
-                            <Text style={styles.addressPhone}>📱 {item.shippingAddress.mobile}</Text>
-                        </View>
-
-                        <View style={styles.orderSummary}>
-                            <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Payment Status</Text>
-                                <Text style={[styles.summaryValue, {
-                                    color: item.paymentStatus === 'Completed' ? '#34D399' :
-                                        item.paymentStatus === 'Failed' ? '#EF4444' : '#A78BFA'
-                                }]}>
-                                    {item.paymentStatus}
-                                </Text>
-                            </View>
-                            <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Total Amount</Text>
-                                <Text style={styles.totalAmountLarge}>₹{item.totalAmount}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.buttonContainer}>
-                            <TouchableOpacity style={styles.trackButton}>
-                                <Text style={styles.trackButtonText}>Track Order</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.supportButton}>
-                                <Text style={styles.supportButtonText}>Help & Support</Text>
-                            </TouchableOpacity>
-                        </View>
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoItem}>
+                        <Ionicons name="cube" size={16} color="#666" />
+                        <Text style={styles.infoLabel}>{itemCount} item{itemCount > 1 ? 's' : ''}</Text>
                     </View>
-                )}
+                    <View style={styles.infoDivider} />
+                    <View style={styles.infoItem}>
+                        <Ionicons 
+                            name={item.paymentMethod === 'cod' ? 'cash' : 'card'} 
+                            size={16} 
+                            color="#666" 
+                        />
+                        <Text style={styles.infoLabel}>{item.paymentMethod.toUpperCase()}</Text>
+                    </View>
+                </View>
+
+                {/* Action Button */}
+                <View style={styles.viewDetailsButton}>
+                    <Text style={styles.viewDetailsText}>View Details</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#4F46E5" />
+                </View>
             </TouchableOpacity>
         );
     };
@@ -263,6 +263,174 @@ const OrderHistoryScreen = ({ navigation }) => {
                     }
                 />
             )}
+
+            {/* Order Details Modal */}
+            <Modal
+                visible={detailsModalVisible}
+                animationType="slide"
+                onRequestClose={closeOrderDetails}
+            >
+                {selectedOrder && (
+                    <SafeAreaView style={styles.modalContainer}>
+                        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+                        
+                        {/* Modal Header */}
+                        <View style={styles.modalHeader}>
+                            <TouchableOpacity onPress={closeOrderDetails} style={styles.closeButton}>
+                                <Ionicons name="arrow-back" size={24} color="#333" />
+                            </TouchableOpacity>
+                            <Text style={styles.modalTitle}>Order Details</Text>
+                        </View>
+
+                        <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+                            {/* Status Card */}
+                            <View style={[styles.detailStatusCard, { backgroundColor: getStatusColor(selectedOrder.orderStatus) }]}>
+                                <Ionicons 
+                                    name={
+                                        selectedOrder.orderStatus === 'Delivered' ? 'checkmark-circle' :
+                                        selectedOrder.orderStatus === 'Shipped' ? 'airplane' :
+                                        selectedOrder.orderStatus === 'Processing' ? 'time' :
+                                        selectedOrder.orderStatus === 'Cancelled' ? 'close-circle' : 'ellipse'
+                                    } 
+                                    size={40} 
+                                    color="#FFF" 
+                                />
+                                <Text style={styles.detailStatusText}>{selectedOrder.orderStatus}</Text>
+                            </View>
+
+                            {/* Order Info */}
+                            <View style={styles.detailCard}>
+                                <Text style={styles.detailCardTitle}>Order Information</Text>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Order ID</Text>
+                                    <Text style={styles.detailValue}>#{selectedOrder._id.slice(-12).toUpperCase()}</Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Order Date</Text>
+                                    <Text style={styles.detailValue}>{formatDate(selectedOrder.createdAt)}</Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Payment Method</Text>
+                                    <Text style={styles.detailValue}>{selectedOrder.paymentMethod.toUpperCase()}</Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Payment Status</Text>
+                                    <Text style={[styles.detailValue, {
+                                        color: selectedOrder.paymentStatus === 'Completed' ? '#34D399' :
+                                               selectedOrder.paymentStatus === 'Failed' ? '#EF4444' : '#F59E0B'
+                                    }]}>
+                                        {selectedOrder.paymentStatus}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Products */}
+                            <View style={styles.detailCard}>
+                                <Text style={styles.detailCardTitle}>Items ({selectedOrder.items.length})</Text>
+                                {selectedOrder.items.map((item, index) => {
+                                    const product = item.product;
+                                    const productImage = product?.thumbnail || 
+                                                       product?.image || 
+                                                       product?.images?.[0] || 
+                                                       (product?.images && product.images.length > 0 ? product.images[0] : null);
+                                    
+                                    return (
+                                        <View key={index} style={styles.detailProductItem}>
+                                            {productImage ? (
+                                                <Image
+                                                    source={{ uri: productImage }}
+                                                    style={styles.detailProductImage}
+                                                    resizeMode="cover"
+                                                />
+                                            ) : (
+                                                <View style={[styles.detailProductImage, styles.placeholderImage]}>
+                                                    <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                                                </View>
+                                            )}
+                                            <View style={styles.detailProductInfo}>
+                                                <Text style={styles.detailProductName} numberOfLines={2}>
+                                                    {product?.name || 'Product'}
+                                                </Text>
+                                                <Text style={styles.detailProductSize}>Size: {item.size}</Text>
+                                                <View style={styles.detailProductPriceRow}>
+                                                    <Text style={styles.detailProductPrice}>₹{item.selectedDiscountedPrice}</Text>
+                                                    {item.selectedprice !== item.selectedDiscountedPrice && (
+                                                        <Text style={styles.detailProductOriginalPrice}>₹{item.selectedprice}</Text>
+                                                    )}
+                                                    <Text style={styles.detailProductQuantity}>Qty: {item.quantity}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+
+                            {/* Shipping Address */}
+                            <View style={styles.detailCard}>
+                                <Text style={styles.detailCardTitle}>Delivery Address</Text>
+                                <View style={styles.addressBox}>
+                                    <Text style={styles.addressName}>{selectedOrder.shippingAddress.Name}</Text>
+                                    <Text style={styles.addressText}>{selectedOrder.shippingAddress.streetAddress}</Text>
+                                    <Text style={styles.addressText}>
+                                        {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}
+                                    </Text>
+                                    <Text style={styles.addressText}>PIN: {selectedOrder.shippingAddress.zipcode}</Text>
+                                    <Text style={styles.addressPhone}>📱 {selectedOrder.shippingAddress.mobile}</Text>
+                                </View>
+                            </View>
+
+                            {/* Price Details */}
+                            <View style={styles.detailCard}>
+                                <Text style={styles.detailCardTitle}>Price Details</Text>
+                                <View style={styles.priceRow}>
+                                    <Text style={styles.priceLabel}>Price ({selectedOrder.items.length} item{selectedOrder.items.length > 1 ? 's' : ''})</Text>
+                                    <Text style={styles.priceValue}>₹{selectedOrder.totalAmount}</Text>
+                                </View>
+                                <View style={styles.priceRow}>
+                                    <Text style={styles.priceLabel}>Delivery Charges</Text>
+                                    <Text style={styles.priceFree}>FREE</Text>
+                                </View>
+                                <View style={styles.priceDivider} />
+                                <View style={styles.priceRow}>
+                                    <Text style={styles.totalLabel}>Total Amount</Text>
+                                    <Text style={styles.totalValue}>₹{selectedOrder.totalAmount}</Text>
+                                </View>
+                            </View>
+
+                            {/* Tracking Button */}
+                            {selectedOrder.shiprocketOrderId && (
+                                <View style={styles.trackingContainer}>
+                                    <ShipmentTrackingButton
+                                        orderId={selectedOrder._id}
+                                        navigation={navigation}
+                                        hasShipment={selectedOrder.shiprocketOrderId}
+                                    />
+                                </View>
+                            )}
+
+                            {/* Action Buttons */}
+                            <View style={styles.actionButtons}>
+                                {selectedOrder.orderStatus !== 'Cancelled' && selectedOrder.orderStatus !== 'Delivered' && (
+                                    <TouchableOpacity 
+                                        style={styles.cancelButton}
+                                        onPress={() => Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?')}
+                                    >
+                                        <Text style={styles.cancelButtonText}>Cancel Order</Text>
+                                    </TouchableOpacity>
+                                )}
+                                <TouchableOpacity 
+                                    style={styles.helpButton}
+                                    onPress={() => Alert.alert('Help', 'Contact support for assistance')}
+                                >
+                                    <Text style={styles.helpButtonText}>Need Help?</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={{ height: 24 }} />
+                        </ScrollView>
+                    </SafeAreaView>
+                )}
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -272,11 +440,11 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center', // Center content horizontally
+        justifyContent: 'center',
         paddingVertical: 10,
         backgroundColor: '#FFFFFF',
-        elevation: 4, // Shadow for Android
-        shadowColor: '#000', // Shadow for iOS
+        elevation: 4,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -301,18 +469,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
     },
-    header: {
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#111827',
-    },
     listContainer: {
         padding: 12,
     },
@@ -320,226 +476,111 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
         marginBottom: 16,
-        padding: 16,
+        overflow: 'hidden',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 3,
     },
-    expandedCard: {
-        shadowOpacity: 0.1,
-        elevation: 5,
-    },
-    orderHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    orderId: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#111827',
-    },
-    orderDate: {
-        fontSize: 13,
-        color: '#6B7280',
-        marginTop: 2,
-    },
-    statusContainer: {
-        alignItems: 'flex-end',
-    },
-    statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-        marginBottom: 4,
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
-    paymentMethod: {
-        fontSize: 12,
-        color: '#6B7280',
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#E5E7EB',
-        marginVertical: 12,
-    },
-    previewContainer: {
+    statusBanner: {
         flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        gap: 6,
     },
-    previewImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 8,
-        backgroundColor: '#F3F4F6',
-    },
-    previewInfo: {
-        flex: 1,
-        paddingHorizontal: 12,
-    },
-    previewProduct: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#111827',
-    },
-    previewSize: {
-        fontSize: 13,
-        color: '#6B7280',
-        marginTop: 2,
-    },
-    previewAmount: {
-        alignItems: 'flex-end',
-    },
-    totalAmount: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#111827',
-    },
-    expandIndicator: {
+    statusBannerText: {
+        color: '#FFFFFF',
         fontSize: 12,
-        color: '#6B7280',
-        marginTop: 4,
+        fontWeight: '600',
+        textTransform: 'uppercase',
     },
-    expandedContent: {
-        marginTop: 4,
-    },
-    productItem: {
+    productPreview: {
         flexDirection: 'row',
-        paddingVertical: 12,
+        padding: 16,
+        paddingBottom: 12,
     },
-    itemDivider: {
-        height: 1,
-        backgroundColor: '#F3F4F6',
-    },
-    productImage: {
+    productThumbnail: {
         width: 70,
         height: 70,
         borderRadius: 8,
         backgroundColor: '#F3F4F6',
     },
-    productInfo: {
+    placeholderImage: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+    },
+    productDetails: {
         flex: 1,
         marginLeft: 12,
+        justifyContent: 'center',
     },
-    productName: {
+    productTitle: {
         fontSize: 14,
         fontWeight: '500',
         color: '#111827',
+        marginBottom: 4,
     },
-    productSize: {
+    moreItemsBadge: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#EEF2FF',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+        marginBottom: 4,
+    },
+    moreItemsText: {
+        fontSize: 12,
+        color: '#4F46E5',
+        fontWeight: '500',
+    },
+    orderDateText: {
         fontSize: 13,
         color: '#6B7280',
-        marginTop: 2,
     },
-    priceContainer: {
+    orderInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 8,
-    },
-    discountedPrice: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#111827',
-    },
-    originalPrice: {
-        fontSize: 13,
-        color: '#9CA3AF',
-        textDecorationLine: 'line-through',
-        marginLeft: 6,
-        marginRight: 8,
-    },
-    quantity: {
-        fontSize: 13,
-        color: '#6B7280',
-        marginLeft: 'auto',
-    },
-    addressContainer: {
-        padding: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         backgroundColor: '#F9FAFB',
-        borderRadius: 8,
-        marginTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
     },
-    addressTitle: {
-        fontSize: 14,
-        fontWeight: '600',
+    infoItem: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    infoDivider: {
+        width: 1,
+        height: 20,
+        backgroundColor: '#D1D5DB',
+    },
+    infoLabel: {
+        fontSize: 13,
         color: '#374151',
-        marginBottom: 6,
-    },
-    addressName: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#111827',
-    },
-    addressText: {
-        fontSize: 13,
-        lineHeight: 18,
-        color: '#4B5563',
-        marginTop: 2,
-    },
-    addressPhone: {
-        fontSize: 13,
-        color: '#4B5563',
-        marginTop: 6,
-    },
-    orderSummary: {
-        marginTop: 16,
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    summaryLabel: {
-        fontSize: 14,
-        color: '#6B7280',
-    },
-    summaryValue: {
-        fontSize: 14,
         fontWeight: '500',
     },
-    totalAmountLarge: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#111827',
-    },
-    buttonContainer: {
+    viewDetailsButton: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 16,
-    },
-    trackButton: {
-        flex: 1,
-        backgroundColor: '#1F2937',
-        paddingVertical: 12,
-        borderRadius: 8,
         alignItems: 'center',
-        marginRight: 8,
-    },
-    trackButtonText: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    supportButton: {
-        flex: 1,
-        borderWidth: 1,
-        borderColor: '#D1D5DB',
+        justifyContent: 'center',
         paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginLeft: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        gap: 4,
     },
-    supportButtonText: {
-        color: '#4B5563',
-        fontWeight: '600',
+    viewDetailsText: {
         fontSize: 14,
+        color: '#4F46E5',
+        fontWeight: '600',
     },
     loadingText: {
         marginTop: 12,
@@ -559,12 +600,10 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     retryButton: {
-        backgroundColor: '#1F2937',
+        backgroundColor: '#4F46E5',
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 8,
     },
     retryButtonText: {
         color: '#FFFFFF',
@@ -599,12 +638,212 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 8,
-        alignItems: 'center',
     },
     shopButtonText: {
         color: '#FFFFFF',
         fontWeight: '600',
         fontSize: 16,
+    },
+    // Modal Styles
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#F5F7FA',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        elevation: 2,
+    },
+    closeButton: {
+        marginRight: 16,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    modalContent: {
+        flex: 1,
+    },
+    detailStatusCard: {
+        padding: 24,
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    detailStatusText: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        marginTop: 12,
+        textTransform: 'uppercase',
+    },
+    detailCard: {
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        marginBottom: 12,
+    },
+    detailCardTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 12,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    detailLabel: {
+        fontSize: 14,
+        color: '#6B7280',
+    },
+    detailValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111827',
+    },
+    detailProductItem: {
+        flexDirection: 'row',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+    },
+    detailProductImage: {
+        width: 70,
+        height: 70,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+    },
+    detailProductInfo: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    detailProductName: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    detailProductSize: {
+        fontSize: 13,
+        color: '#6B7280',
+        marginBottom: 6,
+    },
+    detailProductPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    detailProductPrice: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    detailProductOriginalPrice: {
+        fontSize: 13,
+        color: '#9CA3AF',
+        textDecorationLine: 'line-through',
+    },
+    detailProductQuantity: {
+        fontSize: 13,
+        color: '#6B7280',
+        marginLeft: 'auto',
+    },
+    addressBox: {
+        backgroundColor: '#F9FAFB',
+        padding: 12,
+        borderRadius: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: '#4F46E5',
+    },
+    addressName: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    addressText: {
+        fontSize: 13,
+        color: '#4B5563',
+        lineHeight: 18,
+    },
+    addressPhone: {
+        fontSize: 13,
+        color: '#4B5563',
+        marginTop: 6,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+    },
+    priceLabel: {
+        fontSize: 14,
+        color: '#6B7280',
+    },
+    priceValue: {
+        fontSize: 14,
+        color: '#111827',
+    },
+    priceFree: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#34D399',
+    },
+    priceDivider: {
+        height: 1,
+        backgroundColor: '#E5E7EB',
+        marginVertical: 8,
+    },
+    totalLabel: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    totalValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    trackingContainer: {
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        marginBottom: 12,
+    },
+    actionButtons: {
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        marginBottom: 12,
+        gap: 12,
+    },
+    cancelButton: {
+        backgroundColor: '#FEE2E2',
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#DC2626',
+    },
+    helpButton: {
+        backgroundColor: '#EEF2FF',
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    helpButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#4F46E5',
     },
 });
 
