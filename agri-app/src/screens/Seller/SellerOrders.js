@@ -6,13 +6,14 @@ import { Package, Clock, Truck, CheckCircle, XCircle } from 'lucide-react-native
 import SellerTopBar from '../../components/seller/SellerTopBar';
 import SellerFooterNavigation from '../../components/seller/SellerFooterNavigation';
 
-const SellerOrders = ({ navigation }) => {
+const SellerOrders = ({ navigation, route }) => {
     const [orders, setOrders] = useState([]);
     const [filteredOrders, setFilteredOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [filterStatus, setFilterStatus] = useState('All');
+    const [filterStatus, setFilterStatus] = useState(route.params?.filter || 'All');
     const [menuVisible, setMenuVisible] = useState(false);
+    const showFilterMenu = route.params?.filter === 'All' || !route.params?.filter;
 
     const fetchOrders = async () => {
         try {
@@ -153,33 +154,44 @@ const SellerOrders = ({ navigation }) => {
         <>
             <SellerTopBar navigation={navigation} title="Orders" />
             <View style={styles.container}>
-                {/* Filter Menu */}
-                <View style={styles.filterContainer}>
-                    <Menu
-                        visible={menuVisible}
-                        onDismiss={() => setMenuVisible(false)}
-                        anchor={
-                            <Button
-                                mode="outlined"
-                                onPress={() => setMenuVisible(true)}
-                                style={styles.filterButton}
-                            >
-                                Filter: {filterStatus}
-                            </Button>
-                        }
-                    >
-                        {['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(status => (
-                            <Menu.Item
-                                key={status}
-                                onPress={() => {
-                                    setFilterStatus(status);
-                                    setMenuVisible(false);
-                                }}
-                                title={status}
-                            />
-                        ))}
-                    </Menu>
-                </View>
+                {/* Filter Menu - Only show for "All" orders */}
+                {showFilterMenu && (
+                    <View style={styles.filterContainer}>
+                        <Menu
+                            visible={menuVisible}
+                            onDismiss={() => setMenuVisible(false)}
+                            anchor={
+                                <Button
+                                    mode="outlined"
+                                    onPress={() => setMenuVisible(true)}
+                                    style={styles.filterButton}
+                                >
+                                    Filter: {filterStatus}
+                                </Button>
+                            }
+                        >
+                            {['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(status => (
+                                <Menu.Item
+                                    key={status}
+                                    onPress={() => {
+                                        setFilterStatus(status);
+                                        setMenuVisible(false);
+                                    }}
+                                    title={status}
+                                />
+                            ))}
+                        </Menu>
+                    </View>
+                )}
+                
+                {/* Status Header - Show when filtered */}
+                {!showFilterMenu && (
+                    <View style={styles.statusHeader}>
+                        <Text style={styles.statusHeaderText}>
+                            {filterStatus} Orders ({filteredOrders.length})
+                        </Text>
+                    </View>
+                )}
 
                 <ScrollView
                     showsVerticalScrollIndicator={false}
@@ -323,6 +335,18 @@ const styles = StyleSheet.create({
     },
     filterButton: {
         borderColor: '#4CAF50',
+    },
+    statusHeader: {
+        padding: 15,
+        backgroundColor: '#fff',
+        elevation: 2,
+        borderBottomWidth: 2,
+        borderBottomColor: '#4CAF50',
+    },
+    statusHeaderText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
     },
     scrollContent: {
         padding: 15,

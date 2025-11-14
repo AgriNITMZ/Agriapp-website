@@ -7,6 +7,7 @@ import SellerDashboard from '../screens/Seller/SellerDashboard';
 import SellerProducts from '../screens/Seller/SellerProducts';
 import SellerOrders from '../screens/Seller/SellerOrders';
 import SellerProfile from '../screens/Seller/SellerProfile';
+import SalesAnalytics from '../screens/Seller/SalesAnalytics';
 
 // Shared Screens
 import AddPost from '../screens/Posts/AddPost';
@@ -30,6 +31,7 @@ const SellerStackNavigator = () => {
             <Stack.Screen name="SellerProducts" component={SellerProducts} />
             <Stack.Screen name="SellerOrders" component={SellerOrders} />
             <Stack.Screen name="SellerProfile" component={SellerProfile} />
+            <Stack.Screen name="SalesAnalytics" component={SalesAnalytics} />
             <Stack.Screen name="AddPost" component={AddPost} />
             <Stack.Screen name="EditPost" component={EditPost} />
             <Stack.Screen name="EditProfile" component={EditProfilePage} />

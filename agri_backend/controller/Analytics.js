@@ -1724,6 +1724,10 @@ const getSellerDashboardAnalytics = async (req, res) => {
         let totalOrders = 0;
         let totalRevenue = 0;
         let pendingOrders = 0;
+        let processingOrders = 0;
+        let shippedOrders = 0;
+        let deliveredOrders = 0;
+        let cancelledOrders = 0;
 
         orders.forEach(order => {
             const sellerItems = order.items.filter(item => 
@@ -1736,8 +1740,23 @@ const getSellerDashboardAnalytics = async (req, res) => {
                     totalRevenue += item.selectedDiscountedPrice * item.quantity;
                 });
                 
-                if (order.orderStatus === 'Pending' || order.orderStatus === 'Processing') {
-                    pendingOrders++;
+                // Count orders by status
+                switch (order.orderStatus) {
+                    case 'Pending':
+                        pendingOrders++;
+                        break;
+                    case 'Processing':
+                        processingOrders++;
+                        break;
+                    case 'Shipped':
+                        shippedOrders++;
+                        break;
+                    case 'Delivered':
+                        deliveredOrders++;
+                        break;
+                    case 'Cancelled':
+                        cancelledOrders++;
+                        break;
                 }
             }
         });
@@ -1802,6 +1821,10 @@ const getSellerDashboardAnalytics = async (req, res) => {
                 totalOrders,
                 totalRevenue: Math.round(totalRevenue),
                 pendingOrders,
+                processingOrders,
+                shippedOrders,
+                deliveredOrders,
+                cancelledOrders,
                 lowStockProducts: lowStockProducts.slice(0, 5),
                 salesTrend
             }

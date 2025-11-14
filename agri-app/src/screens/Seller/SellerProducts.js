@@ -6,18 +6,27 @@ import { Edit, Trash2, Package } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
 import SellerFooterNavigation from '../../components/seller/SellerFooterNavigation';
 
-const SellerProducts = ({ navigation }) => {
+const SellerProducts = ({ navigation, route }) => {
     const [products, setProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const lowStockOnly = route.params?.lowStockOnly || false;
 
     const fetchProducts = async () => {
         try {
             const response = await customFetch.get('/products/sellerProductt');
-            setProducts(response.data.products);
-            setFilteredProducts(response.data.products);
+            const allProducts = response.data.products;
+            setProducts(allProducts);
+            
+            // Filter for low stock if needed (stock <= 10)
+            if (lowStockOnly) {
+                const lowStock = allProducts.filter(product => product.stock <= 10);
+                setFilteredProducts(lowStock);
+            } else {
+                setFilteredProducts(allProducts);
+            }
         } catch (error) {
             console.error('Error fetching products:', error);
             Alert.alert('Error', 'Failed to fetch products');
@@ -38,10 +47,14 @@ const SellerProducts = ({ navigation }) => {
 
     const handleSearch = (query) => {
         setSearchQuery(query);
+        const baseProducts = lowStockOnly 
+            ? products.filter(product => product.stock <= 10)
+            : products;
+            
         if (query.trim() === '') {
-            setFilteredProducts(products);
+            setFilteredProducts(baseProducts);
         } else {
-            const filtered = products.filter(product =>
+            const filtered = baseProducts.filter(product =>
                 product.name.toLowerCase().includes(query.toLowerCase())
             );
             setFilteredProducts(filtered);
@@ -82,8 +95,18 @@ const SellerProducts = ({ navigation }) => {
 
     return (
         <>
-            <SellerTopBar navigation={navigation} title="My Products" />
+            <SellerTopBar 
+                navigation={navigation} 
+                title={lowStockOnly ? "Low Stock Products" : "My Products"} 
+            />
             <View style={styles.container}>
+                {lowStockOnly && (
+                    <View style={styles.lowStockBanner}>
+                        <Text style={styles.lowStockText}>
+                            Showing products with stock ≤ 10 units
+                        </Text>
+                    </View>
+                )}
                 <Searchbar
                     placeholder="Search products..."
                     onChangeText={handleSearch}
@@ -174,6 +197,20 @@ const styles = StyleSheet.create({
     searchBar: {
         margin: 15,
         elevation: 2,
+    },
+    lowStockBanner: {
+        backgroundColor: '#fff3e0',
+        padding: 12,
+        marginHorizontal: 15,
+        marginTop: 15,
+        borderRadius: 8,
+        borderLeftWidth: 4,
+        borderLeftColor: '#f44336',
+    },
+    lowStockText: {
+        color: '#f44336',
+        fontSize: 14,
+        fontWeight: '600',
     },
     scrollContent: {
         padding: 15,

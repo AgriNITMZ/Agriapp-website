@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Button, TextInput } from 'react-native-paper';
+import { Text, Card, Button, Divider } from 'react-native-paper';
 import { CommonActions } from '@react-navigation/native';
-import { User, Mail, Phone, MapPin, Edit2, LogOut } from 'lucide-react-native';
+import { User, Mail, Phone, MapPin, Edit2, LogOut, Lock, Bell, HelpCircle, Shield, ChevronRight } from 'lucide-react-native';
 import customFetch from '../../utils/axios';
 import { removeUserFromLocalStorage } from '../../utils/localStorage';
 import SellerTopBar from '../../components/seller/SellerTopBar';
@@ -64,56 +64,157 @@ const SellerProfile = ({ navigation }) => {
             <SellerTopBar navigation={navigation} title="Profile" />
             <View style={styles.container}>
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={styles.header}>
-                        <Image
-                            source={{ uri: user?.image || 'https://via.placeholder.com/100' }}
-                            style={styles.avatar}
-                        />
-                        <Text style={styles.name}>{user?.Name}</Text>
-                        <Text style={styles.accountType}>Seller Account</Text>
-                    </View>
-
-                    <Card style={styles.infoCard}>
+                    {/* Profile Header */}
+                    <Card style={styles.profileCard}>
                         <Card.Content>
-                            <View style={styles.infoRow}>
-                                <Mail size={20} color="#666" />
-                                <Text style={styles.infoText}>{user?.email}</Text>
+                            <View style={styles.profileHeader}>
+                                <Image
+                                    source={{ uri: user?.image || 'https://via.placeholder.com/100' }}
+                                    style={styles.avatar}
+                                />
+                                <View style={styles.profileInfo}>
+                                    <Text style={styles.name}>{user?.Name}</Text>
+                                    <View style={styles.badgeContainer}>
+                                        <View style={styles.badge}>
+                                            <Text style={styles.badgeText}>Seller</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                                <TouchableOpacity 
+                                    style={styles.editIconButton}
+                                    onPress={() => navigation.navigate('EditProfile')}
+                                >
+                                    <Edit2 size={20} color="#4CAF50" />
+                                </TouchableOpacity>
                             </View>
+                        </Card.Content>
+                    </Card>
+
+                    {/* Contact Information */}
+                    <Card style={styles.sectionCard}>
+                        <Card.Content>
+                            <Text style={styles.sectionTitle}>Contact Information</Text>
+                            <View style={styles.infoRow}>
+                                <View style={styles.iconContainer}>
+                                    <Mail size={20} color="#4CAF50" />
+                                </View>
+                                <View style={styles.infoContent}>
+                                    <Text style={styles.infoLabel}>Email</Text>
+                                    <Text style={styles.infoText}>{user?.email}</Text>
+                                </View>
+                            </View>
+                            <Divider style={styles.divider} />
                             {user?.additionalDetails?.contactNo && (
+                                <>
+                                    <View style={styles.infoRow}>
+                                        <View style={styles.iconContainer}>
+                                            <Phone size={20} color="#4CAF50" />
+                                        </View>
+                                        <View style={styles.infoContent}>
+                                            <Text style={styles.infoLabel}>Phone</Text>
+                                            <Text style={styles.infoText}>{user.additionalDetails.contactNo}</Text>
+                                        </View>
+                                    </View>
+                                    <Divider style={styles.divider} />
+                                </>
+                            )}
+                            {user?.additionalDetails?.address && (
                                 <View style={styles.infoRow}>
-                                    <Phone size={20} color="#666" />
-                                    <Text style={styles.infoText}>{user.additionalDetails.contactNo}</Text>
+                                    <View style={styles.iconContainer}>
+                                        <MapPin size={20} color="#4CAF50" />
+                                    </View>
+                                    <View style={styles.infoContent}>
+                                        <Text style={styles.infoLabel}>Address</Text>
+                                        <Text style={styles.infoText}>{user.additionalDetails.address}</Text>
+                                    </View>
                                 </View>
                             )}
                         </Card.Content>
                     </Card>
 
-                    <Button
-                        mode="contained"
-                        onPress={() => navigation.navigate('EditProfile')}
-                        style={styles.editButton}
-                        icon={() => <Edit2 size={18} color="#fff" />}
-                    >
-                        Edit Profile
-                    </Button>
+                    {/* Account Settings */}
+                    <Card style={styles.sectionCard}>
+                        <Card.Content>
+                            <Text style={styles.sectionTitle}>Account Settings</Text>
+                            
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => navigation.navigate('EditProfile')}
+                            >
+                                <View style={styles.menuLeft}>
+                                    <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
+                                        <User size={20} color="#2196F3" />
+                                    </View>
+                                    <Text style={styles.menuText}>Edit Profile</Text>
+                                </View>
+                                <ChevronRight size={20} color="#999" />
+                            </TouchableOpacity>
 
-                    <Button
-                        mode="outlined"
-                        onPress={() => navigation.navigate('ChangePassword')}
-                        style={styles.passwordButton}
-                    >
-                        Change Password
-                    </Button>
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => navigation.navigate('ChangePassword')}
+                            >
+                                <View style={styles.menuLeft}>
+                                    <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
+                                        <Lock size={20} color="#FF9800" />
+                                    </View>
+                                    <Text style={styles.menuText}>Change Password</Text>
+                                </View>
+                                <ChevronRight size={20} color="#999" />
+                            </TouchableOpacity>
 
-                    <Button
-                        mode="contained"
-                        onPress={handleLogout}
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => navigation.navigate('Notification')}
+                            >
+                                <View style={styles.menuLeft}>
+                                    <View style={[styles.iconContainer, { backgroundColor: '#F3E5F5' }]}>
+                                        <Bell size={20} color="#9C27B0" />
+                                    </View>
+                                    <Text style={styles.menuText}>Notifications</Text>
+                                </View>
+                                <ChevronRight size={20} color="#999" />
+                            </TouchableOpacity>
+                        </Card.Content>
+                    </Card>
+
+                    {/* Support & Help */}
+                    <Card style={styles.sectionCard}>
+                        <Card.Content>
+                            <Text style={styles.sectionTitle}>Support & Help</Text>
+                            
+                            <TouchableOpacity style={styles.menuItem}>
+                                <View style={styles.menuLeft}>
+                                    <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
+                                        <HelpCircle size={20} color="#4CAF50" />
+                                    </View>
+                                    <Text style={styles.menuText}>Help Center</Text>
+                                </View>
+                                <ChevronRight size={20} color="#999" />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.menuItem}>
+                                <View style={styles.menuLeft}>
+                                    <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
+                                        <Shield size={20} color="#2196F3" />
+                                    </View>
+                                    <Text style={styles.menuText}>Privacy Policy</Text>
+                                </View>
+                                <ChevronRight size={20} color="#999" />
+                            </TouchableOpacity>
+                        </Card.Content>
+                    </Card>
+
+                    {/* Logout Button */}
+                    <TouchableOpacity 
                         style={styles.logoutButton}
-                        icon={() => <LogOut size={18} color="#fff" />}
-                        buttonColor="#f44336"
+                        onPress={handleLogout}
                     >
-                        Logout
-                    </Button>
+                        <LogOut size={20} color="#f44336" />
+                        <Text style={styles.logoutText}>Logout</Text>
+                    </TouchableOpacity>
+
+                    <View style={{ height: 100 }} />
                 </ScrollView>
                 <SellerFooterNavigation navigation={navigation} activePage="Profile" />
             </View>
@@ -131,53 +232,125 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    header: {
+    profileCard: {
+        margin: 15,
+        marginTop: 15,
+        elevation: 3,
+    },
+    profileHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
-        padding: 30,
-        backgroundColor: '#fff',
     },
     avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        marginBottom: 15,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        borderWidth: 3,
+        borderColor: '#4CAF50',
+    },
+    profileInfo: {
+        flex: 1,
+        marginLeft: 15,
     },
     name: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: 'bold',
         color: '#333',
+        marginBottom: 8,
     },
-    accountType: {
-        fontSize: 14,
+    badgeContainer: {
+        flexDirection: 'row',
+    },
+    badge: {
+        backgroundColor: '#E8F5E9',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    badgeText: {
         color: '#4CAF50',
-        marginTop: 5,
+        fontSize: 12,
+        fontWeight: '600',
     },
-    infoCard: {
+    editIconButton: {
+        padding: 8,
+        backgroundColor: '#E8F5E9',
+        borderRadius: 20,
+    },
+    sectionCard: {
         margin: 15,
+        marginTop: 0,
         elevation: 2,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 15,
     },
     infoRow: {
         flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: 8,
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#E8F5E9',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 12,
+    },
+    infoContent: {
+        flex: 1,
+        marginLeft: 15,
+        justifyContent: 'center',
+    },
+    infoLabel: {
+        fontSize: 12,
+        color: '#999',
+        marginBottom: 4,
     },
     infoText: {
-        fontSize: 16,
+        fontSize: 15,
+        color: '#333',
+    },
+    divider: {
+        marginVertical: 12,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+    },
+    menuLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    menuText: {
+        fontSize: 15,
         color: '#333',
         marginLeft: 15,
     },
-    editButton: {
-        margin: 15,
-        backgroundColor: '#4CAF50',
-    },
-    passwordButton: {
-        marginHorizontal: 15,
-        marginBottom: 15,
-        borderColor: '#4CAF50',
-    },
     logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
         marginHorizontal: 15,
-        marginBottom: 100,
+        marginTop: 0,
+        padding: 16,
+        borderRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#FFEBEE',
+    },
+    logoutText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#f44336',
+        marginLeft: 10,
     },
 });
 
