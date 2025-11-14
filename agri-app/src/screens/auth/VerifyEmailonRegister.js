@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
-import Toast from 'react-native-toast-message'
+import { CommonActions } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 import Background from '../../components/auth/Background';
 import Header from '../../components/auth/Header';
@@ -9,7 +10,7 @@ import TextInput from '../../components/auth/TextInput';
 import BackButton from '../../components/auth/BackButton';
 import Logo from '../../components/auth/Logo';
 import customFetch from '../../utils/axios';
-import { addUserToLocalStorage } from '../../utils/localStorage'
+import { addUserToLocalStorage } from '../../utils/localStorage';
 
 export default function VerifyEmailonRegister({ route, navigation }) {
     const { userData } = route.params;
@@ -43,7 +44,6 @@ export default function VerifyEmailonRegister({ route, navigation }) {
     const handleContinue = async () => {
         if (otp.length !== 6) {
             Toast.show({ type: 'error', text1: 'Invalid OTP', text2: 'Please enter a 6-digit OTP.' });
-
             return;
         }
         try {
@@ -67,7 +67,16 @@ export default function VerifyEmailonRegister({ route, navigation }) {
                 };
 
                 await addUserToLocalStorage(user);
-                navigation.replace('HomePage');
+                
+                // Reset to StartScreen - it will redirect to appropriate screen based on account type
+                setTimeout(() => {
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [{ name: 'StartScreen' }],
+                        })
+                    );
+                }, 500);
             }
         } catch (error) {
             Toast.show({ type: 'error', text1: error.response?.data?.message || 'Failed to verify OTP. Please try again.' });

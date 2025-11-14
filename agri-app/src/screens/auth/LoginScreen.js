@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { CommonActions } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import customFetch from '../../utils/axios';
 import { addUserToLocalStorage } from '../../utils/localStorage';
-import { useRefreshProviders } from '../../context/AppProviders'; // ✅ ADDED
 import Background from '../../components/auth/Background';
 import Logo from '../../components/auth/Logo';
 import Header from '../../components/auth/Header';
@@ -18,7 +18,6 @@ import { passwordValidator } from '../../helpers/passwordValidator';
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState({ value: '', error: '' });
   const [password, setPassword] = useState({ value: '', error: '' });
-  const { refreshAll } = useRefreshProviders(); // ✅ ADDED
 
   // Handle login process
   const onLoginPressed = async () => {
@@ -47,25 +46,39 @@ export default function LoginScreen({ navigation }) {
           token: data.token
         };
 
-        // Save user data
+        console.log('Login successful for:', user.accountType);
+
+        // Save user data to AsyncStorage
         await addUserToLocalStorage(user);
-        
-        // ✅ ADDED: Refresh providers after successful login
-        await refreshAll();
 
         Toast.show({
           type: 'success',
           text1: 'Login Successful',
-          text2: 'Welcome back!',
+          text2: `Welcome back${user.accountType === 'Seller' ? ' to your dashboard' : ''}!`,
         });
 
-        navigation.replace('HomePage');
+        // Wait a bit for storage to complete and App.js to detect the change
+        // App.js will automatically switch to the correct navigator
+        setTimeout(() => {
+          // For sellers, just wait - App.js will switch to SellerNavigator
+          // For buyers, navigate to HomePage
+          if (user.accountType !== 'Seller') {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'HomePage' }],
+              })
+            );
+          }
+          // For sellers, App.js interval will detect the change and switch navigators
+        }, 800);
       }
     } catch (error) {
+      console.error('Login error:', error);
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: error.response?.data?.message || 'Something went wrong. Please try again.',
+        text2: error.response?.data?.message || 'Invalid email or password. Please try again.',
       });
     }
   };

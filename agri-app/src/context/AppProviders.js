@@ -22,19 +22,25 @@ const AppProviders = ({ children, onAuthChange }) => {
 
 // Export a hook to refresh both providers' auth status
 export const useRefreshProviders = () => {
-    const cartContext = useContext(CartContext);
-    const wishlistContext = useContext(WishlistContext);
-    
-    const refreshAll = async () => {
-        if (cartContext?.refreshAuthStatus) {
-            await cartContext.refreshAuthStatus();
-        }
-        if (wishlistContext?.refreshAuthStatus) {
-            await wishlistContext.refreshAuthStatus();
-        }
-    };
-    
-    return { refreshAll };
+    // Use try-catch to handle when providers aren't loaded (e.g., for sellers)
+    try {
+        const cartContext = useContext(CartContext);
+        const wishlistContext = useContext(WishlistContext);
+        
+        const refreshAll = async () => {
+            if (cartContext?.refreshAuthStatus) {
+                await cartContext.refreshAuthStatus();
+            }
+            if (wishlistContext?.refreshAuthStatus) {
+                await wishlistContext.refreshAuthStatus();
+            }
+        };
+        
+        return { refreshAll };
+    } catch (error) {
+        // Return no-op function if providers aren't available
+        return { refreshAll: async () => {} };
+    }
 };
 
 export default AppProviders;

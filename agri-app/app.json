@@ -54,6 +54,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "88584d35-ea66-4d77-8bdd-891e0baefbf9"
+      },
+      "apiUrl": "http://192.168.0.104:4000/api/v1"
+    }
   }
 }

@@ -211,3 +211,59 @@ exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
                               .sort({ createdAt: -1 });
     res.status(200).json({ message:'Seller orders retrieved', orders });
 });
+
+
+// ============ CHANGED FOR APP - Update Order Status ============
+exports.updateOrderStatus = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const { orderStatus } = req.body;
+    const sellerId = req.user.id;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if seller has items in this order
+    const hasSellerItems = order.items.some(item => 
+        item.sellerId.toString() === sellerId
+    );
+
+    if (!hasSellerItems) {
+        return res.status(403).json({ 
+            message: 'You are not authorized to update this order' 
+        });
+    }
+
+    // Validate status transition
+    const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    if (!validStatuses.includes(orderStatus)) {
+        return res.status(400).json({ message: 'Invalid order status' });
+    }
+
+    order.orderStatus = orderStatus;
+    await order.save();
+
+    // Create notification for buyer
+    await createNotification(
+        order.userId,
+        'order_status_updated',
+        `Order Status Updated`,
+        `Your order #${order._id.toString().slice(-8)} is now ${orderStatus}`,
+        order._id,
+        { orderStatus }
+    );
+
+    // Invalidate analytics cache
+    try {
+        invalidateAnalyticsCache(sellerId);
+    } catch (cacheError) {
+        console.warn('Failed to invalidate cache:', cacheError.message);
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Order status updated successfully',
+        order
+    });
+});
