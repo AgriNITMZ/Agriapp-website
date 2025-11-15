@@ -29,7 +29,7 @@ const ShiprocketOrders = () => {
 
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_BASE_URL}/shiprocket/orders`,
+          `${import.meta.env.VITE_API_URL}/shiprocket/orders`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -79,7 +79,7 @@ const ShiprocketOrders = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}/shiprocket/cancel/${shipmentId}`,
+        `${import.meta.env.VITE_API_URL}/shiprocket/cancel/${shipmentId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
