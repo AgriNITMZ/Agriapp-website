@@ -304,18 +304,42 @@ const SingleItem = () => {
                   </button>
                 </div>
               </div>
-              <div className="flex space-x-4 mt-4">
+              <div className="flex flex-col space-y-3 mt-4">
+                <div className="flex space-x-4">
+                  <button
+                    className="flex-1 flex items-center justify-center bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
+                    onClick={() => addtocart(selectedProduct._id)}
+                  >
+                    <ShoppingCart className="mr-2" /> Add to Cart
+                  </button>
+                  <button
+                    className="flex-1 flex items-center justify-center bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition"
+                    onClick={handleBuyNow}
+                  >
+                    Buy Now
+                  </button>
+                </div>
                 <button
-                  className="flex-1 flex items-center justify-center bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
-                  onClick={() => addtocart(selectedProduct._id)}
+                  className="w-full flex items-center justify-center bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition border-2 border-blue-700 shadow-lg"
+                  onClick={() => {
+                    if (!selectedSize) {
+                      toast.error('Please select a size before checkout');
+                      return;
+                    }
+                    navigate('/shiprocket/checkout', {
+                      state: {
+                        preSelectedProduct: {
+                          productId: selectedProduct._id,
+                          name: selectedProduct.name,
+                          quantity: quantity,
+                          price: selectedSize.discountedPrice || selectedSize.price,
+                          imageUrl: selectedProduct.images?.[0] || ''
+                        }
+                      }
+                    });
+                  }}
                 >
-                  <ShoppingCart className="mr-2" /> Add to Cart
-                </button>
-                <button
-                  className="flex-1 flex items-center justify-center bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition"
-                  onClick={handleBuyNow}
-                >
-                  Buy Now
+                  <Truck className="mr-2" /> Checkout with Shiprocket
                 </button>
               </div>
               {userType === "Seller" && (

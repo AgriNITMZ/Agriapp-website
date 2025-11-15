@@ -161,7 +161,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
 
     console.log('=== Order Creation Completed ===');
 
-    // Invalidate analytics cache for real-time updates
+ 
     try {
         // Invalidate cache for all sellers involved in this order
         const sellerIds = orderItems.map(item => item.sellerId.toString());

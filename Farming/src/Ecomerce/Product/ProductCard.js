@@ -49,9 +49,8 @@ const ProductCard = ({ product }) => {
             key={index}
             src={image}
             alt={`${product.name} view ${index + 1}`}
-            className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 ${
-              currentImageIndex === index ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 ${currentImageIndex === index ? "opacity-100" : "opacity-0"
+              }`}
             onClick={() => goToProduct(product._id)}
           />
         ))}
