@@ -72,7 +72,9 @@ const NotificationScreen = ({ navigation }) => {
 
     const getNotificationIcon = (type) => {
         switch (type) {
+            case 'order':
             case 'order_placed':
+                return { name: 'cart', color: '#4CAF50' };
             case 'order_confirmed':
                 return { name: 'checkmark-circle', color: '#4CAF50' };
             case 'order_shipped':
@@ -86,7 +88,7 @@ const NotificationScreen = ({ navigation }) => {
             case 'payment_failed':
                 return { name: 'warning', color: '#f44336' };
             default:
-                return { name: 'notifications', color: '#666' };
+                return { name: 'notifications', color: '#4F46E5' };
         }
     };
 
@@ -200,23 +202,29 @@ const styles = StyleSheet.create({
     },
     notificationCard: {
         backgroundColor: '#fff',
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 16,
-        marginBottom: 10,
+        marginBottom: 12,
         flexDirection: 'row',
-        alignItems: 'center',
-        elevation: 2,
+        alignItems: 'flex-start',
+        elevation: 3,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
     },
     unreadNotification: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: '#F0F9FF',
         borderLeftWidth: 4,
-        borderLeftColor: '#4CAF50',
+        borderLeftColor: '#4F46E5',
     },
     iconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
         marginRight: 12,
     },
     contentContainer: {
@@ -224,19 +232,20 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 4,
+        fontWeight: '700',
+        color: '#111827',
+        marginBottom: 6,
     },
     message: {
         fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
+        color: '#6B7280',
+        marginBottom: 8,
         lineHeight: 20,
     },
     time: {
         fontSize: 12,
-        color: '#999',
+        color: '#9CA3AF',
+        fontWeight: '500',
     },
     deleteButton: {
         padding: 8,
@@ -244,12 +253,14 @@ const styles = StyleSheet.create({
     },
     unreadDot: {
         position: 'absolute',
-        top: 16,
-        right: 16,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#4CAF50',
+        top: 20,
+        right: 20,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#4F46E5',
+        borderWidth: 2,
+        borderColor: '#fff',
     },
     emptyText: {
         fontSize: 18,

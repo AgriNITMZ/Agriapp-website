@@ -105,6 +105,47 @@ const OrderHistoryScreen = ({ navigation }) => {
         setSelectedOrder(null);
     };
 
+    const handleCancelOrder = (orderId) => {
+        Alert.alert(
+            'Cancel Order',
+            'Are you sure you want to cancel this order? This action cannot be undone.',
+            [
+                {
+                    text: 'No, Keep Order',
+                    style: 'cancel'
+                },
+                {
+                    text: 'Yes, Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            const response = await customFetch.put(`/order/cancel/${orderId}`);
+                            
+                            if (response.data.success) {
+                                Alert.alert('Success', 'Order cancelled successfully');
+                                // Refresh orders list
+                                await fetchOrders();
+                                // Close modal
+                                closeOrderDetails();
+                            } else {
+                                Alert.alert('Error', response.data.message || 'Failed to cancel order');
+                            }
+                        } catch (error) {
+                            console.error('Error cancelling order:', error);
+                            Alert.alert(
+                                'Error',
+                                error.response?.data?.message || 'Failed to cancel order. Please try again.'
+                            );
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const renderOrderItem = ({ item }) => {
         const firstItem = item.items && item.items.length > 0 ? item.items[0] : null;
         const firstProduct = firstItem?.product;
@@ -413,14 +454,14 @@ const OrderHistoryScreen = ({ navigation }) => {
                                 {selectedOrder.orderStatus !== 'Cancelled' && selectedOrder.orderStatus !== 'Delivered' && (
                                     <TouchableOpacity 
                                         style={styles.cancelButton}
-                                        onPress={() => Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?')}
+                                        onPress={() => handleCancelOrder(selectedOrder._id)}
                                     >
                                         <Text style={styles.cancelButtonText}>Cancel Order</Text>
                                     </TouchableOpacity>
                                 )}
                                 <TouchableOpacity 
                                     style={styles.helpButton}
-                                    onPress={() => Alert.alert('Help', 'Contact support for assistance')}
+                                    onPress={() => navigation.navigate('ContactUs')}
                                 >
                                     <Text style={styles.helpButtonText}>Need Help?</Text>
                                 </TouchableOpacity>
