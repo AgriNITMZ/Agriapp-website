@@ -104,7 +104,7 @@ const MarketplaceScreen = ({ navigation, route }) => {
         try {
             setSearchLoading(true);
             const response = await customFetch.get(`/products/searchproducts?search=${encodeURIComponent(query)}`);
-            setSearchResults(response.data.data || []);
+            setSearchResults(response.data.products || []);
         } catch (error) {
             console.error('Error searching products:', error);
             setSearchResults([]);

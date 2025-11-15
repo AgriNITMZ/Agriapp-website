@@ -77,6 +77,7 @@ router.post("/create", auth, createRatingAndReview);
 
 // IMPORTANT: Specific routes MUST come BEFORE the catch-all /:productId route
 router.get('/searchProducts/search',seachProduct)
+router.get('/searchproducts',seachProduct) // Frontend uses this endpoint
 router.get('/sellerProductt',auth,isSeller,getAllProductBySeller)
 router.get('/filteredproducts', getFilteredProducts)
 
