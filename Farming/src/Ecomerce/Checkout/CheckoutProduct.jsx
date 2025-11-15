@@ -18,17 +18,44 @@ const CheckoutProduct = () => {
   const searchParams = new URLSearchParams(location.search);
 
   const sellerId = searchParams.get('sellerId');
-  console.log("sellerId", sellerId);
   const shopName = searchParams.get('shopName');
   const productId = searchParams.get('productId');
-  console.log("productId", productId);
   const image = searchParams.get('image');
   const size = searchParams.get('size');
-  const price = parseFloat(searchParams.get('price'));
-  const discountedPrice = parseFloat(searchParams.get('discountedPrice'));
-  const quantity = parseInt(searchParams.get('quantity') || '1');
+  const priceParam = searchParams.get('price');
+  const discountedPriceParam = searchParams.get('discountedPrice');
+  const quantityParam = searchParams.get('quantity');
+  const productName = searchParams.get('productName');
 
+  // Parse with fallback values
+  const price = priceParam ? parseFloat(priceParam) : 0;
+  const discountedPrice = discountedPriceParam ? parseFloat(discountedPriceParam) : 0;
+  const quantity = quantityParam ? parseInt(quantityParam) : 1;
+
+  console.log("Checkout URL params:", { 
+    sellerId, 
+    shopName, 
+    productId, 
+    image, 
+    size, 
+    priceParam, 
+    discountedPriceParam, 
+    quantityParam,
+    productName,
+    parsedPrice: price,
+    parsedDiscountedPrice: discountedPrice,
+    parsedQuantity: quantity
+  });
+  
   const totalAmount = discountedPrice * quantity;
+  
+  // Show warning if prices are missing
+  useEffect(() => {
+    if (!discountedPrice || !price) {
+      console.error("Missing price data in URL parameters!");
+      toast.error("Price information is missing. Please try again from the product page.");
+    }
+  }, [discountedPrice, price]);
   const navigate = useNavigate();
 
   // Get token from localStorage
@@ -193,18 +220,18 @@ const handleAddressSelect = (address) => {
                 <div className="flex items-center space-x-4">
                   <img
                     src={image}
-                    alt={selectedProduct?.name}
+                    alt={productName || selectedProduct?.name}
                     className="w-24 h-24 object-cover rounded-md"
                   />
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900">{selectedProduct?.name}</h3>
+                    <h3 className="text-lg font-medium text-gray-900">{productName || selectedProduct?.name}</h3>
                     <p className="text-gray-600">Size: {size}, Seller: {shopName}</p>
                     <div className="mt-2 flex items-center justify-between">
                       <span className="text-2xl font-bold text-green-600">
-                        ₹{discountedPrice} x {quantity} = ₹{totalAmount}
+                        ₹{discountedPrice || 0} x {quantity} = ₹{totalAmount || 0}
                       </span>
                       <span className="text-gray-500 line-through">
-                        ₹{price * quantity}
+                        ₹{(price * quantity) || 0}
                       </span>
                     </div>
 
@@ -317,7 +344,7 @@ const handleAddressSelect = (address) => {
               <div className="flex items-center justify-between mb-6">
                 <span className="text-lg font-medium text-gray-900">Total Amount:</span>
                 <span className="text-2xl font-bold text-green-600">
-                  ₹{totalAmount}
+                  ₹{totalAmount || 0}
                 </span>
               </div>
               <button

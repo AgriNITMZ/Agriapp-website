@@ -28,15 +28,33 @@ const ShiprocketCheckout = () => {
 
   // Handle pre-selected product or cart items from navigation state
   useEffect(() => {
+    // First, try to load from sessionStorage (for page refresh)
+    const savedProducts = sessionStorage.getItem('shiprocketSelectedProducts');
+    if (savedProducts) {
+      try {
+        const parsedProducts = JSON.parse(savedProducts);
+        setSelectedProducts(parsedProducts);
+        console.log('Loaded products from sessionStorage:', parsedProducts);
+      } catch (error) {
+        console.error('Error parsing saved products:', error);
+        sessionStorage.removeItem('shiprocketSelectedProducts');
+      }
+    }
+    
+    // Then check for new products from navigation state
     if (location.state?.preSelectedProduct) {
       const preSelected = location.state.preSelectedProduct;
       setSelectedProducts([preSelected]);
+      // Save to sessionStorage
+      sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify([preSelected]));
       toast.success(`${preSelected.name} added to checkout`);
       // Clear the navigation state to prevent re-adding on refresh
       window.history.replaceState({}, document.title);
     } else if (location.state?.cartItems) {
       const cartItems = location.state.cartItems;
       setSelectedProducts(cartItems);
+      // Save to sessionStorage
+      sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(cartItems));
       toast.success(`${cartItems.length} item(s) added to checkout from cart`);
       // Clear the navigation state to prevent re-adding on refresh
       window.history.replaceState({}, document.title);
@@ -185,13 +203,16 @@ const ShiprocketCheckout = () => {
     if (existingProduct) {
       updateQuantity(product._id, existingProduct.quantity + 1);
     } else {
-      setSelectedProducts([...selectedProducts, {
+      const newProducts = [...selectedProducts, {
         productId: product._id,
         name: product.name,
         quantity: 1,
         price: priceDetail.discountedPrice || priceDetail.price,
         imageUrl: product.images?.[0] || ''
-      }]);
+      }];
+      setSelectedProducts(newProducts);
+      // Save to sessionStorage
+      sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(newProducts));
       toast.success(`${product.name} added to checkout`);
     }
   };
@@ -202,14 +223,20 @@ const ShiprocketCheckout = () => {
       removeProduct(productId);
       return;
     }
-    setSelectedProducts(selectedProducts.map(p =>
+    const updatedProducts = selectedProducts.map(p =>
       p.productId === productId ? { ...p, quantity: newQuantity } : p
-    ));
+    );
+    setSelectedProducts(updatedProducts);
+    // Save to sessionStorage
+    sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(updatedProducts));
   };
 
   // Remove product
   const removeProduct = (productId) => {
-    setSelectedProducts(selectedProducts.filter(p => p.productId !== productId));
+    const updatedProducts = selectedProducts.filter(p => p.productId !== productId);
+    setSelectedProducts(updatedProducts);
+    // Save to sessionStorage
+    sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(updatedProducts));
     toast.success('Product removed');
   };
 
@@ -274,6 +301,8 @@ const ShiprocketCheckout = () => {
         if (orderResponse.data.success) {
           // Clear selected products to prevent duplicate orders
           setSelectedProducts([]);
+          // Clear sessionStorage
+          sessionStorage.removeItem('shiprocketSelectedProducts');
           
           toast.success('Order placed successfully!');
           console.log('Navigating to success page with:', {
@@ -368,6 +397,8 @@ const ShiprocketCheckout = () => {
                 if (orderResponse.data.success) {
                   // Clear selected products to prevent duplicate orders
                   setSelectedProducts([]);
+                  // Clear sessionStorage
+                  sessionStorage.removeItem('shiprocketSelectedProducts');
                   
                   toast.success('Payment successful! Order placed.');
                   navigate('/shiprocket/success', {

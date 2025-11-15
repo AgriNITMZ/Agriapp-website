@@ -184,6 +184,7 @@ const SingleItem = () => {
         quantity: quantity,
         image:selectedProduct.images[0],
         productId: selectedProduct._id,
+        productName: selectedProduct.name,
       }).toString();
   
       navigate(`/product/checkout?${queryParams}`);
