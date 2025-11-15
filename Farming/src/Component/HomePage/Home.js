@@ -62,7 +62,7 @@ const Home = () => {
               Bridging traditional Mizoram farming with modern IoT technology through{' '}
               <span className="role text-mizoram-300 font-semibold professional-text"></span>
             </p>
-            <div className='flex justify-center'>
+            <div className='flex flex-col sm:flex-row justify-center gap-4'>
               <button 
                 className='bg-mizoram-600 hover:bg-mizoram-700 text-white px-12 py-5 rounded-full font-display font-semibold text-xl transition-colors duration-200 shadow-professional-lg btn-professional focus-professional'
                 onClick={() => window.location.href = '/product'}

@@ -38,6 +38,10 @@ import MyCoupons from '../Ecomerce/Profile/MyCoupons'
 import MyReviewsRatings from '../Ecomerce/Profile/MyReviewsRatings'
 import AllNotifications from '../Ecomerce/Profile/AllNotifications'
 import ContactUs from '../Ecomerce/Profile/ContactUs'
+import ShiprocketCheckout from '../Ecomerce/Shiprocket/ShiprocketCheckout'
+import ShiprocketSuccess from '../Ecomerce/Shiprocket/ShiprocketSuccess'
+import ShiprocketOrders from '../Ecomerce/Shiprocket/ShiprocketOrders'
+import ShiprocketTrack from '../Ecomerce/Shiprocket/ShiprocketTrack'
 
 
 const CustomerRoutes = () => {
@@ -82,6 +86,12 @@ const CustomerRoutes = () => {
         <Route path="/server" element={<Server/>} />
         <Route path="/profile/pan-card" element={<PanCard/>} />
         <Route path="/payment/callback" element={<PaymentCallback/>} />
+        
+        {/* Shiprocket Routes */}
+        <Route path="/shiprocket/checkout" element={<ShiprocketCheckout/>} />
+        <Route path="/shiprocket/success" element={<ShiprocketSuccess/>} />
+        <Route path="/shiprocket/orders" element={<ShiprocketOrders/>} />
+        <Route path="/shiprocket/track/:shipmentId" element={<ShiprocketTrack/>} />
       {/* //  <Route path="/analytics-demo" element={<AnalyticsDemo/>} /> */}
 
       </Routes>
