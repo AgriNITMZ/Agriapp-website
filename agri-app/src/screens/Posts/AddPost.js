@@ -167,14 +167,15 @@ export default function AddPost({ navigation }) {
             return false;
         }
 
-        if (!tags.trim()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Please enter at least one tag'
-            });
-            return false;
-        }
+        // Tags are optional - you can add them to improve product discoverability
+        // if (!tags.trim()) {
+        //     Toast.show({
+        //         type: 'error',
+        //         text1: 'Error',
+        //         text2: 'Please enter at least one tag'
+        //     });
+        //     return false;
+        // }
 
         // Validate sizes
         for (const size of sizes) {
@@ -240,8 +241,10 @@ export default function AddPost({ navigation }) {
             // Append category
             formData.append('category', selectedSubCategory._id);
 
-            // Parse tags as an array
-            const tagsArray = tags.split(',').map(tag => tag.trim());
+            // Parse tags as an array (tags are optional)
+            const tagsArray = tags.trim() 
+                ? tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+                : [];
             formData.append('tag', JSON.stringify(tagsArray));
 
             // Add badges
@@ -396,7 +399,7 @@ export default function AddPost({ navigation }) {
                         Add tags and badges to help customers find your product.
                     </Text>
 
-                    <Text style={styles.label}>Tags (comma separated)</Text>
+                    <Text style={styles.label}>Tags (comma separated) - Optional</Text>
                     <Text style={styles.fieldDescription}>
                         Enter keywords to improve discoverability of your Product.
                     </Text>
@@ -404,7 +407,7 @@ export default function AddPost({ navigation }) {
                         style={styles.input}
                         value={tags}
                         onChangeText={setTags}
-                        placeholder="e.g., organic, natural, vegan"
+                        placeholder="e.g., organic, natural, vegan (optional)"
                     />
 
                     <Text style={styles.label}>Badges</Text>

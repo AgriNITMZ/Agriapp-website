@@ -33,6 +33,15 @@ const handleTokenCleanup = async () => {
 customFetch.interceptors.request.use(
     async (config) => {
         try {
+            // Skip token validation for auth endpoints (login, signup, etc.)
+            const authEndpoints = ['/auth/login', '/auth/signup', '/auth/sendotp', '/auth/resetpasswordtoken', '/auth/resetpassword'];
+            const isAuthEndpoint = authEndpoints.some(endpoint => config.url?.includes(endpoint));
+            
+            if (isAuthEndpoint) {
+                // For auth endpoints, don't check token - just proceed
+                return config;
+            }
+
             // First check if we have a user in storage
             const user = await getUserFromLocalStorage();
             if (!user?.token) {

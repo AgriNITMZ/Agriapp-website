@@ -1704,6 +1704,142 @@ const getAdminFinancialAnalytics = async (req, res) => {
     }
 };
 
+// ============ CHANGED FOR APP - Seller Dashboard Analytics ============
+// Simplified seller dashboard endpoint for mobile app
+const getSellerDashboardAnalytics = async (req, res) => {
+    try {
+        const sellerId = req.user.id;
+
+        // Get total products count
+        const totalProducts = await Product.countDocuments({
+            'sellers.sellerId': sellerId
+        });
+
+        // Get orders for this seller
+        const orders = await Order.find({
+            'items.sellerId': sellerId
+        });
+
+        // Calculate metrics
+        let totalOrders = 0;
+        let totalRevenue = 0;
+        let pendingOrders = 0;
+        let processingOrders = 0;
+        let shippedOrders = 0;
+        let deliveredOrders = 0;
+        let cancelledOrders = 0;
+
+        orders.forEach(order => {
+            const sellerItems = order.items.filter(item => 
+                item.sellerId.toString() === sellerId
+            );
+            
+            if (sellerItems.length > 0) {
+                totalOrders++;
+                sellerItems.forEach(item => {
+                    totalRevenue += item.selectedDiscountedPrice * item.quantity;
+                });
+                
+                // Count orders by status
+                switch (order.orderStatus) {
+                    case 'Pending':
+                        pendingOrders++;
+                        break;
+                    case 'Processing':
+                        processingOrders++;
+                        break;
+                    case 'Shipped':
+                        shippedOrders++;
+                        break;
+                    case 'Delivered':
+                        deliveredOrders++;
+                        break;
+                    case 'Cancelled':
+                        cancelledOrders++;
+                        break;
+                }
+            }
+        });
+
+        // Get low stock products
+        const products = await Product.find({
+            'sellers.sellerId': sellerId
+        });
+
+        const lowStockProducts = [];
+        products.forEach(product => {
+            const sellerData = product.sellers.find(s => 
+                s.sellerId.toString() === sellerId
+            );
+            
+            if (sellerData) {
+                sellerData.price_size.forEach(ps => {
+                    if (ps.quantity < 10) {
+                        lowStockProducts.push({
+                            name: product.name,
+                            size: ps.size,
+                            stock: ps.quantity
+                        });
+                    }
+                });
+            }
+        });
+
+        // Get sales trend for last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const recentOrders = await Order.find({
+            'items.sellerId': sellerId,
+            createdAt: { $gte: sevenDaysAgo }
+        }).sort({ createdAt: 1 });
+
+        // Group by day
+        const salesByDay = {};
+        recentOrders.forEach(order => {
+            const date = order.createdAt.toISOString().split('T')[0];
+            if (!salesByDay[date]) {
+                salesByDay[date] = 0;
+            }
+            
+            order.items.forEach(item => {
+                if (item.sellerId.toString() === sellerId) {
+                    salesByDay[date] += item.selectedDiscountedPrice * item.quantity;
+                }
+            });
+        });
+
+        const salesTrend = Object.keys(salesByDay).map(date => ({
+            label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            value: Math.round(salesByDay[date])
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalProducts,
+                totalOrders,
+                totalRevenue: Math.round(totalRevenue),
+                pendingOrders,
+                processingOrders,
+                shippedOrders,
+                deliveredOrders,
+                cancelledOrders,
+                lowStockProducts: lowStockProducts.slice(0, 5),
+                salesTrend
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching seller dashboard analytics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch dashboard analytics',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getDateRange,
     handleError,
@@ -1717,5 +1853,6 @@ module.exports = {
     getAdminPlatformOverview,
     getAdminUserAnalytics,
     getAdminProductAnalytics,
-    getAdminFinancialAnalytics
+    getAdminFinancialAnalytics,
+    getSellerDashboardAnalytics // CHANGED FOR APP
 };

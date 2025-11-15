@@ -1,39 +1,53 @@
-import React, { useEffect, useRef } from 'react'; // ✅ useRef added
-import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRefreshProviders } from '../../context/AppProviders';
+import React, { useEffect, useRef } from 'react';
+import { View, ActivityIndicator, Text } from 'react-native';
+import { removeUserFromLocalStorage } from '../../utils/localStorage';
+import Toast from 'react-native-toast-message';
 
 const LogoutScreen = ({ navigation }) => {
-    const { refreshAll } = useRefreshProviders();
-
-    const hasLoggedOut = useRef(false); // ✅ added to prevent loop
+    const hasLoggedOut = useRef(false);
 
     useEffect(() => {
         const logout = async () => {
-            if (hasLoggedOut.current) return; // ✅ prevent multiple executions
-            hasLoggedOut.current = true; // ✅ set flag
+            if (hasLoggedOut.current) return;
+            hasLoggedOut.current = true;
 
             try {
                 console.log('Starting logout process...');
-                await AsyncStorage.removeItem('user');
+                
+                // Clear all user data from storage
+                await removeUserFromLocalStorage();
+                
                 console.log('User data cleared from storage');
 
-                await refreshAll();
-                console.log('Providers refreshed');
+                // Show logout success message
+                Toast.show({
+                    type: 'success',
+                    text1: 'Logged Out',
+                    text2: 'You have been successfully logged out.',
+                });
 
-                navigation.navigate('StartScreen');
+                // Wait for App.js to detect the auth change and handle navigation
+                // The checkAuthInterval in App.js will detect the logout and update the UI
+                console.log('Waiting for App.js to handle navigation...');
+                
             } catch (error) {
                 console.error("Error during logout:", error);
-                navigation.navigate('StartScreen');
+                
+                Toast.show({
+                    type: 'error',
+                    text1: 'Logout Error',
+                    text2: 'There was an issue logging out. Please try again.',
+                });
             }
         };
 
         logout();
-    }, [navigation, refreshAll]);
+    }, [navigation]);
 
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#0000ff" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={{ marginTop: 20, fontSize: 16, color: '#666' }}>Logging out...</Text>
         </View>
     );
 };

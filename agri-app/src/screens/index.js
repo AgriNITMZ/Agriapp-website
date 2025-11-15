@@ -24,3 +24,9 @@ export { default as NewsAndSchemesTabView } from './News/NewsAndSchemesTabView'
 export { default as LogoutScreen } from './auth/LogoutScreen'
 export { default as UserProducts } from './UserProducts'
 
+
+// Seller Screens
+export { default as SellerDashboard } from './Seller/SellerDashboard';
+export { default as SellerProducts } from './Seller/SellerProducts';
+export { default as SellerOrders } from './Seller/SellerOrders';
+export { default as SellerProfile } from './Seller/SellerProfile';

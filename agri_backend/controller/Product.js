@@ -290,22 +290,30 @@ exports.getProductsByCategory = async (req, res) => {
 
 exports.seachProduct = async (req, res) => {
     try {
-        let { query, page, limit } = req.query;
-        if (!query) return res.status(400).json({ message: "Query is required" });
+        // Accept both 'query' and 'search' parameters for compatibility
+        let { query, search, page, limit } = req.query;
+        const searchQuery = query || search;
+        
+        if (!searchQuery) return res.status(400).json({ message: "Query is required" });
 
-        const words = query.split(" "); // Split query into words
-        const searchRegexArray = words.map(word => new RegExp(word, 'i')); // Create regex for each word
+        const pageNumber = parseInt(page) || 1;
+        const pageSize = parseInt(limit) || 20;
 
-        const pageNumber = parseInt(page);
-        const pageSize = parseInt(limit);
+        // Create regex for case-insensitive search
+        const searchRegex = new RegExp(searchQuery, 'i');
 
-        const totalProducts = await Product.countDocuments({
-            tag: { $in: searchRegexArray } // Match if any tag contains any word
-        });
+        // Search in name, description, and tags
+        const searchConditions = {
+            $or: [
+                { name: searchRegex },
+                { description: searchRegex },
+                { tag: { $elemMatch: { $regex: searchRegex } } }
+            ]
+        };
 
-        const products = await Product.find({
-            tag: { $in: searchRegexArray }
-        })
+        const totalProducts = await Product.countDocuments(searchConditions);
+
+        const products = await Product.find(searchConditions)
             .skip((pageNumber - 1) * pageSize)
             .limit(pageSize);
 

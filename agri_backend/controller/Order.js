@@ -211,3 +211,284 @@ exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
                               .sort({ createdAt: -1 });
     res.status(200).json({ message:'Seller orders retrieved', orders });
 });
+
+
+// ============ CHANGED FOR APP - Update Order Status ============
+exports.updateOrderStatus = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const { orderStatus } = req.body;
+    const sellerId = req.user.id;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if seller has items in this order
+    const hasSellerItems = order.items.some(item => 
+        item.sellerId.toString() === sellerId
+    );
+
+    if (!hasSellerItems) {
+        return res.status(403).json({ 
+            message: 'You are not authorized to update this order' 
+        });
+    }
+
+    // Validate status transition
+    const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    if (!validStatuses.includes(orderStatus)) {
+        return res.status(400).json({ message: 'Invalid order status' });
+    }
+
+    order.orderStatus = orderStatus;
+    await order.save();
+
+    // Create notification for buyer
+    await createNotification(
+        order.userId,
+        'order_status_updated',
+        `Order Status Updated`,
+        `Your order #${order._id.toString().slice(-8)} is now ${orderStatus}`,
+        order._id,
+        { orderStatus }
+    );
+
+    // Invalidate analytics cache
+    try {
+        invalidateAnalyticsCache(sellerId);
+    } catch (cacheError) {
+        console.warn('Failed to invalidate cache:', cacheError.message);
+    }
+
+    res.status(200).json({
+        success: true,
+        message: 'Order status updated successfully',
+        order
+    });
+});
+
+
+// Cancel Order
+exports.cancelOrder = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+
+    console.log('=== Cancel Order Request ===');
+    console.log('Order ID:', orderId);
+    console.log('User ID:', userId);
+
+    // Find the order
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+        return res.status(404).json({
+            success: false,
+            message: 'Order not found'
+        });
+    }
+
+    // Check if the order belongs to the user
+    if (order.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+            success: false,
+            message: 'You are not authorized to cancel this order'
+        });
+    }
+
+    // Check if order can be cancelled
+    if (order.orderStatus === 'Cancelled') {
+        return res.status(400).json({
+            success: false,
+            message: 'Order is already cancelled'
+        });
+    }
+
+    if (order.orderStatus === 'Delivered') {
+        return res.status(400).json({
+            success: false,
+            message: 'Cannot cancel a delivered order'
+        });
+    }
+
+    if (order.orderStatus === 'Shipped') {
+        return res.status(400).json({
+            success: false,
+            message: 'Cannot cancel a shipped order. Please contact support.'
+        });
+    }
+
+    // Update order status to Cancelled
+    order.orderStatus = 'Cancelled';
+    // Keep payment status as is for COD, or set to Failed for online payments
+    if (order.paymentMethod === 'online' && order.paymentStatus === 'Pending') {
+        order.paymentStatus = 'Failed';
+    }
+    await order.save();
+
+    // Restore product quantities
+    for (const item of order.items) {
+        const product = await Product.findById(item.product);
+        if (product) {
+            const priceArr = getPriceArray(product, item.sellerId);
+            if (priceArr) {
+                const sizeDetail = priceArr.find(p => p.size === item.size);
+                if (sizeDetail) {
+                    sizeDetail.quantity += item.quantity;
+                    await product.save();
+                    console.log(`Restored ${item.quantity} units of ${product.name} (${item.size})`);
+                }
+            }
+        }
+    }
+
+    // Invalidate analytics cache
+    invalidateAnalyticsCache();
+
+    // Create notification for user
+    await createNotification(
+        order.userId,
+        'order_cancelled',
+        'Order Cancelled',
+        `Your order #${order._id.toString().slice(-8)} has been cancelled successfully.`,
+        order._id
+    );
+
+    // Create notification for seller
+    if (order.items && order.items.length > 0 && order.items[0].sellerId) {
+        await createNotification(
+            order.items[0].sellerId,
+            'order_cancelled',
+            'Order Cancelled',
+            `Order #${order._id.toString().slice(-8)} has been cancelled by the customer.`,
+            order._id
+        );
+    }
+
+    console.log('Order cancelled successfully');
+
+    res.status(200).json({
+        success: true,
+        message: 'Order cancelled successfully',
+        order
+    });
+});
+
+
+// Update Order Status (for sellers)
+exports.updateOrderStatus = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const { orderStatus } = req.body;
+    const sellerId = req.user.id;
+
+    console.log('=== Update Order Status Request ===');
+    console.log('Order ID:', orderId);
+    console.log('New Status:', orderStatus);
+    console.log('Seller ID:', sellerId);
+
+    // Validate status
+    const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    if (!validStatuses.includes(orderStatus)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid order status'
+        });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+        return res.status(404).json({
+            success: false,
+            message: 'Order not found'
+        });
+    }
+
+    // Check if the seller is associated with this order
+    const sellerItem = order.items.find(item => 
+        item.sellerId && item.sellerId.toString() === sellerId.toString()
+    );
+
+    if (!sellerItem) {
+        return res.status(403).json({
+            success: false,
+            message: 'You are not authorized to update this order'
+        });
+    }
+
+    // Store old status for notification
+    const oldStatus = order.orderStatus;
+
+    // Update order status
+    order.orderStatus = orderStatus;
+    await order.save();
+
+    // Invalidate analytics cache
+    invalidateAnalyticsCache();
+
+    // Create notification for customer based on status change
+    let notificationTitle = '';
+    let notificationMessage = '';
+    let notificationType = 'order';
+
+    switch (orderStatus) {
+        case 'Processing':
+            notificationTitle = 'Order is Being Processed';
+            notificationMessage = `Your order #${order._id.toString().slice(-8)} is now being processed and will be shipped soon.`;
+            notificationType = 'order_confirmed';
+            break;
+        case 'Shipped':
+            notificationTitle = 'Order Shipped';
+            notificationMessage = `Great news! Your order #${order._id.toString().slice(-8)} has been shipped and is on its way.`;
+            notificationType = 'order_shipped';
+            break;
+        case 'Delivered':
+            notificationTitle = 'Order Delivered';
+            notificationMessage = `Your order #${order._id.toString().slice(-8)} has been delivered. Thank you for shopping with us!`;
+            notificationType = 'order_delivered';
+            break;
+        case 'Cancelled':
+            notificationTitle = 'Order Cancelled';
+            notificationMessage = `Your order #${order._id.toString().slice(-8)} has been cancelled by the seller.`;
+            notificationType = 'order_cancelled';
+            
+            // Restore product quantities if cancelled by seller
+            for (const item of order.items) {
+                const product = await Product.findById(item.product);
+                if (product) {
+                    const priceArr = getPriceArray(product, item.sellerId);
+                    if (priceArr) {
+                        const sizeDetail = priceArr.find(p => p.size === item.size);
+                        if (sizeDetail) {
+                            sizeDetail.quantity += item.quantity;
+                            await product.save();
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            notificationTitle = 'Order Status Updated';
+            notificationMessage = `Your order #${order._id.toString().slice(-8)} status has been updated to ${orderStatus}.`;
+    }
+
+    // Send notification to customer
+    if (oldStatus !== orderStatus) {
+        await createNotification(
+            order.userId,
+            notificationType,
+            notificationTitle,
+            notificationMessage,
+            order._id
+        );
+    }
+
+    console.log('Order status updated successfully');
+
+    res.status(200).json({
+        success: true,
+        message: 'Order status updated successfully',
+        order
+    });
+});

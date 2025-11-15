@@ -72,7 +72,24 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
   stockAdjusted: { type: Boolean, 
-    default: false }
+    default: false },
+  
+  // Shiprocket fields
+  shiprocketOrderId: {
+    type: Number
+  },
+  shiprocketShipmentId: {
+    type: Number
+  },
+  awbCode: {
+    type: String
+  },
+  courierCompanyId: {
+    type: Number
+  },
+  courierName: {
+    type: String
+  }
 
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt

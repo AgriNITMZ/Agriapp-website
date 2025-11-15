@@ -193,43 +193,40 @@ exports.Login = asyncHandler(async (req, res) => {
             })
         }
 
-       
-        // password match
+        // password match - TEMPORARILY COMMENTED OUT
+        // TODO: Re-enable password validation later
         // if (!await bcrypt.compare(password, user.password)) {
-            // generate JWT TOKEN
-            const payload = {
-                email: user.email,
-                id: user._id,
-                accountType: user.accountType,
-            }
-
-            const token = jwt.sign(payload, process.env.JWT_SECRET, {
-                expiresIn: "24h"
-            })
-            // Save token to user document in database
-            user.token = token
-            user.password = undefined
-
-
-            // generate cookie and send resposnse
-
-            const options = {
-                expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-                httpOnly: true
-            }
-            return res.cookie("token", token, options).status(200).json({
-                success: true,
-                token,
-                user,
-                message: "Loged in succesfully!"
-            })
-      //  }
-        // else {
         //     return res.status(401).json({
         //         success: false,
         //         message: "Incorrect Password!"
         //     })
         // }
+
+        // generate JWT TOKEN
+        const payload = {
+            email: user.email,
+            id: user._id,
+            accountType: user.accountType,
+        }
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: "24h"
+        })
+        // Save token to user document in database
+        user.token = token
+        user.password = undefined
+
+        // generate cookie and send response
+        const options = {
+            expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+            httpOnly: true
+        }
+        return res.cookie("token", token, options).status(200).json({
+            success: true,
+            token,
+            user,
+            message: "Logged in successfully!"
+        })
   
 })
 
