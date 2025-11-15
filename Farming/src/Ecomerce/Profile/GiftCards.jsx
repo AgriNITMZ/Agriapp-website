@@ -116,7 +116,7 @@ const GiftCards = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
                       <CreditCard className="w-5 h-5" />
-                      <span className="text-sm font-medium">PERCI AGRI</span>
+                      <span className="text-sm font-medium">PRECI AGRI</span>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(card.status)} text-gray-800`}>
                       {card.status.toUpperCase()}
@@ -254,7 +254,7 @@ const GiftCards = () => {
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-1">Gift Card Information</h3>
               <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Gift cards can be used for any purchase on PERCI AGRI</li>
+                <li>• Gift cards can be used for any purchase on PRECI AGRI</li>
                 <li>• Gift cards do not expire unless specified</li>
                 <li>• Multiple gift cards can be combined for a single purchase</li>
                 <li>• Gift card balances are non-refundable</li>

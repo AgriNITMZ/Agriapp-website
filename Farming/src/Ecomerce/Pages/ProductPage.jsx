@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ProductCard from '../Product/ProductCard';
+import EnhancedProductCard from '../Product/EnhancedProductCard';
 import Loading from '../../Component/Common/Loading';
 import Filter from './Filter';
 
@@ -25,17 +26,84 @@ const ProductPage = () => {
     }
   };
 
+  // New function to fetch grouped products for a category
+  const fetchGroupedProductsForCategory = async (categoryId) => {
+    try {
+      const token = localStorage.getItem('token');
+      let authToken = token;
+      
+      // Handle token format
+      try {
+        const tokenData = JSON.parse(token);
+        if (tokenData && tokenData.value) {
+          authToken = tokenData.value;
+        }
+      } catch (e) {
+        // Token is already a string
+      }
+
+      const response = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/products/getgroupedproducts`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }
+      );
+
+      if (response.data.success) {
+        // Filter products by category if needed
+        let groupedProducts = response.data.products;
+        if (categoryId) {
+          groupedProducts = groupedProducts.filter(product => 
+            product.category._id === categoryId || product.category === categoryId
+          );
+        }
+        return groupedProducts;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching grouped products:", error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchCategory();
   }, []);
 
-  const allProducts = secondLevecategory.flatMap(category => category.product);
+  // Use grouped products for all products view
+  const [allGroupedProducts, setAllGroupedProducts] = useState([]);
+  
+  useEffect(() => {
+    const fetchAllGrouped = async () => {
+      if (secondLevecategory.length > 0) {
+        const grouped = await fetchGroupedProductsForCategory();
+        setAllGroupedProducts(grouped);
+      }
+    };
+    fetchAllGrouped();
+  }, [secondLevecategory]);
+
+  const allProducts = allGroupedProducts.length > 0 
+    ? allGroupedProducts 
+    : secondLevecategory.flatMap(category => category.product);
 
   const handleClick = async (id) => {
     try {
       setSecondLevecategorydata(false);
       let response = await axios.post(`${import.meta.env.VITE_API_URL}/products/particularcreatecategory`, { categoryId: id });
       setProduct(response?.data?.data?.product);
+      
+      // Try to get grouped products first
+      const groupedProducts = await fetchGroupedProductsForCategory(id);
+      
+      if (groupedProducts.length > 0) {
+        setProduct(groupedProducts);
+      } else {
+        // Fallback to original method if no grouped products
+        let response = await axios.post(`${process.env.REACT_APP_BASE_URL}/products/particularcreatecategory`, { categoryId: id });
+        setProduct(response?.data?.data?.product);
+      }
+      
       setSecondLevecategorydata(true);
     } catch (error) {
       console.error(error);
@@ -47,13 +115,25 @@ const ProductPage = () => {
   };
 
   const filteredProducts = (secondLevecategorydata ? product : allProducts).filter(prod => {
-    console.log("price",prod[0]?.discountedPrice,filters.maxPrice)
-    return (
-      (!filters.size || prod.size === filters.size) &&
-      (!filters.minPrice || prod?.price_size[0]?.discountedPrice >= filters.minPrice) &&
-      (!filters.maxPrice || prod?.price_size[0]?.discountedPrice <= filters.maxPrice) &&
-      (!filters.rating || prod.avgRating>= filters.rating)
-    );
+    // Handle both grouped and regular products
+    const isGrouped = prod.sellerCount > 1 || prod.priceRange;
+    
+    if (isGrouped) {
+      // For grouped products, use priceRange
+      return (
+        (!filters.minPrice || prod.priceRange?.min >= filters.minPrice) &&
+        (!filters.maxPrice || prod.priceRange?.max <= filters.maxPrice) &&
+        (!filters.rating || prod.avgRating >= filters.rating)
+      );
+    } else {
+      // For regular products, use original logic
+      return (
+        (!filters.size || prod.size === filters.size) &&
+        (!filters.minPrice || prod?.price_size?.[0]?.discountedPrice >= filters.minPrice) &&
+        (!filters.maxPrice || prod?.price_size?.[0]?.discountedPrice <= filters.maxPrice) &&
+        (!filters.rating || prod.avgRating >= filters.rating)
+      );
+    }
   });
 
   const handleResetFilters = () => {
@@ -105,7 +185,7 @@ const ProductPage = () => {
               {/* Product Grid Section */}
               <div  className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-3 mb-2">
                 {filteredProducts.length > 0 ? (
-                  filteredProducts.map(prod => <ProductCard key={prod?._id} product={prod} />)
+                  filteredProducts.map(prod => <EnhancedProductCard key={prod?._id} product={prod} />)
                 ) : (
                   <p className="col-span-full text-center text-gray-500">No products found</p>
                 )}

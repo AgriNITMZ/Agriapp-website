@@ -96,7 +96,7 @@ const NavBar = () => {
           <div className="container mx-auto px-4 flex justify-between items-center py-4">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3">
-              <img src={logo} alt="PERCI AGRI Logo" className="h-12 w-auto object-contain" />
+              <img src={logo} alt="PRECI AGRI Logo" className="h-12 w-auto object-contain" />
               <div className="hidden md:block">
                 
               </div>
@@ -190,8 +190,8 @@ const NavBar = () => {
             {/* Logo + Search */}
             <div className="flex items-center gap-4 md:gap-8 w-full">
               <Link to="/" className="flex items-center space-x-2">
-                <img src={logo} alt="PERCI AGRI Logo" className="h-10 w-auto" />
-                <span className="hidden md:block font-bold text-lg">PERCI AGRI</span>
+                <img src={logo} alt="PRECI AGRI Logo" className="h-10 w-auto" />
+                <span className="hidden md:block font-bold text-lg">PRECI AGRI</span>
               </Link>
               <div className="flex items-center border border-mizoram-300 rounded-full shadow-lg bg-white w-full max-w-lg">
                 <button onClick={handleSearch} className="p-3 text-mizoram-600 hover:text-mizoram-700 transition-colors duration-200">

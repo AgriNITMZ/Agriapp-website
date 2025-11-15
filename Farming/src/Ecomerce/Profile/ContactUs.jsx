@@ -150,9 +150,9 @@ const ContactUs = () => {
                                 <h3 className="font-semibold text-gray-900">Our Office</h3>
                             </div>
                             <div className="text-sm text-gray-700 space-y-1">
-                                <p>National Institute of Technology Mizoram</p>
-                                <p>Chaltlang Road</p>
-                                <p>Aizawl, Mizoram 796012</p>
+                                <p>PRECI AGRI Headquarters</p>
+                                <p>123 Agriculture Street</p>
+                                <p>Green Valley, State 123456</p>
                                 <p>India</p>
                             </div>
                         </div>

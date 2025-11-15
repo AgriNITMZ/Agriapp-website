@@ -11,7 +11,7 @@ const Service = () => {
                 <div className="text-center mb-12">
                     <h2 className="text-4xl lg:text-5xl font-display font-bold text-gray-900 mb-6 hero-text">
                         SELLER ADVANTAGES ON{' '}
-                        <span className="text-mizoram-600">PERCI AGRI</span>
+                        <span className="text-mizoram-600">PRECI AGRI</span>
                     </h2>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-body body-text">
                         Join our marketplace and discover the benefits of selling agricultural 

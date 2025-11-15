@@ -16,7 +16,7 @@ const Footer = () => {
           {/* Company Branding */}
           <div className="mb-8">
             <h2 className="text-4xl lg:text-5xl font-display font-bold mb-4 tracking-wide hero-text">
-              PERCI AGRI
+              PRECI AGRI
             </h2>
             <h3 className="text-xl lg:text-2xl font-display font-semibold text-mizoram-200 mb-6 professional-text">
               Smart Farming Marketplace
@@ -56,7 +56,7 @@ const Footer = () => {
       <div className="border-t border-mizoram-700">
         <div className="container mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-mizoram-300 text-sm font-medium">
-            © 2024 PERCI AGRI. All rights reserved. Smart farming marketplace for Mizoram.
+            © 2024 PRECI AGRI. All rights reserved. Smart farming marketplace for Mizoram.
           </p>
           <div className="flex items-center space-x-6 mt-4 md:mt-0">
             <Link to="/privacy" className="text-mizoram-300 hover:text-white text-sm transition-colors font-medium">

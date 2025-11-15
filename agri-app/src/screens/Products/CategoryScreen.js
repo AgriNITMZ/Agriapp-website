@@ -148,8 +148,8 @@ const CategoryScreen = ({ navigation }) => {
                                 <TouchableOpacity
                                     key={subcategory._id}
                                     style={styles.subcategoryItem}
-                                    onPress={() => navigation.navigate('Shop', {
-                                        subcategory: subcategory._id
+                                    onPress={() => navigation.navigate('Marketplace', {
+                                        subcategoryId: subcategory._id
                                     })}
                                     activeOpacity={0.7}
                                 >

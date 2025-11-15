@@ -27,7 +27,7 @@ exports.auth = async (req, res, next) => {
 exports.isUser = async (req, res, next) => {
     console.log("user role ", req.user.accountType)
     try {
-        if (req.user.accountType != 'User') {
+        if (req.user.accountType.toLowerCase() != 'user') {
             return res.status(401).json({
                 success: false,
                 message: "this is protected route for user only"

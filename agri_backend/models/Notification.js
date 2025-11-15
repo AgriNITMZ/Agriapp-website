@@ -1,14 +1,26 @@
+// models/Notification.js
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true
     },
     type: {
         type: String,
-        enum: ['order', 'payment', 'delivery', 'promotion', 'system', 'review'],
+        enum: [
+            'order_placed',
+            'order_confirmed', 
+            'order_shipped',
+            'order_delivered',
+            'order_cancelled',
+            'payment_success',
+            'payment_failed',
+            'promotion',
+            'system'
+        ],
         required: true
     },
     title: {
@@ -21,9 +33,10 @@ const notificationSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    read: {
+    isRead: {  // ✅ Changed from 'read' to 'isRead'
         type: Boolean,
-        default: false
+        default: false,
+        index: true
     },
     orderId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -42,8 +55,8 @@ const notificationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for efficient queries
+// Compound indexes for efficient queries
 notificationSchema.index({ userId: 1, createdAt: -1 });
-notificationSchema.index({ userId: 1, read: 1 });
+notificationSchema.index({ userId: 1, isRead: 1 });
 
 module.exports = mongoose.model("Notification", notificationSchema);
