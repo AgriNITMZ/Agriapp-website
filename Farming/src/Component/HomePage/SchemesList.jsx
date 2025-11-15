@@ -1,5 +1,6 @@
 import React from "react";
 import { ExternalLink, Info, Star, Leaf, Sprout } from "lucide-react";
+import LatestNewsBox from './LatestNewsBox';
 
 const mizoAgriLinks = [
   {
@@ -226,6 +227,11 @@ export default function MizoramAgriSchemesList() {
           A curated collection of verified government resources, portals, and
           financial support programs for agriculture in Mizoram.
         </p>
+      </div>
+
+      {/* ===== LATEST NEWS BOX ===== */}
+      <div className="max-w-6xl mx-auto px-6 mt-10">
+        <LatestNewsBox />
       </div>
 
       {/* ===== CARD GRID ===== */}

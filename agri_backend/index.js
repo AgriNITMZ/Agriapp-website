@@ -14,7 +14,7 @@ app.use(morgan('tiny')) // only for development purpose
 app.use(express.json());
 app.use(cookieParser());
 const allowedOrigins = [
-  "http://localhost:3000",
+  "http://localhost:5173",
   process.env.CORS_ORIGIN, // for web
   "http://192.168.0.101:19000", // Expo Go dev server (adjust IP accordingly)
 ];
@@ -50,6 +50,7 @@ const schemeRoute = require('./routes/Scheme')
 const analyticsRoute = require('./routes/Analytics')
 const shiprocketRoute = require('./routes/Shiprocket')
 
+
 const chatRoute = require("./routes/chat");
 app.use("/api/v1/chat", chatRoute);
 
@@ -61,6 +62,10 @@ app.use("/api/v1/appChat", appChatRoute);
 const notificationRoutes = require('./routes/notification');
 app.use('/api/v1/notifications', notificationRoutes);
 
+//
+const { scrapeWebsite } = require('./utils/Scrapping');
+app.use('/api/v1/scrape',scrapeWebsite); 
+
 // Routes
 app.use("/api/v1/auth", userRoute)
 app.use("/api/v1/products", productRoute)
@@ -70,10 +75,16 @@ app.use("/api/v1/scheme", schemeRoute)
 app.use("/api/v1/analytics", analyticsRoute)
 app.use("/api/v1/shiprocket", shiprocketRoute)
 
+app.use("/api/news", newsRoute) // New isolated news API
+
 
 app.get('/', (req, res) => {
     res.send('Server is running');
 });
+
+// Initialize news cron job (every 30 minutes)
+const { initializeNewsCron } = require('./scraper/newsCronJob');
+initializeNewsCron();
 
 // Start server
 app.listen(PORT, () => {

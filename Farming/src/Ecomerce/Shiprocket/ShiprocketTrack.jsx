@@ -30,7 +30,8 @@ const ShiprocketTrack = () => {
     try {
       setRefreshing(true);
       const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}/shiprocket/track/${shipmentId}`,
+        `${import.meta.env.VITE_API_URL}/shiprocket/track/${shipmentId}`,
+
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

@@ -53,7 +53,7 @@ const ShiprocketCheckout = () => {
       }
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/products/getallproduct`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/products/getallproduct`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.data && response.data.products) {
@@ -76,7 +76,7 @@ const ShiprocketCheckout = () => {
       if (!token) return;
 
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/auth/getaddress`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/getaddress`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -105,7 +105,7 @@ const ShiprocketCheckout = () => {
       // Get the first product's details to find seller address
       const productId = selectedProducts[0].productId;
       const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}/products/get/${productId}`,
+        `${import.meta.env.VITE_API_URL}/products/get/${productId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -132,7 +132,7 @@ const ShiprocketCheckout = () => {
       const pickupPincode = await getPickupPincode();
       
       const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}/shiprocket/check-serviceability`,
+        `${import.meta.env.VITE_API_URL}/shiprocket/check-serviceability`,
         {
           pincode: zipCode,
           pickupPincode: pickupPincode,
@@ -258,7 +258,7 @@ const ShiprocketCheckout = () => {
       if (paymentMethod === 'cod') {
         // Direct order creation for COD
         const orderResponse = await axios.post(
-          `${process.env.REACT_APP_BASE_URL}/shiprocket/create`,
+          `${import.meta.env.VITE_API_URL}/shiprocket/create`,
           {
             addressId: selectedAddress._id,
             paymentMethod: 'cod',
@@ -302,7 +302,7 @@ const ShiprocketCheckout = () => {
 
         // Create Razorpay order
         const paymentOrderResponse = await axios.post(
-          `${process.env.REACT_APP_BASE_URL}/shiprocket/payment/create-order`,
+          `${import.meta.env.VITE_API_URL}/shiprocket/payment/create-order`,
           { amount: totalAmount },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -316,18 +316,18 @@ const ShiprocketCheckout = () => {
         const razorpayOrder = paymentOrderResponse.data.order;
 
         // Validate Razorpay key
-        if (!process.env.REACT_APP_RAZORPAY_KEY_ID) {
+        if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
           console.error('Razorpay key not configured');
           toast.error('Payment gateway not configured. Please contact support.');
           setIsProcessing(false);
           return;
         }
 
-        console.log('Razorpay Key:', process.env.REACT_APP_RAZORPAY_KEY_ID);
+        console.log('Razorpay Key:', import.meta.env.VITE_RAZORPAY_KEY_ID);
 
         // Open Razorpay popup
         const options = {
-          key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
           amount: razorpayOrder.amount,
           currency: razorpayOrder.currency,
           name: 'Shiprocket Checkout',
@@ -337,7 +337,7 @@ const ShiprocketCheckout = () => {
             try {
               // Verify payment
               const verifyResponse = await axios.post(
-                `${process.env.REACT_APP_BASE_URL}/shiprocket/payment/verify`,
+                `${import.meta.env.VITE_API_URL}/shiprocket/payment/verify`,
                 {
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
@@ -349,7 +349,7 @@ const ShiprocketCheckout = () => {
               if (verifyResponse.data.success) {
                 // Create Shiprocket order
                 const orderResponse = await axios.post(
-                  `${process.env.REACT_APP_BASE_URL}/shiprocket/create`,
+                  `${import.meta.env.VITE_API_URL}/shiprocket/create`,
                   {
                     addressId: selectedAddress._id,
                     paymentMethod: 'online',
