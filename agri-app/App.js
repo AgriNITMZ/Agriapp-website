@@ -76,8 +76,9 @@ const loadFonts = async () => {
   });
 };
 
-const StackNav = ({ route }) => {
-  const { isAuthenticated } = route.params;
+const StackNav = ({ route, isAuthenticated: isAuthProp }) => {
+  // Support both route params (when used as Drawer.Screen) and direct prop (when used standalone)
+  const isAuthenticated = route?.params?.isAuthenticated ?? isAuthProp ?? false;
   const Stack = createStackNavigator();
 
   return (
@@ -237,11 +238,11 @@ const App = () => {
               />
             ) : accountType === 'Seller' ? (
               // Seller Navigation - No Cart/Wishlist providers
-              <SellerNavigator />
-            ) : (
+              <SellerNavigator key={`seller-${isAuthenticated}`} />
+            ) : isAuthenticated ? (
               // Buyer Navigation - With Cart/Wishlist providers
               <AppProviders>
-                <Drawer.Navigator screenOptions={{ headerShown: false }}>
+                <Drawer.Navigator screenOptions={{ headerShown: false }} key={`buyer-${isAuthenticated}`}>
                   <Drawer.Screen
                     name="Home"
                     component={StackNav}
@@ -255,6 +256,9 @@ const App = () => {
                   <Drawer.Screen name="Logout" component={LogoutScreen} />
                 </Drawer.Navigator>
               </AppProviders>
+            ) : (
+              // Not authenticated - Show login/signup screens
+              <StackNav isAuthenticated={false} key="unauthenticated" />
             )}
             <Toast />
           </NavigationContainer>

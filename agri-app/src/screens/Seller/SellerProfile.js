@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Alert } from 're
 import { Text, Card, Button, Divider } from 'react-native-paper';
 import { CommonActions } from '@react-navigation/native';
 import { User, Mail, Phone, MapPin, Edit2, LogOut, Lock, Bell, HelpCircle, Shield, ChevronRight } from 'lucide-react-native';
+import Toast from 'react-native-toast-message';
 import customFetch from '../../utils/axios';
 import { removeUserFromLocalStorage } from '../../utils/localStorage';
 import SellerTopBar from '../../components/seller/SellerTopBar';
@@ -38,13 +39,15 @@ const SellerProfile = ({ navigation }) => {
                     style: 'destructive',
                     onPress: async () => {
                         await removeUserFromLocalStorage();
-                        // Use CommonActions to reset navigation properly
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [{ name: 'StartScreen' }],
-                            })
-                        );
+                        
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Logged Out',
+                            text2: 'You have been successfully logged out.',
+                        });
+                        
+                        // App.js will detect the auth change and handle navigation automatically
+                        console.log('Logout completed, waiting for App.js to handle navigation...');
                     }
                 }
             ]
