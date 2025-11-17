@@ -23,6 +23,10 @@ const AddProduct = () => {
     fullShopDetails: '',
     name: '',
     description: '',
+    modelNumber: '',
+    brand: '',
+    deliveryInfo: '',
+    warranty: '',
     priceDetails: [{ price: '', discountedPrice: '', size: '', quantity: '' }],
     images: [], // will hold both URLs (old) and preview URLs (new files)
   });
@@ -45,6 +49,10 @@ const AddProduct = () => {
           fullShopDetails: product.sellers[0]?.fullShopDetails || '',
           name: product.name || '',
           description: product.description || '',
+          modelNumber: product.modelNumber || '',
+          brand: product.brand || '',
+          deliveryInfo: product.sellers[0]?.deliveryInfo || '',
+          warranty: product.sellers[0]?.warranty || '',
           priceDetails: product.sellers[0]?.price_size || [
             { price: '', discountedPrice: '', size: '', quantity: '' },
           ],
@@ -193,6 +201,24 @@ const AddProduct = () => {
     e.preventDefault();
     if (submitting) return;
 
+    // Validate price details
+    const invalidPrices = productData.priceDetails.some(
+      (detail) => !detail.price || !detail.discountedPrice || detail.discountedPrice === 0
+    );
+    
+    if (invalidPrices) {
+      return toast.error('Please enter valid prices. Discounted price cannot be 0 or empty.');
+    }
+
+    // Validate that discounted price is not greater than original price
+    const invalidDiscount = productData.priceDetails.some(
+      (detail) => Number(detail.discountedPrice) > Number(detail.price)
+    );
+    
+    if (invalidDiscount) {
+      return toast.error('Discounted price cannot be greater than original price.');
+    }
+
     const storedTokenData = JSON.parse(localStorage.getItem('token'));
     if (!storedTokenData || Date.now() >= storedTokenData.expires) {
       return toast.error('Session expired. Please sign in again.');
@@ -206,6 +232,12 @@ const AddProduct = () => {
     formData.append('category', selectedSubcategory || selectedCategory);
     formData.append('badges', 'PreciAgri');
     formData.append('tag', JSON.stringify(chips));
+    
+    // Add new fields
+    if (productData.modelNumber) formData.append('modelNumber', productData.modelNumber);
+    if (productData.brand) formData.append('brand', productData.brand);
+    if (productData.deliveryInfo) formData.append('deliveryInfo', productData.deliveryInfo);
+    if (productData.warranty) formData.append('warranty', productData.warranty);
 
     images.forEach((img) => formData.append('image', img));
 
@@ -228,7 +260,15 @@ const AddProduct = () => {
 
       await axios[method](url, formData, config);
       toast.success(isEditing ? 'Product updated!' : 'Product added!', { id: toastId });
-      navigate('/seller');
+      
+      // Navigate to products page instead of dashboard
+      if (isEditing) {
+        // Stay on the same page after editing, or go back
+        navigate(-1); // Go back to previous page
+      } else {
+        // After adding, go to products list
+        navigate('/seller');
+      }
     } catch (err) {
       console.error('Error saving product:', err);
       toast.error('Failed to save product', { id: toastId });
@@ -253,7 +293,7 @@ const AddProduct = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <label className="block mb-1 font-medium text-gray-700">
-            Full Shop Details
+            Full Shop Details <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -266,7 +306,7 @@ const AddProduct = () => {
         </div>
         <div>
           <label className="block mb-1 font-medium text-gray-700">
-            Product Name
+            Product Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -275,6 +315,67 @@ const AddProduct = () => {
             onChange={handleInputChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             required
+          />
+        </div>
+      </div>
+
+      {/* Grid: Model Number & Brand */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Model Number
+            <span className="text-xs text-gray-500 ml-2">(Helps group same products)</span>
+          </label>
+          <input
+            type="text"
+            name="modelNumber"
+            value={productData.modelNumber}
+            onChange={handleInputChange}
+            placeholder="e.g., ABC123"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Brand
+          </label>
+          <input
+            type="text"
+            name="brand"
+            value={productData.brand}
+            onChange={handleInputChange}
+            placeholder="e.g., Apple, Samsung"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Grid: Delivery Info & Warranty */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Delivery Information
+          </label>
+          <input
+            type="text"
+            name="deliveryInfo"
+            value={productData.deliveryInfo}
+            onChange={handleInputChange}
+            placeholder="e.g., 2-3 days, Same day delivery"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Warranty
+          </label>
+          <input
+            type="text"
+            name="warranty"
+            value={productData.warranty}
+            onChange={handleInputChange}
+            placeholder="e.g., 1 year warranty, No warranty"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
       </div>
@@ -389,59 +490,101 @@ const AddProduct = () => {
 
       {/* Price & Sizes */}
       <div className="mb-6">
-        <label className="block mb-1 font-medium text-gray-700">Price & Sizes</label>
+        <label className="block mb-3 font-medium text-gray-700 text-lg">Price & Sizes</label>
         {productData.priceDetails.map((detail, idx) => (
           <div
             key={idx}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg"
+            className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
           >
-            <input
-              type="number"
-              name="price"
-              placeholder="Price"
-              value={detail.price}
-              onWheel={(e) => e.target.blur()}
-              onChange={(e) => handlePriceDetailChange(idx, e)}
-              className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            <input
-              type="number"
-              name="discountedPrice"
-              placeholder="Discount Price"
-              value={detail.discountedPrice}
-              onChange={(e) => handlePriceDetailChange(idx, e)}
-              className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-            <input
-              type="text"
-              name="size"
-              placeholder="Size"
-              value={detail.size}
-              onChange={(e) => handlePriceDetailChange(idx, e)}
-              className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            <div className="flex items-center gap-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Original Price (₹) *
+              </label>
               <input
                 type="number"
-                name="quantity"
-                placeholder="Qty"
-                value={detail.quantity}
+                name="price"
+                placeholder="e.g., 100"
+                value={detail.price}
+                onWheel={(e) => e.target.blur()}
                 onChange={(e) => handlePriceDetailChange(idx, e)}
-                className="p-3 border border-gray-300 rounded-lg flex-grow focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 required
               />
-              {idx > 0 && (
-                <button
-                  type="button"
-                  onClick={() => removePriceDetail(idx)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 size={20} />
-                </button>
-              )}
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Selling Price (₹) *
+              </label>
+              <input
+                type="number"
+                name="discountedPrice"
+                placeholder="e.g., 80"
+                value={detail.discountedPrice}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                onWheel={(e) => e.target.blur()}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none ${
+                  detail.discountedPrice === 0 || !detail.discountedPrice
+                    ? 'border-red-300 focus:ring-red-500'
+                    : Number(detail.discountedPrice) > Number(detail.price)
+                    ? 'border-orange-300 focus:ring-orange-500'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                required
+                min="1"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Size/Unit *
+              </label>
+              <input
+                type="text"
+                name="size"
+                placeholder="e.g., 1kg, 500g, Pack"
+                value={detail.size}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Stock Quantity *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  name="quantity"
+                  placeholder="e.g., 50"
+                  value={detail.quantity}
+                  onChange={(e) => handlePriceDetailChange(idx, e)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+                {idx > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removePriceDetail(idx)}
+                    className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    title="Remove this variant"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Validation Messages */}
+            {(detail.discountedPrice === 0 || !detail.discountedPrice) && (
+              <div className="col-span-4 text-xs text-red-500 -mt-2">
+                ⚠️ Selling price cannot be 0 or empty
+              </div>
+            )}
+            {detail.discountedPrice && Number(detail.discountedPrice) > Number(detail.price) && (
+              <div className="col-span-4 text-xs text-orange-500 -mt-2">
+                ⚠️ Selling price should be less than or equal to original price
+              </div>
+            )}
           </div>
         ))}
         <button

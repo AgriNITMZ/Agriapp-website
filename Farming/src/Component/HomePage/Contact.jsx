@@ -103,8 +103,8 @@ const Contact = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mizoram-50 to-earth-50 py-8">
-      <div className="container mx-auto px-6 lg:px-12 mt-20">
+    <div className="min-h-screen bg-gradient-to-br from-mizoram-50 to-earth-50 py-8 pt-20">
+      <div className="container mx-auto px-6 lg:px-12">
         
         {/* Header Section */}
         <div className="text-center mb-16">

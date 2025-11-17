@@ -10,7 +10,7 @@ const AboutUs = () => {
   ];
 
   return (
-    <div className='py-16 bg-gradient-to-br from-mizoram-50 to-white'>
+    <div className='py-16 bg-gradient-to-br from-mizoram-50 to-white pt-20'>
       <div className='container mx-auto px-6 lg:px-12'>
         
         {/* Section Header */}

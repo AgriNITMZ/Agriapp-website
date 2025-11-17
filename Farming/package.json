@@ -17,6 +17,7 @@
     "copy-to-clipboard": "^3.3.3",
     "cra-template": "1.2.0",
     "emailjs": "^4.0.3",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.471.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -27,6 +28,7 @@
     "react-scripts": "5.0.1",
     "recharts": "^2.15.1",
     "redux": "^5.0.1",
+    "socket.io-client": "^4.8.1",
     "typed.js": "^2.1.0",
     "web-vitals": "^4.2.4",
     "xlsx": "^0.18.5"

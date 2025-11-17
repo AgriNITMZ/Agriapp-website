@@ -45,10 +45,21 @@ const SingleItem = () => {
 
   // Extract token from localStorage
   let token;
-  const storedTokenData = JSON.parse(localStorage.getItem("token"));
-  if (storedTokenData && Date.now() < storedTokenData.expires) {
-    token = storedTokenData.value;
-  } else {
+  try {
+    const storedTokenData = JSON.parse(localStorage.getItem("token"));
+    if (storedTokenData) {
+      if (storedTokenData.expires && Date.now() < storedTokenData.expires) {
+        token = storedTokenData.value;
+      } else if (typeof storedTokenData === 'string') {
+        // Handle old token format (direct string)
+        token = storedTokenData;
+      } else {
+        // Token expired
+        localStorage.removeItem("token");
+      }
+    }
+  } catch (error) {
+    console.error("Error parsing token:", error);
     localStorage.removeItem("token");
   }
 
@@ -107,14 +118,35 @@ const SingleItem = () => {
 
   // Add product to cart
   const addtocart = async (id) => {
-    if (!selectedSize) {
-      alert("Please select a size before adding to cart.");
+    // Check if user is logged in
+    if (!token) {
+      toast.error("Please login to add items to cart");
+      navigate("/login");
       return;
     }
+
+    if (!selectedSize) {
+      toast.error("Please select a size before adding to cart.");
+      return;
+    }
+
     const selectedsize = selectedSize.size;
     const selectedDiscountedPrice = selectedSize.discountedPrice;
     const selectedPrice = selectedSize.price;
-    const sellerId = selectedProduct.sellers[selectedSeller].sellerId;
+    
+    // Extract sellerId properly - handle both object and string cases
+    const sellerIdValue = typeof selectedProduct.sellers[selectedSeller].sellerId === 'object' 
+      ? selectedProduct.sellers[selectedSeller].sellerId._id || selectedProduct.sellers[selectedSeller].sellerId 
+      : selectedProduct.sellers[selectedSeller].sellerId;
+
+    console.log("Adding to cart with data:", {
+      productId: id,
+      quantity,
+      selectedsize,
+      selectedDiscountedPrice,
+      selectedPrice,
+      sellerId: sellerIdValue,
+    });
 
     try {
       const response = await axios.post(
@@ -125,7 +157,7 @@ const SingleItem = () => {
           selectedsize,
           selectedDiscountedPrice,
           selectedPrice,
-          sellerId,
+          sellerId: sellerIdValue,
         },
         {
           headers: {
@@ -139,7 +171,18 @@ const SingleItem = () => {
       navigate("/product/cart");
     } catch (error) {
       console.error("Error adding to cart:", error.response?.data || error.message);
-      toast.error("Failed to add product to cart.");
+      
+      // More specific error messages
+      if (error.response?.status === 401) {
+        toast.error("Please login to add items to cart");
+        navigate("/login");
+      } else if (error.response?.status === 404) {
+        toast.error(error.response?.data?.message || "Product or seller not found");
+      } else if (error.response?.status === 400) {
+        toast.error(error.response?.data?.message || "Invalid request");
+      } else {
+        toast.error("Failed to add product to cart. Please try again.");
+      }
     }
   };
 
@@ -175,8 +218,13 @@ const SingleItem = () => {
       const selectedPriceSize = selectedSize; // already available as state
   
       // Navigate with query params
+      // Extract sellerId - handle both object and string cases
+      const sellerIdValue = typeof selectedSellerInfo.sellerId === 'object' 
+        ? selectedSellerInfo.sellerId._id || selectedSellerInfo.sellerId 
+        : selectedSellerInfo.sellerId;
+      
       const queryParams = new URLSearchParams({
-        sellerId: selectedSellerInfo.sellerId,
+        sellerId: sellerIdValue,
         shopName: selectedSellerInfo.fullShopDetails,
         size: selectedPriceSize.size,
         price: selectedPriceSize.price,
@@ -184,6 +232,7 @@ const SingleItem = () => {
         quantity: quantity,
         image:selectedProduct.images[0],
         productId: selectedProduct._id,
+        productName: selectedProduct.name,
       }).toString();
   
       navigate(`/product/checkout?${queryParams}`);
@@ -206,7 +255,7 @@ const SingleItem = () => {
   return (
     <>
       {/* Main Product Layout */}
-      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8 mt-16">
+      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8 pt-24">
         {/* Image Gallery Section */}
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Thumbnail Gallery */}

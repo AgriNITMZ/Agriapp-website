@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setUser } from "../../slice/profileSlice";
 import ProfileLayout from "./Profile";
 import { User, Mail, Phone, Calendar, Edit3, Save, X, Check, AlertCircle } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
 const ProfileInformation = () => {
+    const dispatch = useDispatch();
     const user = useSelector((state) => state.profile.user);
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -97,7 +99,8 @@ const ProfileInformation = () => {
             if (response.data.success) {
                 toast.success("Profile updated successfully!");
                 setIsEditing(false);
-                // You might want to dispatch an action to update the Redux store here
+                // Update Redux store with the new user data
+                dispatch(setUser(response.data.user));
             }
         } catch (error) {
             console.error("Error updating profile:", error);

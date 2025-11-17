@@ -37,7 +37,7 @@ const Home = () => {
     <div className="bg-gradient-to-br from-mizoram-50 to-earth-50">
       
       {/* Hero Video Section */}
-      <div className="relative w-full h-[85vh] overflow-hidden mt-16">
+      <div className="relative w-full h-[85vh] overflow-hidden pt-20">
         <video
           src={video}
           autoPlay

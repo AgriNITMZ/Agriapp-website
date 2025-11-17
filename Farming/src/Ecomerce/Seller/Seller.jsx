@@ -4,6 +4,8 @@ import OrdersTable from './Component/OrdersTable';
 import ProductTable from './Component/ProductTable';
 import DashBoard from './Component/DashBoard';
 import BulkUpload from './Component/AddBulkProduct';
+import LowStockProducts from './Component/LowStockProducts';
+import SellerAnalytics from '../../Component/Analytics/SellerDashboard';
 import { useNavigate } from 'react-router-dom';
 
 // Placeholder components for dashboard views
@@ -24,6 +26,7 @@ const Seller = () => {
     { name: "Dashboard", path: "/", icon: "📊" },
     { name: "Analytics", path: "/analytics", icon: "📈" },
     { name: "Products", path: "/products", icon: "📦" },
+    { name: "Low Stock Items", path: "/low-stock", icon: "⚠️" },
     { name: "Customers", path: "/customers", icon: "👥" },
     { name: "Orders", path: "/orders", icon: "🛒" },
     { name: "Total Earnings", path: "/earnings", icon: "💰" },
@@ -54,9 +57,13 @@ const Seller = () => {
   const renderCurrentView = () => {
     switch (currentRoute) {
       case '/':
-        return <DashBoard />;
+        return <DashBoard onRouteChange={setCurrentRoute} />;
+      case '/analytics':
+        return <SellerAnalytics hideBackButton={true} />;
       case '/products':
         return <ProductTable />;
+      case '/low-stock':
+        return <LowStockProducts />;
       case '/customers':
         return <Customers />;
       case '/orders':
@@ -68,7 +75,7 @@ const Seller = () => {
       case '/product/update':
         return <UpdateProductForm />;
       default:
-        return <DashBoard />;
+        return <DashBoard onRouteChange={setCurrentRoute} />;
     }
   };
 
@@ -80,7 +87,15 @@ const Seller = () => {
       lg:translate-x-0 lg:static
     `}>
       <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold">Admin Panel</h2>
+        <h2 className="text-xl font-bold">Seller Panel</h2>
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="mt-3 w-full flex items-center space-x-2 text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+        >
+          <span>←</span>
+          <span>Back to Home</span>
+        </button>
       </div>
       
       <nav className="py-4 flex flex-col justify-between">
@@ -88,14 +103,12 @@ const Seller = () => {
           <div 
             key={item.path}
             onClick={() => {
-              if (item.path === '/analytics') {
-                navigate('/seller/analytics');
-              } else {
-                setCurrentRoute(item.path);
-              }
+              setCurrentRoute(item.path);
               if (!isLargeScreen) setSidebarVisible(false);
             }}
-            className="flex items-center p-3 hover:bg-gray-700 cursor-pointer"
+            className={`flex items-center p-3 hover:bg-gray-700 cursor-pointer transition-colors ${
+              currentRoute === item.path ? 'bg-gray-700' : ''
+            }`}
           >
             <span className="mr-3">{item.icon}</span>
             <span>{item.name}</span>
@@ -118,19 +131,27 @@ const Seller = () => {
   // Navbar component
   const Navbar = () => (
     <div className="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
-      <button 
-        onClick={() => setSidebarVisible(!sidebarVisible)}
-        className="text-2xl"
-      >
-        ☰
-      </button>
-      <h1 className="text-xl font-semibold">Admin Panel</h1>
+      <div className="flex items-center space-x-3">
+        <button 
+          onClick={() => setSidebarVisible(!sidebarVisible)}
+          className="text-2xl"
+        >
+          ☰
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="text-gray-600 hover:text-gray-900 text-sm"
+        >
+          ← Home
+        </button>
+      </div>
+      <h1 className="text-xl font-semibold">Seller Panel</h1>
       <div>{/* Placeholder for additional navbar items */}</div>
     </div>
   );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen pt-16">
       <Sidebar />
       
       <main className="flex-1 overflow-y-auto bg-gray-100">

@@ -1,9 +1,21 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const AdminDashBoard = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl">
+    <div className="max-w-3xl mx-auto mt-10 pt-24 p-6 bg-white shadow-lg rounded-xl">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span className="font-medium">Back to Home</span>
+      </button>
+
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
         Admin Dashboard
       </h1>

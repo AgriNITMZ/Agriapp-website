@@ -158,7 +158,7 @@ const Cart = () => {
 
   return (
     <>
-      <div className="container mx-auto px-4 mt-16">
+      <div className="container mx-auto px-4 pt-24">
         <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-8rem)]">
           {/* Delivery Address Section */}
           <div className="lg:w-3/5 w-full">

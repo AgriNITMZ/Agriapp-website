@@ -127,6 +127,12 @@ const getSellerOverview = async (req, res) => {
         const previousPeriodStart = new Date(dateRange.startDate.getTime() - periodDuration);
         const previousPeriodEnd = dateRange.startDate;
 
+        // Debug: Log seller ID and date range
+        console.log('📊 Seller Analytics Debug:');
+        console.log('   Seller ID:', sellerId);
+        console.log('   Date Range:', dateRange);
+        console.log('   Period:', period);
+
         // Aggregation pipeline for current period
         const currentPeriodPipeline = [
             createSellerMatch(sellerId),
@@ -185,6 +191,16 @@ const getSellerOverview = async (req, res) => {
             Order.aggregate(currentPeriodPipeline),
             Order.aggregate(previousPeriodPipeline)
         ]);
+
+        // Debug: Log aggregation results
+        console.log('   Current Period Result:', JSON.stringify(currentPeriodResult, null, 2));
+        console.log('   Previous Period Result:', JSON.stringify(previousPeriodResult, null, 2));
+
+        // Also check total orders for this seller (without date filter)
+        const totalOrdersForSeller = await Order.countDocuments({
+            'items.sellerId': new mongoose.Types.ObjectId(sellerId)
+        });
+        console.log('   Total Orders Ever for Seller:', totalOrdersForSeller);
 
         // Process results
         const current = currentPeriodResult[0] || {

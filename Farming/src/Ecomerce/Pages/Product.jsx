@@ -36,7 +36,7 @@ const Product = () => {
 
   return (
     <>
-      <nav className="w-full bg-[#cefad0] shadow-sm mt-16">
+      <nav className="w-full bg-[#cefad0] shadow-sm pt-20">
         {/* Navigation Section */}
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-4 overflow-x-auto py-4 scrollbar-hide justify-evenly">

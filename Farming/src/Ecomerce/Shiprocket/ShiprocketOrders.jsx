@@ -102,7 +102,7 @@ const ShiprocketOrders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 mt-16">
+      <div className="min-h-screen bg-gray-50 py-12 pt-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse space-y-4">
             {[1, 2, 3].map(i => (
@@ -116,7 +116,7 @@ const ShiprocketOrders = () => {
 
   if (orders.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 mt-16">
+      <div className="min-h-screen bg-gray-50 py-12 pt-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow-lg rounded-lg p-12 text-center">
             <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -135,8 +135,17 @@ const ShiprocketOrders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 mt-16">
+    <div className="min-h-screen bg-gray-50 py-12 pt-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back</span>
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Shiprocket Orders</h1>

@@ -1,5 +1,20 @@
 const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
+    productSlug: {
+        type: String,
+        unique: true,
+        sparse: true,
+        index: true
+    },
+    modelNumber: {
+        type: String,
+        sparse: true,
+        index: true
+    },
+    brand: {
+        type: String,
+        default: ''
+    },
     sellers: [
         {
             sellerId: {
@@ -16,6 +31,9 @@ const productSchema = new mongoose.Schema({
                 }
             ],
             fullShopDetails: { type: String,default: 'Full Shop Details' },
+            deliveryInfo: { type: String, default: 'Standard delivery' },
+            warranty: { type: String, default: 'No warranty' },
+            addedAt: { type: Date, default: Date.now }
         }
     ],
   name: {

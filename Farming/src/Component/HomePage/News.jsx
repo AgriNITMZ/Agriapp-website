@@ -48,9 +48,9 @@ const News = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-mizoram-50 to-earth-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-mizoram-50 to-earth-50 py-8 pt-20">
       {/* Header Section */}
-      <div className="container mx-auto px-6 lg:px-12 mt-20 mb-12">
+      <div className="container mx-auto px-6 lg:px-12 mb-12">
         <div className="text-center mb-8">
           <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             Agricultural <span className="text-mizoram-600">News & Updates</span>

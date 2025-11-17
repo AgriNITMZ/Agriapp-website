@@ -39,7 +39,7 @@ const UpdatePassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-green-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-green-100 p-4 pt-24">
       <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md border border-green-100">
         <div className="flex items-center justify-center mb-6">
           <div className="bg-green-100 p-3 rounded-full">

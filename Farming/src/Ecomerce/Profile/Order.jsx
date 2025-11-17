@@ -7,6 +7,8 @@ import {
   AlertTriangle, Truck, Eye, MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSocket } from '../../context/SocketContext';
+import { jwtDecode } from 'jwt-decode';
 
 const Order = () => {
   const [orders, setOrders] = useState([]);
@@ -15,6 +17,57 @@ const Order = () => {
   const [error, setError] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const navigate = useNavigate();
+  const { socket, connected, joinUserRoom } = useSocket();
+
+  // Join user's Socket.IO room
+  useEffect(() => {
+    const storedTokenData = JSON.parse(localStorage.getItem('token'));
+    if (storedTokenData && Date.now() < storedTokenData.expires && connected) {
+      try {
+        const decoded = jwtDecode(storedTokenData.value);
+        const userId = decoded.id;
+        joinUserRoom(userId);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, [connected, joinUserRoom]);
+
+  // Listen for real-time order status updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOrderStatusUpdate = (data) => {
+      console.log('📡 Received order status update:', data);
+      
+      // Update the order in the list
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order._id === data.orderId 
+            ? { ...order, orderStatus: data.orderStatus }
+            : order
+        )
+      );
+
+      // Show toast notification
+      toast.success(
+        <div>
+          <p className="font-semibold">Order Status Updated!</p>
+          <p className="text-sm">{data.message}</p>
+        </div>,
+        { 
+          icon: '📦',
+          duration: 5000 
+        }
+      );
+    };
+
+    socket.on('order-status-updated', handleOrderStatusUpdate);
+
+    return () => {
+      socket.off('order-status-updated', handleOrderStatusUpdate);
+    };
+  }, [socket]);
 
   useEffect(() => {
     fetchOrders();
@@ -135,7 +188,16 @@ const Order = () => {
   return (
     <ProfileLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">My Orders</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">My Orders</h1>
+          {/* Real-time connection status */}
+          {connected && (
+            <span className="flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-green-100 text-green-700">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Live Updates
+            </span>
+          )}
+        </div>
 
         {/* Shiprocket Orders Section */}
         {shiprocketOrders.length > 0 && (

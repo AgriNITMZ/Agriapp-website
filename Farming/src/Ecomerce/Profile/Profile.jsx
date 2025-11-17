@@ -224,7 +224,7 @@ const ProfileLayout = ({ children }) => {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-16">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24">
             <div className="flex flex-col lg:flex-row">
                 {/* Mobile Menu Button */}
                 <div className="lg:hidden px-4 py-2">
