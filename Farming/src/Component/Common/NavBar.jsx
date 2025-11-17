@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Heart, Search, Server, ShoppingCart, Store, User } from "lucide-react";
 import logo from "../../Data/Logo/logo.png";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setUser } from "../../slice/profileSlice";
 import axios from "axios";
 import ChatBot from "./ChatBot";
 
 const NavBar = () => {
+  const dispatch = useDispatch();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -49,6 +51,8 @@ const NavBar = () => {
         );
         setUserImage(data.user.image);
         setUserRole(data.user.accountType);
+        // Update Redux store with fetched user data
+        dispatch(setUser(data.user));
       } catch (err) {
         console.error("Error fetching user:", err);
       }

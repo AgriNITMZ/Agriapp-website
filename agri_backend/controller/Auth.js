@@ -185,7 +185,7 @@ exports.Login = asyncHandler(async (req, res) => {
             })
         }
         // user check exist or not
-        const user = await User.findOne({ email })
+        const user = await User.findOne({ email }).populate('additionalDetails')
         if (!user) {
             return res.status(403).json({
                 success: false,
@@ -234,7 +234,7 @@ exports.Login = asyncHandler(async (req, res) => {
 
 exports.getUserById = asyncHandler(async (req, res) => {
 
-        const user = await User.findById(req.params.userId);
+        const user = await User.findById(req.params.userId).populate('additionalDetails');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -258,7 +258,7 @@ exports.getUserByToken = asyncHandler(async (req, res) => {
             })
         }
         const payload = jwt.verify(token, process.env.JWT_SECRET)
-        const user = await User.findById(payload.id);
+        const user = await User.findById(payload.id).populate('additionalDetails');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -283,7 +283,7 @@ exports.getUserProfile = asyncHandler(async (req, res) => {
         }
 
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(payload.id).select('_id Name email accountType image');
+        const user = await User.findById(payload.id).populate('additionalDetails').select('_id Name email accountType image additionalDetails');
 
         if (!user) {
             return res.status(404).json({
