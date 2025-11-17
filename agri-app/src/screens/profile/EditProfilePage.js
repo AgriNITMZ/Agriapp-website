@@ -1,33 +1,54 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ToastAndroid } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { FontAwesome } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import customFetch from '../../utils/axios';
 import CustomTopBar from '../../components/topBar/CustomTopBar';
+
 const profileIcon = require('../../assets/images/placeholder/user_icon.png');
+
 export default function EditProfilePage({ route, navigation }) {
-    const { profileData } = route.params
-    const [Name, setName] = useState(profileData.Name);
-    const [lastName, setLastName] = useState(profileData.lastName);
-    const [email, setEmail] = useState(profileData.email);
+    const { profileData } = route.params;
+    const [Name, setName] = useState(profileData?.Name || '');
+    const [lastName, setLastName] = useState(profileData?.lastName || '');
+    const [email, setEmail] = useState(profileData?.email || '');
     const [category, setCategory] = useState('Farmer');
-    const [contactNumber, setContactNumber] = useState(profileData.mobile);
+    const [contactNumber, setContactNumber] = useState(profileData?.additionalDetails?.contactNo || profileData?.mobile || '');
+    const [loading, setLoading] = useState(false);
 
     const handleSaveChanges = async () => {
-        try {
-            const token = await AsyncStorage.getItem('token');
-            const response = await axios.put(
-                'http://172.16.1.240:4000/api/users/profile/edit',
-                { firstName, lastName, mobile: contactNumber },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+        if (!Name.trim()) {
+            Alert.alert('Error', 'Name cannot be empty');
+            return;
+        }
 
-            ToastAndroid.show('Profile updated successfully!', ToastAndroid.SHORT);
-            navigation.goBack();
+        try {
+            setLoading(true);
+            const response = await customFetch.put('/auth/updateProfile', {
+                Name: Name.trim(),
+                contactNo: contactNumber
+            });
+
+            Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Profile updated successfully!',
+            });
+            
+            // Navigate back with a flag to trigger refresh
+            setTimeout(() => {
+                navigation.navigate('SellerProfile', { refresh: true });
+            }, 1000);
         } catch (error) {
             console.error('Error updating profile:', error);
-            ToastAndroid.show('Failed to update profile. Please try again.', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error.response?.data?.message || 'Failed to update profile. Please try again.',
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -58,7 +79,7 @@ export default function EditProfilePage({ route, navigation }) {
                     <TextInput
                         style={styles.input}
                         value={Name}
-                        onChangeText={Name}
+                        onChangeText={setName}
                         placeholder="Enter full name"
                     />
                     {/* <Text style={styles.label}>Last Name</Text>
@@ -103,8 +124,16 @@ export default function EditProfilePage({ route, navigation }) {
                 </View>
 
                 {/* Save Changes Button */}
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
-                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                <TouchableOpacity 
+                    style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+                    onPress={handleSaveChanges}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="white" />
+                    ) : (
+                        <Text style={styles.saveButtonText}>Save Changes</Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </>
@@ -193,6 +222,10 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         alignItems: 'center',
         margin: 15,
+    },
+    saveButtonDisabled: {
+        backgroundColor: '#A5D6A7',
+        opacity: 0.7,
     },
     saveButtonText: {
         color: 'white',
