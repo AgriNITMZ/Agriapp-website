@@ -57,6 +57,10 @@ import OrderHistoryScreen from './src/screens/Orders/MyOrdersPage';
 // import AuthChecker from './src/screens/auth/AuthChecker'; // ❌ REMOVED
 import customFetch from './src/utils/axios';
 import SensorDropdownScreen from './src/screens/Sensor/Sensor';
+import ShiprocketCheckoutScreen from './src/screens/Shiprocket/ShiprocketCheckoutScreen';
+import ShiprocketSuccessScreen from './src/screens/Shiprocket/ShiprocketSuccessScreen';
+import ShiprocketOrdersScreen from './src/screens/Shiprocket/ShiprocketOrdersScreen';
+import ShiprocketTrackScreen from './src/screens/Shiprocket/ShiprocketTrackScreen';
 import {
   getUserFromLocalStorage,
   removeUserFromLocalStorage
@@ -128,6 +132,11 @@ const StackNav = ({ route, isAuthenticated: isAuthProp }) => {
           component={NotificationScreen} 
           options={{ headerShown: false }}
       />
+      {/* Shiprocket Screens */}
+      <Stack.Screen name="ShiprocketCheckout" component={ShiprocketCheckoutScreen} />
+      <Stack.Screen name="ShiprocketSuccess" component={ShiprocketSuccessScreen} />
+      <Stack.Screen name="ShiprocketOrders" component={ShiprocketOrdersScreen} />
+      <Stack.Screen name="ShiprocketTrack" component={ShiprocketTrackScreen} />
     </Stack.Navigator>
   );
 };
