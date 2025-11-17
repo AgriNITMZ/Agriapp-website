@@ -16,11 +16,11 @@ const Banner = () => {
       // "https://www.yardproduct.com/blog/wp-content/uploads/2016/01/gardening-banner.jpg",
       // "https://t3.ftcdn.net/jpg/06/58/31/10/360_F_658311073_jv0oobaa7DOjWlya5LeEx2Wq64iRLyhB.jpg",
       require("../../assets/images/banner/img1.jpg"),
-      require("../../assets/images/banner/img2.png"),
-      require("../../assets/images/banner/img3.png"),
-      require("../../assets/images/banner/img4.png"),
-      require("../../assets/images/banner/img5.png"),
-      require("../../assets/images/banner/img6.png"),
+      require("../../assets/images/banner/img2.jpg"),
+      require("../../assets/images/banner/img3.jpg"),
+      require("../../assets/images/banner/img4.jpg"),
+      require("../../assets/images/banner/img5.jpg"),
+      require("../../assets/images/banner/img6.jpg"),
     ]);
     return () => setBannerData([]);
   }, []);
