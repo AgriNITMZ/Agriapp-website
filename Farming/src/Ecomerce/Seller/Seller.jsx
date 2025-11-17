@@ -80,7 +80,7 @@ const Seller = () => {
       lg:translate-x-0 lg:static
     `}>
       <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold">Admin Panel</h2>
+        <h2 className="text-xl font-bold">Seller Panel</h2>
       </div>
       
       <nav className="py-4 flex flex-col justify-between">
