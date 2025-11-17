@@ -155,6 +155,7 @@ const SalesAnalytics = ({ navigation }) => {
                             </Card.Content>
                         </Card>
                     )}
+                    <View style={{ height: 80 }} />
                 </ScrollView>
                 <SellerFooterNavigation navigation={navigation} activePage="Dashboard" />
             </View>
