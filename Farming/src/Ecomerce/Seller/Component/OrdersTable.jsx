@@ -84,17 +84,50 @@ const OrdersTable = () => {
         throw new Error("Token expired or not found");
       }
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/order/seller/orders`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      // Fetch both regular orders and Shiprocket orders
+      const [regularOrdersResponse, shiprocketOrdersResponse] = await Promise.all([
+        axios.post(
+          `${import.meta.env.VITE_API_URL}/order/seller/orders`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(err => {
+          console.error('Error fetching regular orders:', err);
+          return { data: { orders: [] } };
+        }),
+        axios.get(
+          `${import.meta.env.VITE_API_URL}/shiprocket/orders`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(err => {
+          console.error('Error fetching Shiprocket orders:', err);
+          return { data: { orders: [] } };
+        })
+      ]);
 
-      setOrders(response.data.orders || []);
+      const regularOrders = regularOrdersResponse.data.orders || [];
+      let shiprocketOrders = shiprocketOrdersResponse.data.orders || [];
+
+      // Normalize Shiprocket orders to match regular order structure
+      shiprocketOrders = shiprocketOrders.map(order => ({
+        ...order,
+        _id: order._id,
+        userId: order.user, // Map 'user' to 'userId'
+        orderStatus: order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Processing', // Map 'status' to 'orderStatus' and capitalize
+        paymentStatus: order.paymentInfo?.razorpay_payment_id ? 'Completed' : 'Pending',
+        shiprocketOrderId: order.shiprocket?.order_id,
+        shiprocketShipmentId: order.shiprocket?.shipment_id,
+        awbCode: order.shiprocket?.awb_code,
+        courierName: order.shippingInfo?.courierName,
+        // Keep original items structure
+        items: order.items || []
+      }));
+
+      // Merge both order types
+      const allOrders = [...regularOrders, ...shiprocketOrders];
+      
+      // Sort by creation date (newest first)
+      allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      setOrders(allOrders);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -244,7 +277,7 @@ const OrdersTable = () => {
             </span>
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            {connected ? 'Real-time updates enabled' : 'Manage and track all your orders'}
+            {connected ? 'Real-time updates enabled for regular orders' : 'View all orders'} • Shiprocket orders are view-only
           </p>
         </div>
         <button
@@ -346,6 +379,9 @@ const OrdersTable = () => {
                     Payment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -354,10 +390,16 @@ const OrdersTable = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50">
+                {filteredOrders.map((order) => {
+                  const isShiprocketOrder = order.shiprocketOrderId || order.shiprocketShipmentId;
+                  
+                  return (
+                  <tr key={order._id} className={`hover:bg-gray-50 ${isShiprocketOrder ? 'bg-green-50' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       #{order._id.slice(-8).toUpperCase()}
+                      {isShiprocketOrder && (
+                        <p className="text-xs text-green-600 font-semibold">Shiprocket</p>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {order.userId?.firstName} {order.userId?.lastName}
@@ -368,11 +410,17 @@ const OrdersTable = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       <div className="max-w-xs">
-                        {order.items.slice(0, 2).map((item, index) => (
-                          <div key={index} className="mb-1">
-                            {item.quantity}x {item.product?.name || 'Product'} ({item.size})
-                          </div>
-                        ))}
+                        {order.items.slice(0, 2).map((item, index) => {
+                          // Handle both regular and Shiprocket order item structures
+                          const itemName = item.product?.name || item.name || 'Product';
+                          const itemSize = item.size || '';
+                          
+                          return (
+                            <div key={index} className="mb-1">
+                              {item.quantity}x {itemName} {itemSize && `(${itemSize})`}
+                            </div>
+                          );
+                        })}
                         {order.items.length > 2 && (
                           <p className="text-xs text-gray-400">+{order.items.length - 2} more</p>
                         )}
@@ -390,12 +438,26 @@ const OrdersTable = () => {
                       </p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {isShiprocketOrder ? (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          🚚 Shiprocket
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          📦 Regular
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {getStatusIcon(order.orderStatus)}
                         <span className={`ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.orderStatus)}`}>
                           {order.orderStatus}
                         </span>
                       </div>
+                      {isShiprocketOrder && order.awbCode && (
+                        <p className="text-xs text-gray-500 mt-1">AWB: {order.awbCode}</p>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
@@ -408,9 +470,13 @@ const OrdersTable = () => {
                         <Eye size={16} />
                         <span>View</span>
                       </button>
+                      {isShiprocketOrder && (
+                        <p className="text-xs text-gray-500 mt-1">View only</p>
+                      )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -446,6 +512,7 @@ const OrdersTable = () => {
 // Order Detail Modal Component
 const OrderDetailModal = ({ order, onClose, onUpdateStatus, updatingStatus }) => {
   const [newStatus, setNewStatus] = useState(order.orderStatus);
+  const isShiprocketOrder = order.shiprocketOrderId || order.shiprocketShipmentId;
 
   const statusOptions = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
@@ -568,30 +635,59 @@ const OrderDetailModal = ({ order, onClose, onUpdateStatus, updatingStatus }) =>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Update Order Status</h4>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                disabled={order.orderStatus === 'Delivered' || order.orderStatus === 'Cancelled'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 mb-3"
-              >
-                {statusOptions.map(status => (
-                  <option 
-                    key={status} 
-                    value={status}
-                    disabled={!canUpdateStatus(order.orderStatus, status)}
+              <h4 className="font-semibold text-gray-900 mb-2">
+                {isShiprocketOrder ? 'Order Status (View Only)' : 'Update Order Status'}
+              </h4>
+              
+              {isShiprocketOrder ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-800 mb-2">
+                    <strong>🚚 Shiprocket Order</strong>
+                  </p>
+                  <p className="text-sm text-gray-700 mb-2">
+                    This order is managed by Shiprocket. Status updates are automatic from the courier.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Current Status: <strong>{order.orderStatus}</strong>
+                  </p>
+                  {order.awbCode && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      AWB Code: <strong>{order.awbCode}</strong>
+                    </p>
+                  )}
+                  {order.courierName && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Courier: <strong>{order.courierName}</strong>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    disabled={order.orderStatus === 'Delivered' || order.orderStatus === 'Cancelled'}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 mb-3"
                   >
-                    {status}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={() => onUpdateStatus(order._id, newStatus)}
-                disabled={updatingStatus || newStatus === order.orderStatus || order.orderStatus === 'Delivered' || order.orderStatus === 'Cancelled'}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                {updatingStatus ? 'Updating...' : 'Update Status'}
-              </button>
+                    {statusOptions.map(status => (
+                      <option 
+                        key={status} 
+                        value={status}
+                        disabled={!canUpdateStatus(order.orderStatus, status)}
+                      >
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => onUpdateStatus(order._id, newStatus)}
+                    disabled={updatingStatus || newStatus === order.orderStatus || order.orderStatus === 'Delivered' || order.orderStatus === 'Cancelled'}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {updatingStatus ? 'Updating...' : 'Update Status'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

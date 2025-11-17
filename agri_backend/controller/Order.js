@@ -253,6 +253,13 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: 'Order not found' });
     }
 
+    // Prevent updating Shiprocket orders - they are managed by Shiprocket API
+    if (order.shiprocketOrderId || order.shiprocketShipmentId) {
+        return res.status(403).json({ 
+            message: 'Cannot update Shiprocket orders. These are managed by Shiprocket API.' 
+        });
+    }
+
     // Check if seller has items in this order
     const hasSellerItems = order.items.some(item => 
         item.sellerId.toString() === sellerId
