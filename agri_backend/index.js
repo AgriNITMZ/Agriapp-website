@@ -4,6 +4,19 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require('socket.io');
 const cors = require('cors');
+
+// Initialize Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      process.env.CORS_ORIGIN,
+      "http://192.168.0.101:19000"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 const fileUpload = require('express-fileupload');
 require('dotenv').config();
 const database = require('./config/dbConnect')
@@ -49,6 +62,7 @@ const orderRoute = require('./routes/Order')
 const newsRoute = require('./routes/News')
 const schemeRoute = require('./routes/Scheme')
 const analyticsRoute = require('./routes/Analytics')
+const shiprocketRoute = require('./routes/Shiprocket')
 
 const chatRoute = require("./routes/chat");
 app.use("/api/v1/chat", chatRoute);
@@ -72,17 +86,36 @@ app.use("/api/v1/order", orderRoute)
 app.use("/api/v1/news", newsRoute)
 app.use("/api/v1/scheme", schemeRoute)
 app.use("/api/v1/analytics", analyticsRoute)
+app.use("/api/v1/shiprocket", shiprocketRoute)
 
 
 app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+
+  // Add any custom socket event handlers here
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
+  });
+});
+
+// Make io accessible to routes if needed
+app.set('io', io);
+
 // Initialize news cron job (every 30 minutes)
 const { initializeNewsCron } = require("./scraper/newsCronJob");
 initializeNewsCron();
 
-// Start server
-app.listen(PORT, () => {
+// Start server - Use server.listen() instead of app.listen() for Socket.IO
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Socket.IO server ready`);
 });
