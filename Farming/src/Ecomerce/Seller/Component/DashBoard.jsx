@@ -195,7 +195,7 @@ const DashBoard = ({ onRouteChange }) => {
           </button>
           
           <button
-            onClick={() => navigate('/seller/analytics')}
+            onClick={() => onRouteChange ? onRouteChange('/analytics') : navigate('/seller/analytics')}
             className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
             <TrendingUp className="w-5 h-5" />

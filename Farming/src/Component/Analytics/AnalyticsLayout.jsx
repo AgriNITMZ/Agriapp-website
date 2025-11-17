@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { analyticsUtils } from '../../services/operations/analytics';
 
-const AnalyticsLayout = ({ children, title, onPeriodChange, currentPeriod = '30d' }) => {
+const AnalyticsLayout = ({ children, title, onPeriodChange, currentPeriod = '30d', hideBackButton = false }) => {
     const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
     const periodOptions = analyticsUtils.getPeriodOptions();
     const navigate = useNavigate();
@@ -16,16 +16,18 @@ const AnalyticsLayout = ({ children, title, onPeriodChange, currentPeriod = '30d
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 pt-24">
+        <div className={`min-h-screen bg-gray-50 p-6 ${hideBackButton ? '' : 'pt-24'}`}>
             <div className="max-w-7xl mx-auto">
-                {/* Back Button */}
-                <button
-                    onClick={() => navigate(-1)}
-                    className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span className="font-medium">Back</span>
-                </button>
+                {/* Back Button - Only show if not hidden */}
+                {!hideBackButton && (
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span className="font-medium">Back</span>
+                    </button>
+                )}
 
                 {/* Header */}
                 <div className="mb-8 flex justify-between items-center">

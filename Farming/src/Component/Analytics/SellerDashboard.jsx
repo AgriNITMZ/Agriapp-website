@@ -5,7 +5,7 @@ import ChartWidget from './ChartWidget';
 import { sellerAnalyticsAPI } from '../../services/operations/analytics';
 import toast from 'react-hot-toast';
 
-const SellerDashboard = () => {
+const SellerDashboard = ({ hideBackButton = false }) => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30d');
   const [overview, setOverview] = useState(null);
@@ -73,6 +73,7 @@ const SellerDashboard = () => {
       title="Seller Analytics" 
       onPeriodChange={handlePeriodChange}
       currentPeriod={period}
+      hideBackButton={hideBackButton}
     >
       {/* Overview Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

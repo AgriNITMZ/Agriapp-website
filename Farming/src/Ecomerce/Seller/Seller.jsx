@@ -5,6 +5,7 @@ import ProductTable from './Component/ProductTable';
 import DashBoard from './Component/DashBoard';
 import BulkUpload from './Component/AddBulkProduct';
 import LowStockProducts from './Component/LowStockProducts';
+import SellerAnalytics from '../../Component/Analytics/SellerDashboard';
 import { useNavigate } from 'react-router-dom';
 
 // Placeholder components for dashboard views
@@ -57,6 +58,8 @@ const Seller = () => {
     switch (currentRoute) {
       case '/':
         return <DashBoard onRouteChange={setCurrentRoute} />;
+      case '/analytics':
+        return <SellerAnalytics hideBackButton={true} />;
       case '/products':
         return <ProductTable />;
       case '/low-stock':
@@ -100,14 +103,12 @@ const Seller = () => {
           <div 
             key={item.path}
             onClick={() => {
-              if (item.path === '/analytics') {
-                navigate('/seller/analytics');
-              } else {
-                setCurrentRoute(item.path);
-              }
+              setCurrentRoute(item.path);
               if (!isLargeScreen) setSidebarVisible(false);
             }}
-            className="flex items-center p-3 hover:bg-gray-700 cursor-pointer"
+            className={`flex items-center p-3 hover:bg-gray-700 cursor-pointer transition-colors ${
+              currentRoute === item.path ? 'bg-gray-700' : ''
+            }`}
           >
             <span className="mr-3">{item.icon}</span>
             <span>{item.name}</span>
