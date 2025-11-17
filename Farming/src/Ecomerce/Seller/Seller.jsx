@@ -4,6 +4,7 @@ import OrdersTable from './Component/OrdersTable';
 import ProductTable from './Component/ProductTable';
 import DashBoard from './Component/DashBoard';
 import BulkUpload from './Component/AddBulkProduct';
+import LowStockProducts from './Component/LowStockProducts';
 import { useNavigate } from 'react-router-dom';
 
 // Placeholder components for dashboard views
@@ -24,6 +25,7 @@ const Seller = () => {
     { name: "Dashboard", path: "/", icon: "📊" },
     { name: "Analytics", path: "/analytics", icon: "📈" },
     { name: "Products", path: "/products", icon: "📦" },
+    { name: "Low Stock Items", path: "/low-stock", icon: "⚠️" },
     { name: "Customers", path: "/customers", icon: "👥" },
     { name: "Orders", path: "/orders", icon: "🛒" },
     { name: "Total Earnings", path: "/earnings", icon: "💰" },
@@ -54,9 +56,11 @@ const Seller = () => {
   const renderCurrentView = () => {
     switch (currentRoute) {
       case '/':
-        return <DashBoard />;
+        return <DashBoard onRouteChange={setCurrentRoute} />;
       case '/products':
         return <ProductTable />;
+      case '/low-stock':
+        return <LowStockProducts />;
       case '/customers':
         return <Customers />;
       case '/orders':
@@ -68,7 +72,7 @@ const Seller = () => {
       case '/product/update':
         return <UpdateProductForm />;
       default:
-        return <DashBoard />;
+        return <DashBoard onRouteChange={setCurrentRoute} />;
     }
   };
 

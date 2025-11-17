@@ -260,7 +260,15 @@ const AddProduct = () => {
 
       await axios[method](url, formData, config);
       toast.success(isEditing ? 'Product updated!' : 'Product added!', { id: toastId });
-      navigate('/seller');
+      
+      // Navigate to products page instead of dashboard
+      if (isEditing) {
+        // Stay on the same page after editing, or go back
+        navigate(-1); // Go back to previous page
+      } else {
+        // After adding, go to products list
+        navigate('/seller');
+      }
     } catch (err) {
       console.error('Error saving product:', err);
       toast.error('Failed to save product', { id: toastId });
@@ -482,78 +490,101 @@ const AddProduct = () => {
 
       {/* Price & Sizes */}
       <div className="mb-6">
-        <label className="block mb-1 font-medium text-gray-700">Price & Sizes</label>
+        <label className="block mb-3 font-medium text-gray-700 text-lg">Price & Sizes</label>
         {productData.priceDetails.map((detail, idx) => (
           <div
             key={idx}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg"
+            className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
           >
-            <input
-              type="number"
-              name="price"
-              placeholder="Price"
-              value={detail.price}
-              onWheel={(e) => e.target.blur()}
-              onChange={(e) => handlePriceDetailChange(idx, e)}
-              className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            <input
-              type="number"
-              name="discountedPrice"
-              placeholder="Discount Price"
-              value={detail.discountedPrice}
-              onChange={(e) => handlePriceDetailChange(idx, e)}
-              onWheel={(e) => e.target.blur()}
-              className={`p-3 border rounded-lg focus:ring-2 focus:outline-none ${
-                detail.discountedPrice === 0 || !detail.discountedPrice
-                  ? 'border-red-300 focus:ring-red-500'
-                  : Number(detail.discountedPrice) > Number(detail.price)
-                  ? 'border-orange-300 focus:ring-orange-500'
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
-              required
-              min="1"
-            />
-            {(detail.discountedPrice === 0 || !detail.discountedPrice) && (
-              <span className="col-span-4 text-xs text-red-500">
-                ⚠️ Discounted price cannot be 0 or empty
-              </span>
-            )}
-            {detail.discountedPrice && Number(detail.discountedPrice) > Number(detail.price) && (
-              <span className="col-span-4 text-xs text-orange-500">
-                ⚠️ Discounted price should be less than or equal to original price
-              </span>
-            )}
-            <input
-              type="text"
-              name="size"
-              placeholder="Size"
-              value={detail.size}
-              onChange={(e) => handlePriceDetailChange(idx, e)}
-              className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-            <div className="flex items-center gap-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Original Price (₹) *
+              </label>
               <input
                 type="number"
-                name="quantity"
-                placeholder="Qty"
-                value={detail.quantity}
+                name="price"
+                placeholder="e.g., 100"
+                value={detail.price}
+                onWheel={(e) => e.target.blur()}
                 onChange={(e) => handlePriceDetailChange(idx, e)}
-                className="p-3 border border-gray-300 rounded-lg flex-grow focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 required
               />
-              {idx > 0 && (
-                <button
-                  type="button"
-                  onClick={() => removePriceDetail(idx)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 size={20} />
-                </button>
-              )}
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Selling Price (₹) *
+              </label>
+              <input
+                type="number"
+                name="discountedPrice"
+                placeholder="e.g., 80"
+                value={detail.discountedPrice}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                onWheel={(e) => e.target.blur()}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none ${
+                  detail.discountedPrice === 0 || !detail.discountedPrice
+                    ? 'border-red-300 focus:ring-red-500'
+                    : Number(detail.discountedPrice) > Number(detail.price)
+                    ? 'border-orange-300 focus:ring-orange-500'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                required
+                min="1"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Size/Unit *
+              </label>
+              <input
+                type="text"
+                name="size"
+                placeholder="e.g., 1kg, 500g, Pack"
+                value={detail.size}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Stock Quantity *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  name="quantity"
+                  placeholder="e.g., 50"
+                  value={detail.quantity}
+                  onChange={(e) => handlePriceDetailChange(idx, e)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+                {idx > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removePriceDetail(idx)}
+                    className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    title="Remove this variant"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Validation Messages */}
+            {(detail.discountedPrice === 0 || !detail.discountedPrice) && (
+              <div className="col-span-4 text-xs text-red-500 -mt-2">
+                ⚠️ Selling price cannot be 0 or empty
+              </div>
+            )}
+            {detail.discountedPrice && Number(detail.discountedPrice) > Number(detail.price) && (
+              <div className="col-span-4 text-xs text-orange-500 -mt-2">
+                ⚠️ Selling price should be less than or equal to original price
+              </div>
+            )}
           </div>
         ))}
         <button

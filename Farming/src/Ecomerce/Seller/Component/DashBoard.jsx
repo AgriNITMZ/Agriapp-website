@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Package, ShoppingCart, DollarSign, TrendingUp, AlertCircle, Eye, Edit, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,13 +6,14 @@ import { getProductListedBySeller } from '../../../services/operations/Seller/li
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const DashBoard = () => {
+const DashBoard = ({ onRouteChange }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { sellerProducts } = useSelector((state) => state.sellerproduct);
   
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hasFetchedRef = useRef(false);
 
   // Get token
   const getToken = () => {
@@ -20,20 +21,7 @@ const DashBoard = () => {
     return storedTokenData && Date.now() < storedTokenData.expires ? storedTokenData.value : null;
   };
 
-  useEffect(() => {
-    const token = getToken();
-    if (token) {
-      dispatch(getProductListedBySeller(token));
-    }
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (sellerProducts) {
-      fetchDashboardData();
-    }
-  }, [sellerProducts]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     const token = getToken();
     if (!token) {
       toast.error('Please login to continue');
@@ -57,10 +45,14 @@ const DashBoard = () => {
         );
         orders = ordersResponse.data.orders || [];
         
-        // Calculate total revenue from completed orders
-        totalRevenue = orders
-          .filter(order => order.orderStatus === 'Delivered' || order.paymentStatus === 'Completed')
-          .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        // Calculate total revenue from all orders (matching analytics calculation)
+        totalRevenue = orders.reduce((sum, order) => {
+          // Sum up revenue from items belonging to this seller
+          const orderRevenue = order.items.reduce((itemSum, item) => {
+            return itemSum + ((item.selectedDiscountedPrice || 0) * (item.quantity || 0));
+          }, 0);
+          return sum + orderRevenue;
+        }, 0);
       } catch (orderError) {
         console.log('Orders not available yet:', orderError);
       }
@@ -68,8 +60,8 @@ const DashBoard = () => {
       // Calculate analytics using the same data structure as ProductTable
       const totalProducts = products.length;
       
-      // Count low stock products (using product.stock field)
-      const lowStockProducts = products.filter(p => (p.stock || 0) < 10).length;
+      // Count low stock products (using product.stock field) - threshold is 8
+      const lowStockProducts = products.filter(p => (p.stock || 0) <= 8).length;
 
       // Calculate estimated inventory value using product.price and product.stock
       const inventoryValue = products.reduce((sum, product) => {
@@ -94,7 +86,22 @@ const DashBoard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sellerProducts, navigate]);
+
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      dispatch(getProductListedBySeller(token));
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Only fetch once when sellerProducts is available
+    if (sellerProducts && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchDashboardData();
+    }
+  }, [sellerProducts, fetchDashboardData]);
 
   if (loading) {
     return (
@@ -205,103 +212,102 @@ const DashBoard = () => {
         </div>
       </div>
 
-      {/* Recent Products */}
+      {/* Low Stock Items */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Recent Products</h2>
-          <button
-            onClick={() => navigate('/seller')}
-            className="text-green-600 hover:text-green-700 text-sm font-medium"
-          >
-            View All →
-          </button>
-        </div>
-
-        {sellerProducts && sellerProducts.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {(sellerProducts || []).slice(0, 5).map((product) => {
-                  // Use the same data structure as ProductTable
-                  const displayPrice = product.price || 0;
-                  const totalStock = product.stock || 0;
-
-                  // Debug log
-                  if (totalStock === 0) {
-                    console.log('Product with 0 stock:', product.name, 'Seller data:', sellerData);
-                  }
-
-                  return (
-                    <tr key={product._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <img
-                            src={product.images?.[0] || '/placeholder.png'}
-                            alt={product.name}
-                            className="h-10 w-10 rounded-md object-cover"
-                          />
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {displayPrice > 0 ? (
-                          <span>₹{displayPrice.toFixed(2)}</span>
-                        ) : (
-                          <span className="text-gray-400">Not set</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          totalStock === 0 ? 'bg-gray-100 text-gray-800' :
-                          totalStock < 10 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                          {totalStock} units
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => navigate(`/product/item/${product._id}`)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => navigate(`/seller/edit-product/${product._id}`)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No products yet</p>
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+              Low Stock Items
+            </h2>
             <button
-              onClick={() => navigate('/seller/addproduct')}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
+              onClick={() => onRouteChange ? onRouteChange('/low-stock') : navigate('/seller/low-stock')}
+              className="text-red-600 hover:text-red-700 text-sm font-medium"
             >
-              Add Your First Product
+              View All →
             </button>
           </div>
-        )}
+          <p className="text-xs text-gray-500 mt-1 ml-7">Keep stock above 8 units to avoid low stock alerts</p>
+        </div>
+
+        {(() => {
+          const lowStockItems = (sellerProducts || []).filter(p => (p.stock || 0) <= 8);
+          
+          return lowStockItems.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {lowStockItems.slice(0, 5).map((product) => {
+                    const displayPrice = product.price || 0;
+                    const totalStock = product.stock || 0;
+
+                    return (
+                      <tr key={product._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <img
+                              src={product.images?.[0] || '/placeholder.png'}
+                              alt={product.name}
+                              className="h-10 w-10 rounded-md object-cover"
+                            />
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {displayPrice > 0 ? (
+                            <span>₹{displayPrice.toFixed(2)}</span>
+                          ) : (
+                            <span className="text-gray-400">Not set</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            totalStock === 0 ? 'bg-red-100 text-red-800' :
+                            totalStock <= 3 ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {totalStock} units - Restock Now!
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => navigate(`/product/item/${product._id}`)}
+                            className="text-blue-600 hover:text-blue-900 mr-3"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => navigate(`/seller/edit-product/${product._id}`)}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+              <p className="text-gray-500 mb-2 font-medium">All products are well stocked!</p>
+              <p className="text-sm text-gray-400">No items with stock at or below 8 units</p>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
