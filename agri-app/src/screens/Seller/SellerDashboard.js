@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from '
 import { Text, Card } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import customFetch from '../../utils/axios';
-import { Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ChevronRight } from 'lucide-react-native';
+import { Package, ShoppingCart, AlertCircle, TrendingUp, ChevronRight, BarChart3 } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
 import SellerFooterNavigation from '../../components/seller/SellerFooterNavigation';
 
@@ -43,7 +43,7 @@ const SellerDashboard = ({ navigation }) => {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Loading Dashboard...</Text>
+                <Text style={styles.loadingText}>Loading Dashboard...</Text>
             </View>
         );
     }
@@ -60,17 +60,23 @@ const SellerDashboard = ({ navigation }) => {
                     }
                 >
                     {/* Total Revenue Card */}
-                    <Card style={styles.revenueCard}>
-                        <Card.Content>
-                            <View style={styles.revenueHeader}>
-                                <DollarSign size={40} color="#4CAF50" />
-                                <View style={styles.revenueInfo}>
-                                    <Text style={styles.revenueLabel}>Total Revenue</Text>
+                    <View style={styles.revenueCard}>
+                        <View style={styles.revenueGradient}>
+                            <View style={styles.revenueContent}>
+                                <View style={styles.revenueTopSection}>
+                                    <View style={styles.revenueIconContainer}>
+                                        <BarChart3 size={32} color="#fff" strokeWidth={2.5} />
+                                    </View>
+                                    <View style={styles.revenueBadge}>
+                                        <Text style={styles.revenueBadgeText}>Cumulative Revenue Generated</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.revenueBottomSection}>
                                     <Text style={styles.revenueValue}>₹{analytics?.totalRevenue || 0}</Text>
                                 </View>
                             </View>
-                        </Card.Content>
-                    </Card>
+                        </View>
+                    </View>
 
                     {/* Quick Stats */}
                     <View style={styles.quickStatsContainer}>
@@ -245,7 +251,7 @@ const SellerDashboard = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#F8F9FA',
     },
     scrollContent: {
         paddingBottom: 80,
@@ -254,75 +260,142 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#F8F9FA',
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#6B7280',
+        fontWeight: '500',
     },
     revenueCard: {
-        margin: 15,
-        marginTop: 15,
-        elevation: 4,
-        backgroundColor: '#fff',
+        margin: 16,
+        marginTop: 16,
+        borderRadius: 20,
+        elevation: 8,
+        shadowColor: '#2E7D32',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        overflow: 'hidden',
     },
-    revenueHeader: {
+    revenueGradient: {
+        backgroundColor: '#2E7D32',
+        borderRadius: 20,
+    },
+    revenueContent: {
+        padding: 24,
+    },
+    revenueTopSection: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 10,
+        marginBottom: 24,
     },
-    revenueInfo: {
-        marginLeft: 20,
-        flex: 1,
+    revenueIconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    revenueBadge: {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    revenueBadgeText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    revenueBottomSection: {
+        alignItems: 'flex-start',
     },
     revenueLabel: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 8,
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.85)',
+        marginBottom: 12,
+        fontWeight: '600',
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
     },
     revenueValue: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: '#4CAF50',
+        fontSize: 42,
+        fontWeight: '800',
+        color: '#fff',
+        letterSpacing: -0.5,
+        marginBottom: 8,
+    },
+    revenueSubtext: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.75)',
+        fontWeight: '500',
+        letterSpacing: 0.2,
     },
     quickStatsContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 15,
+        paddingHorizontal: 16,
         justifyContent: 'space-between',
-        marginBottom: 15,
+        marginBottom: 16,
     },
     quickStatCard: {
         width: '48%',
     },
     statCardInner: {
-        elevation: 2,
+        elevation: 4,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     quickStatContent: {
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingVertical: 20,
     },
     quickStatValue: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginTop: 8,
-        color: '#333',
+        fontSize: 28,
+        fontWeight: '700',
+        marginTop: 12,
+        color: '#1A1A1A',
     },
     quickStatLabel: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 4,
+        fontSize: 13,
+        color: '#6B7280',
+        marginTop: 6,
         textAlign: 'center',
+        fontWeight: '500',
     },
     manageOrdersCard: {
-        margin: 15,
+        margin: 16,
         marginTop: 0,
-        elevation: 3,
+        elevation: 4,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     manageOrdersHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
     },
     manageOrdersTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginLeft: 10,
-        color: '#333',
+        fontSize: 19,
+        fontWeight: '700',
+        marginLeft: 12,
+        color: '#1A1A1A',
     },
     orderStatusGrid: {
         flexDirection: 'row',
@@ -332,43 +405,59 @@ const styles = StyleSheet.create({
     orderStatusItem: {
         width: '31%',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
     },
     orderStatusBadge: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
+        width: 72,
+        height: 72,
+        borderRadius: 36,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+        elevation: 2,
     },
     orderStatusValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 26,
+        fontWeight: '700',
     },
     orderStatusLabel: {
         fontSize: 12,
-        color: '#666',
+        color: '#6B7280',
         textAlign: 'center',
+        fontWeight: '500',
     },
     alertCard: {
-        margin: 15,
-        backgroundColor: '#fff3e0',
-        elevation: 2,
+        margin: 16,
+        backgroundColor: '#FFF4E6',
+        elevation: 3,
+        borderRadius: 12,
+        borderLeftWidth: 4,
+        borderLeftColor: '#FF6B6B',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
     },
     alertHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 16,
     },
     alertTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
-        color: '#f44336',
+        fontSize: 17,
+        fontWeight: '700',
+        marginLeft: 10,
+        color: '#DC2626',
     },
     alertItem: {
-        marginVertical: 6,
+        marginVertical: 8,
+        backgroundColor: '#fff',
+        padding: 12,
+        borderRadius: 8,
     },
     alertItemContent: {
         flexDirection: 'row',
@@ -377,25 +466,31 @@ const styles = StyleSheet.create({
     },
     alertText: {
         fontSize: 14,
-        color: '#333',
+        color: '#374151',
         flex: 1,
+        fontWeight: '500',
     },
     stockBadge: {
-        backgroundColor: '#f44336',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
+        backgroundColor: '#DC2626',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
     },
     stockText: {
         color: '#fff',
         fontSize: 12,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
     analyticsCard: {
-        margin: 15,
+        margin: 16,
         marginTop: 0,
-        elevation: 2,
+        elevation: 4,
         backgroundColor: '#fff',
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     analyticsHeader: {
         flexDirection: 'row',
@@ -408,23 +503,24 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     analyticsIconContainer: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         backgroundColor: '#E8F5E9',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 15,
+        marginRight: 16,
     },
     analyticsTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#1A1A1A',
         marginBottom: 4,
     },
     analyticsSubtitle: {
         fontSize: 13,
-        color: '#666',
+        color: '#6B7280',
+        fontWeight: '500',
     },
 });
 

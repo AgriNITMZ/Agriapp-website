@@ -1721,20 +1721,56 @@ const getAdminFinancialAnalytics = async (req, res) => {
 };
 
 // ============ CHANGED FOR APP - Seller Dashboard Analytics ============
-// Simplified seller dashboard endpoint for mobile app
+// Simplified seller dashboard endpoint for mobile app with period filtering
 const getSellerDashboardAnalytics = async (req, res) => {
     try {
         const sellerId = req.user.id;
+        const { period } = req.query; // Get period from query params (optional for backward compatibility)
+        
+        console.log('📊 Seller Dashboard Analytics Request:');
+        console.log('   Seller ID:', sellerId);
+        console.log('   Period:', period || 'overall (no period specified)');
 
-        // Get total products count
+        // Calculate date range based on period
+        let dateFilter = {};
+        if (period && period !== 'overall') {
+            const now = new Date();
+            let startDate;
+            
+            switch (period) {
+                case '7days':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30days':
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case '6months':
+                    startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+                    break;
+                case '1year':
+                    startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    startDate = null;
+            }
+            
+            if (startDate) {
+                dateFilter = { createdAt: { $gte: startDate } };
+            }
+        }
+
+        // Get total products count (not affected by period)
         const totalProducts = await Product.countDocuments({
             'sellers.sellerId': sellerId
         });
 
-        // Get orders for this seller
-        const orders = await Order.find({
-            'items.sellerId': sellerId
-        });
+        // Get orders for this seller with date filter
+        const orderQuery = {
+            'items.sellerId': sellerId,
+            ...dateFilter
+        };
+        
+        const orders = await Order.find(orderQuery);
 
         // Calculate metrics
         let totalOrders = 0;
@@ -1777,7 +1813,7 @@ const getSellerDashboardAnalytics = async (req, res) => {
             }
         });
 
-        // Get low stock products
+        // Get low stock products (not affected by period)
         const products = await Product.find({
             'sellers.sellerId': sellerId
         });
@@ -1801,7 +1837,7 @@ const getSellerDashboardAnalytics = async (req, res) => {
             }
         });
 
-        // Get sales trend for last 7 days
+        // Get sales trend for last 7 days (always show last 7 days for chart)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -1830,20 +1866,29 @@ const getSellerDashboardAnalytics = async (req, res) => {
             value: Math.round(salesByDay[date])
         }));
 
+        const responseData = {
+            totalProducts,
+            totalOrders,
+            totalRevenue: Math.round(totalRevenue),
+            pendingOrders,
+            processingOrders,
+            shippedOrders,
+            deliveredOrders,
+            cancelledOrders,
+            lowStockProducts: lowStockProducts.slice(0, 5),
+            salesTrend,
+            period: period || 'overall' // Return the period for reference
+        };
+        
+        console.log('📊 Seller Dashboard Analytics Response:');
+        console.log('   Total Products:', responseData.totalProducts);
+        console.log('   Total Orders:', responseData.totalOrders);
+        console.log('   Total Revenue:', responseData.totalRevenue);
+        console.log('   Period:', responseData.period);
+
         res.status(200).json({
             success: true,
-            data: {
-                totalProducts,
-                totalOrders,
-                totalRevenue: Math.round(totalRevenue),
-                pendingOrders,
-                processingOrders,
-                shippedOrders,
-                deliveredOrders,
-                cancelledOrders,
-                lowStockProducts: lowStockProducts.slice(0, 5),
-                salesTrend
-            }
+            data: responseData
         });
 
     } catch (error) {

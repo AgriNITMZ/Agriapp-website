@@ -1,21 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, Dimensions, TouchableOpacity } from 'react-native';
 import { Text, Card } from 'react-native-paper';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import customFetch from '../../utils/axios';
-import { TrendingUp, DollarSign, ShoppingBag } from 'lucide-react-native';
+import { TrendingUp, BarChart3, RefreshCw, Package } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
 import SellerFooterNavigation from '../../components/seller/SellerFooterNavigation';
 
 const screenWidth = Dimensions.get('window').width;
+
+const TIME_PERIODS = [
+    { label: 'Last 7 Days', value: '7days' },
+    { label: 'Last 30 Days', value: '30days' },
+    { label: 'Last 6 Months', value: '6months' },
+    { label: 'Last Year', value: '1year' },
+    { label: 'Overall', value: 'overall' }
+];
+
 const SalesAnalytics = ({ navigation }) => {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedPeriod, setSelectedPeriod] = useState('overall');
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = async (period = selectedPeriod) => {
         try {
-            const response = await customFetch.get('/analytics/seller-dashboard');
+            const response = await customFetch.get(`/analytics/seller-dashboard?period=${period}`);
             setAnalytics(response.data.data);
         } catch (error) {
             console.error('Error fetching analytics:', error);
@@ -29,6 +39,12 @@ const SalesAnalytics = ({ navigation }) => {
         fetchAnalytics();
     }, []);
 
+    useEffect(() => {
+        if (!loading) {
+            fetchAnalytics(selectedPeriod);
+        }
+    }, [selectedPeriod]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchAnalytics();
@@ -37,7 +53,7 @@ const SalesAnalytics = ({ navigation }) => {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Loading Analytics...</Text>
+                <Text style={styles.loadingText}>Loading Analytics...</Text>
             </View>
         );
     }
@@ -59,35 +75,72 @@ const SalesAnalytics = ({ navigation }) => {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                     }
                 >
-                    {/* Revenue Summary */}
-                    <Card style={styles.revenueCard}>
-                        <Card.Content>
-                            <View style={styles.revenueHeader}>
-                                <DollarSign size={32} color="#4CAF50" />
-                                <View style={styles.revenueInfo}>
-                                    <Text style={styles.revenueLabel}>Total Revenue</Text>
-                                    <Text style={styles.revenueValue}>₹{analytics?.totalRevenue || 0}</Text>
-                                </View>
-                            </View>
-                        </Card.Content>
-                    </Card>
+                    {/* Time Period Selector and Refresh Button */}
+                    <View style={styles.controlsContainer}>
+                        <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.periodSelector}
+                        >
+                            {TIME_PERIODS.map((period) => (
+                                <TouchableOpacity
+                                    key={period.value}
+                                    style={[
+                                        styles.periodButton,
+                                        selectedPeriod === period.value && styles.periodButtonActive
+                                    ]}
+                                    onPress={() => setSelectedPeriod(period.value)}
+                                >
+                                    <Text style={[
+                                        styles.periodButtonText,
+                                        selectedPeriod === period.value && styles.periodButtonTextActive
+                                    ]}>
+                                        {period.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                        <TouchableOpacity 
+                            style={styles.refreshButton}
+                            onPress={onRefresh}
+                        >
+                            <RefreshCw size={20} color="#2E7D32" />
+                        </TouchableOpacity>
+                    </View>
 
-                    {/* Sales Stats */}
-                    <View style={styles.statsContainer}>
+                    {/* Stats Cards Row */}
+                    <View style={styles.statsGrid}>
+                        {/* Total Sales Card */}
                         <Card style={styles.statCard}>
                             <Card.Content style={styles.statContent}>
-                                <ShoppingBag size={24} color="#2196F3" />
-                                <Text style={styles.statValue}>{analytics?.deliveredOrders || 0}</Text>
-                                <Text style={styles.statLabel}>Completed Sales</Text>
+                                <View style={styles.statIconContainer}>
+                                    <Package size={24} color="#2196F3" />
+                                </View>
+                                <Text style={styles.statValue}>{analytics?.totalOrders || 0}</Text>
+                                <Text style={styles.statLabel}>Total Sales</Text>
                             </Card.Content>
                         </Card>
 
+                        {/* Total Revenue Card */}
                         <Card style={styles.statCard}>
                             <Card.Content style={styles.statContent}>
-                                <TrendingUp size={24} color="#FF9800" />
+                                <View style={styles.statIconContainer}>
+                                    <BarChart3 size={24} color="#4CAF50" />
+                                </View>
+                                <Text style={styles.statValue}>₹{analytics?.totalRevenue || 0}</Text>
+                                <Text style={styles.statLabel}>Total Revenue</Text>
+                            </Card.Content>
+                        </Card>
+
+                        {/* Avg Order Value Card */}
+                        <Card style={styles.statCard}>
+                            <Card.Content style={styles.statContent}>
+                                <View style={styles.statIconContainer}>
+                                    <TrendingUp size={24} color="#FF9800" />
+                                </View>
                                 <Text style={styles.statValue}>
-                                    ₹{analytics?.totalRevenue && analytics?.deliveredOrders 
-                                        ? Math.round(analytics.totalRevenue / analytics.deliveredOrders) 
+                                    ₹{analytics?.totalRevenue && analytics?.totalOrders 
+                                        ? Math.round(analytics.totalRevenue / analytics.totalOrders) 
                                         : 0}
                                 </Text>
                                 <Text style={styles.statLabel}>Avg Order Value</Text>
@@ -133,7 +186,7 @@ const SalesAnalytics = ({ navigation }) => {
                         <Card style={styles.chartCard}>
                             <Card.Content>
                                 <View style={styles.chartHeader}>
-                                    <DollarSign size={20} color="#2196F3" />
+                                    <BarChart3 size={20} color="#2196F3" />
                                     <Text style={styles.chartTitle}>Daily Sales Comparison</Text>
                                 </View>
                                 <BarChart
@@ -166,78 +219,136 @@ const SalesAnalytics = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#F8F9FA',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#F8F9FA',
     },
-    revenueCard: {
-        margin: 15,
-        elevation: 3,
-        backgroundColor: '#E8F5E9',
+    loadingText: {
+        fontSize: 16,
+        color: '#6B7280',
+        fontWeight: '500',
     },
-    revenueHeader: {
+    controlsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 16,
+        gap: 12,
     },
-    revenueInfo: {
-        marginLeft: 15,
+    periodSelector: {
         flex: 1,
     },
-    revenueLabel: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
+    periodButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        backgroundColor: '#fff',
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
     },
-    revenueValue: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#4CAF50',
+    periodButtonActive: {
+        backgroundColor: '#2E7D32',
+        borderColor: '#2E7D32',
     },
-    statsContainer: {
+    periodButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    periodButtonTextActive: {
+        color: '#fff',
+    },
+    refreshButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    statsGrid: {
         flexDirection: 'row',
-        paddingHorizontal: 15,
+        flexWrap: 'wrap',
+        paddingHorizontal: 16,
         justifyContent: 'space-between',
-        marginBottom: 15,
+        marginBottom: 16,
     },
     statCard: {
-        width: '48%',
-        elevation: 2,
+        width: '31.5%',
+        elevation: 4,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        marginBottom: 12,
     },
     statContent: {
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingVertical: 16,
+        paddingHorizontal: 4,
+    },
+    statIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
     },
     statValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '700',
         marginTop: 8,
-        color: '#333',
+        color: '#1A1A1A',
     },
     statLabel: {
-        fontSize: 12,
-        color: '#666',
+        fontSize: 11,
+        color: '#6B7280',
         marginTop: 4,
         textAlign: 'center',
+        fontWeight: '600',
     },
     chartCard: {
-        margin: 15,
+        margin: 16,
         marginTop: 0,
-        elevation: 3,
+        elevation: 4,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     chartHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 16,
     },
     chartTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
-        color: '#333',
+        fontSize: 17,
+        fontWeight: '700',
+        marginLeft: 10,
+        color: '#1A1A1A',
     },
     chart: {
         marginVertical: 8,

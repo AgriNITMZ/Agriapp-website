@@ -32,33 +32,14 @@ const DashBoard = ({ onRouteChange }) => {
     try {
       setLoading(true);
       
+      // Use backend analytics endpoint (backward compatible - no period parameter means overall data)
+      const analyticsResponse = await axios.get(
+        `${import.meta.env.VITE_API_URL}/analytics/seller-dashboard`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const analyticsData = analyticsResponse.data.data;
       const products = sellerProducts || [];
-
-      // Fetch seller orders
-      let orders = [];
-      let totalRevenue = 0;
-      try {
-        const ordersResponse = await axios.post(
-          `${import.meta.env.VITE_API_URL}/order/seller/orders`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        orders = ordersResponse.data.orders || [];
-        
-        // Calculate total revenue from all orders (matching analytics calculation)
-        totalRevenue = orders.reduce((sum, order) => {
-          // Sum up revenue from items belonging to this seller
-          const orderRevenue = order.items.reduce((itemSum, item) => {
-            return itemSum + ((item.selectedDiscountedPrice || 0) * (item.quantity || 0));
-          }, 0);
-          return sum + orderRevenue;
-        }, 0);
-      } catch (orderError) {
-        console.log('Orders not available yet:', orderError);
-      }
-
-      // Calculate analytics using the same data structure as ProductTable
-      const totalProducts = products.length;
       
       // Count low stock products (using product.stock field) - threshold is 8
       const lowStockProducts = products.filter(p => (p.stock || 0) <= 8).length;
@@ -71,13 +52,13 @@ const DashBoard = ({ onRouteChange }) => {
       }, 0);
 
       setAnalytics({
-        totalProducts,
-        totalOrders: orders.length,
-        totalRevenue: Math.round(totalRevenue),
+        totalProducts: analyticsData.totalProducts,
+        totalOrders: analyticsData.totalOrders,
+        totalRevenue: analyticsData.totalRevenue,
         inventoryValue: Math.round(inventoryValue),
         lowStockProducts,
-        pendingOrders: orders.filter(o => o.orderStatus === 'Pending' || o.orderStatus === 'Processing').length,
-        completedOrders: orders.filter(o => o.orderStatus === 'Delivered').length
+        pendingOrders: analyticsData.pendingOrders,
+        completedOrders: analyticsData.deliveredOrders
       });
 
     } catch (error) {
