@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import CustomTopBar from '../../components/topBar/CustomTopBar';
+import { API_BASE } from '@env';
 
 const SensorDropdownScreen = ({ navigation }) => {
     const [sensorIds, setSensorIds] = useState([]);
@@ -37,7 +38,8 @@ const SensorDropdownScreen = ({ navigation }) => {
     const fetchSensorIds = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://59.93.129.199:8090/apis/get_sensor_ids.php');
+            const apiUrl = API_BASE || 'http://192.168.0.111:4000/api/v1';
+            const response = await fetch(`${apiUrl}/sensor/sensor-ids`);
             const json = await response.json();
 
             if (json.status === 'success' && json.sensor_ids) {
@@ -46,11 +48,11 @@ const SensorDropdownScreen = ({ navigation }) => {
                     setSelectedSensor(json.sensor_ids[0]);
                 }
             } else {
-                Alert.alert('Error', 'Failed to get sensor IDs');
+                Alert.alert('Feature Unavailable', json.message || 'Sensor feature is still in development and will be available soon');
             }
         } catch (error) {
             console.error('Error fetching sensor IDs:', error);
-            Alert.alert('Error', 'Network request failed');
+            Alert.alert('Feature Unavailable', 'Sensor feature is still in development and will be available soon');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -62,8 +64,9 @@ const SensorDropdownScreen = ({ navigation }) => {
 
         setDataLoading(true);
         try {
+            const apiUrl = API_BASE || 'http://192.168.0.111:4000/api/v1';
             const response = await fetch(
-                `http://59.93.129.199:8090/apis/get_sensor_data_pagination.php?table=${selectedSensor}&limit=20&page=${currentPage}`
+                `${apiUrl}/sensor/sensor-data?table=${selectedSensor}&limit=20&page=${currentPage}`
             );
             const json = await response.json();
 
@@ -72,12 +75,12 @@ const SensorDropdownScreen = ({ navigation }) => {
                 setTotalPages(json.total_pages || 0);
                 setCurrentPage(json.current_page || 1);
             } else {
-                Alert.alert('Error', 'Failed to fetch sensor data');
+                Alert.alert('Feature Unavailable', json.message || 'Sensor feature is still in development and will be available soon');
                 setSensorData([]);
             }
         } catch (error) {
             console.error('Error fetching sensor data:', error);
-            Alert.alert('Error', 'Network request failed');
+            Alert.alert('Feature Unavailable', 'Sensor feature is still in development and will be available soon');
             setSensorData([]);
         } finally {
             setDataLoading(false);
