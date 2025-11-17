@@ -1,9 +1,9 @@
 import emailjs from '@emailjs/browser';
 
 // EmailJS configuration
-const EMAILJS_SERVICE_ID = import.meta.env.REACT_APP_EMAILJS_SERVICE_ID;
-const EMAILJS_TEMPLATE_ID = import.meta.env.REACT_APP_EMAILJS_TEMPLATE_ID;
-const EMAILJS_PUBLIC_KEY = import.meta.env.REACT_APP_EMAILJS_PUBLIC_KEY;
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || import.meta.env.REACT_APP_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || import.meta.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || import.meta.env.REACT_APP_EMAILJS_PUBLIC_KEY;
 
 // Initialize EmailJS with public key
 if (EMAILJS_PUBLIC_KEY) {
@@ -77,9 +77,9 @@ export const sendEmail = async (formData) => {
 export const validateEmailJSConfig = () => {
     const missingVars = [];
 
-    if (!EMAILJS_SERVICE_ID) missingVars.push('REACT_APP_EMAILJS_SERVICE_ID');
-    if (!EMAILJS_TEMPLATE_ID) missingVars.push('REACT_APP_EMAILJS_TEMPLATE_ID');
-    if (!EMAILJS_PUBLIC_KEY) missingVars.push('REACT_APP_EMAILJS_PUBLIC_KEY');
+    if (!EMAILJS_SERVICE_ID) missingVars.push('VITE_EMAILJS_SERVICE_ID');
+    if (!EMAILJS_TEMPLATE_ID) missingVars.push('VITE_EMAILJS_TEMPLATE_ID');
+    if (!EMAILJS_PUBLIC_KEY) missingVars.push('VITE_EMAILJS_PUBLIC_KEY');
 
     if (missingVars.length > 0) {
         console.warn('Missing EmailJS environment variables:', missingVars);
