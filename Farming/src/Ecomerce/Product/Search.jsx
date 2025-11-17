@@ -35,7 +35,7 @@ const Search = () => {
     });
 
     return (
-        <div className='mt-16 p-4'>
+        <div className='pt-24 p-4'>
             <h2 className='text-xl font-semibold'>Search Results</h2>
 
             {/* Sorting Options in a Row */}

@@ -63,7 +63,7 @@ const SingleNews = () => {
     });
 
     return (
-        <div className="mt-16 mx-auto my-10 bg-white shadow-xl rounded-lg overflow-hidden">
+        <div className="pt-24 mx-auto my-10 bg-white shadow-xl rounded-lg overflow-hidden">
             <div className="relative">
                 <img 
                     src={news.image} 

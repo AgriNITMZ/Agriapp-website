@@ -75,7 +75,7 @@ const Server = () => {
     console.log("data",data)
 
     return (
-        <div className="bg-green-50 min-h-screen p-4 mt-16">
+        <div className="bg-green-50 min-h-screen p-4 pt-24">
             <div className="max-w-7xl mx-auto">
                 <h1 className="text-2xl font-bold text-green-800 mb-4">Admin Dashboard</h1>
                 {/* Action buttons */}

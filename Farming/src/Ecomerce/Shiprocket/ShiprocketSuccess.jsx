@@ -34,7 +34,7 @@ const ShiprocketSuccess = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 mt-16">
+    <div className="min-h-screen bg-gray-50 py-12 pt-24">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Success Header */}
         <div className="bg-white shadow-lg rounded-lg p-8 mb-6">

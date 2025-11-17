@@ -69,7 +69,7 @@ const ShiprocketTrack = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 mt-16">
+      <div className="min-h-screen bg-gray-50 py-12 pt-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse space-y-4">
             <div className="bg-white h-32 rounded-lg"></div>
@@ -82,7 +82,7 @@ const ShiprocketTrack = () => {
 
   if (!tracking) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 mt-16">
+      <div className="min-h-screen bg-gray-50 py-12 pt-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow-lg rounded-lg p-12 text-center">
             <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -109,7 +109,7 @@ const ShiprocketTrack = () => {
   const awbCode = shipmentTrack?.awb_code || trackingData?.awb_code || shipmentId;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 mt-16">
+    <div className="min-h-screen bg-gray-50 py-12 pt-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button
