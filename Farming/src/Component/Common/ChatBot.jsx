@@ -89,7 +89,7 @@ export default function ChatBot() {
 
     // 🔹 Step 2: If not FAQ, call backend
     try {
-      const { data } = await axios.post(`${API_BASE}/api/v1/chat`, {
+      const { data } = await axios.post(`${API_BASE}/chat`, {
         message: input,
         cart: JSON.parse(localStorage.getItem("cart") || "[]"),
       });
