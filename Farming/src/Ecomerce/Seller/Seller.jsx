@@ -81,6 +81,14 @@ const Seller = () => {
     `}>
       <div className="p-4 border-b border-gray-700">
         <h2 className="text-xl font-bold">Seller Panel</h2>
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="mt-3 w-full flex items-center space-x-2 text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+        >
+          <span>←</span>
+          <span>Back to Home</span>
+        </button>
       </div>
       
       <nav className="py-4 flex flex-col justify-between">
@@ -118,13 +126,21 @@ const Seller = () => {
   // Navbar component
   const Navbar = () => (
     <div className="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
-      <button 
-        onClick={() => setSidebarVisible(!sidebarVisible)}
-        className="text-2xl"
-      >
-        ☰
-      </button>
-      <h1 className="text-xl font-semibold">Admin Panel</h1>
+      <div className="flex items-center space-x-3">
+        <button 
+          onClick={() => setSidebarVisible(!sidebarVisible)}
+          className="text-2xl"
+        >
+          ☰
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="text-gray-600 hover:text-gray-900 text-sm"
+        >
+          ← Home
+        </button>
+      </div>
+      <h1 className="text-xl font-semibold">Seller Panel</h1>
       <div>{/* Placeholder for additional navbar items */}</div>
     </div>
   );

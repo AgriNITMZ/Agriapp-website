@@ -28,30 +28,7 @@ const ShiprocketCheckout = () => {
 
   // Handle pre-selected product or cart items from navigation state
   useEffect(() => {
-    // First, try to load from sessionStorage (for page refresh)
-    const savedProducts = sessionStorage.getItem('shiprocketSelectedProducts');
-    if (savedProducts) {
-      try {
-        const parsedProducts = JSON.parse(savedProducts);
-        // Validate that all products have required fields
-        const validProducts = parsedProducts.filter(p => 
-          p.productId && p.name && p.quantity && p.price
-        );
-        
-        if (validProducts.length > 0) {
-          setSelectedProducts(validProducts);
-          console.log('Loaded products from sessionStorage:', validProducts);
-        } else {
-          console.warn('No valid products found in sessionStorage');
-          sessionStorage.removeItem('shiprocketSelectedProducts');
-        }
-      } catch (error) {
-        console.error('Error parsing saved products:', error);
-        sessionStorage.removeItem('shiprocketSelectedProducts');
-      }
-    }
-    
-    // Then check for new products from navigation state
+    // Check for new products from navigation state FIRST (priority)
     if (location.state?.preSelectedProduct) {
       const preSelected = location.state.preSelectedProduct;
       // Validate required fields
@@ -83,6 +60,29 @@ const ShiprocketCheckout = () => {
       }
       // Clear the navigation state to prevent re-adding on refresh
       window.history.replaceState({}, document.title);
+    } else {
+      // Only load from sessionStorage if there's no new navigation state
+      const savedProducts = sessionStorage.getItem('shiprocketSelectedProducts');
+      if (savedProducts) {
+        try {
+          const parsedProducts = JSON.parse(savedProducts);
+          // Validate that all products have required fields
+          const validProducts = parsedProducts.filter(p => 
+            p.productId && p.name && p.quantity && p.price
+          );
+          
+          if (validProducts.length > 0) {
+            setSelectedProducts(validProducts);
+            console.log('Loaded products from sessionStorage:', validProducts);
+          } else {
+            console.warn('No valid products found in sessionStorage');
+            sessionStorage.removeItem('shiprocketSelectedProducts');
+          }
+        } catch (error) {
+          console.error('Error parsing saved products:', error);
+          sessionStorage.removeItem('shiprocketSelectedProducts');
+        }
+      }
     }
   }, [location.state]);
 
