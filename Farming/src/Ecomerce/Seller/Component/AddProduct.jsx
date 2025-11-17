@@ -23,6 +23,10 @@ const AddProduct = () => {
     fullShopDetails: '',
     name: '',
     description: '',
+    modelNumber: '',
+    brand: '',
+    deliveryInfo: '',
+    warranty: '',
     priceDetails: [{ price: '', discountedPrice: '', size: '', quantity: '' }],
     images: [], // will hold both URLs (old) and preview URLs (new files)
   });
@@ -45,6 +49,10 @@ const AddProduct = () => {
           fullShopDetails: product.sellers[0]?.fullShopDetails || '',
           name: product.name || '',
           description: product.description || '',
+          modelNumber: product.modelNumber || '',
+          brand: product.brand || '',
+          deliveryInfo: product.sellers[0]?.deliveryInfo || '',
+          warranty: product.sellers[0]?.warranty || '',
           priceDetails: product.sellers[0]?.price_size || [
             { price: '', discountedPrice: '', size: '', quantity: '' },
           ],
@@ -193,6 +201,24 @@ const AddProduct = () => {
     e.preventDefault();
     if (submitting) return;
 
+    // Validate price details
+    const invalidPrices = productData.priceDetails.some(
+      (detail) => !detail.price || !detail.discountedPrice || detail.discountedPrice === 0
+    );
+    
+    if (invalidPrices) {
+      return toast.error('Please enter valid prices. Discounted price cannot be 0 or empty.');
+    }
+
+    // Validate that discounted price is not greater than original price
+    const invalidDiscount = productData.priceDetails.some(
+      (detail) => Number(detail.discountedPrice) > Number(detail.price)
+    );
+    
+    if (invalidDiscount) {
+      return toast.error('Discounted price cannot be greater than original price.');
+    }
+
     const storedTokenData = JSON.parse(localStorage.getItem('token'));
     if (!storedTokenData || Date.now() >= storedTokenData.expires) {
       return toast.error('Session expired. Please sign in again.');
@@ -206,6 +232,12 @@ const AddProduct = () => {
     formData.append('category', selectedSubcategory || selectedCategory);
     formData.append('badges', 'PreciAgri');
     formData.append('tag', JSON.stringify(chips));
+    
+    // Add new fields
+    if (productData.modelNumber) formData.append('modelNumber', productData.modelNumber);
+    if (productData.brand) formData.append('brand', productData.brand);
+    if (productData.deliveryInfo) formData.append('deliveryInfo', productData.deliveryInfo);
+    if (productData.warranty) formData.append('warranty', productData.warranty);
 
     images.forEach((img) => formData.append('image', img));
 
@@ -253,7 +285,7 @@ const AddProduct = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <label className="block mb-1 font-medium text-gray-700">
-            Full Shop Details
+            Full Shop Details <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -266,7 +298,7 @@ const AddProduct = () => {
         </div>
         <div>
           <label className="block mb-1 font-medium text-gray-700">
-            Product Name
+            Product Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -275,6 +307,67 @@ const AddProduct = () => {
             onChange={handleInputChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             required
+          />
+        </div>
+      </div>
+
+      {/* Grid: Model Number & Brand */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Model Number
+            <span className="text-xs text-gray-500 ml-2">(Helps group same products)</span>
+          </label>
+          <input
+            type="text"
+            name="modelNumber"
+            value={productData.modelNumber}
+            onChange={handleInputChange}
+            placeholder="e.g., ABC123"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Brand
+          </label>
+          <input
+            type="text"
+            name="brand"
+            value={productData.brand}
+            onChange={handleInputChange}
+            placeholder="e.g., Apple, Samsung"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Grid: Delivery Info & Warranty */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Delivery Information
+          </label>
+          <input
+            type="text"
+            name="deliveryInfo"
+            value={productData.deliveryInfo}
+            onChange={handleInputChange}
+            placeholder="e.g., 2-3 days, Same day delivery"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Warranty
+          </label>
+          <input
+            type="text"
+            name="warranty"
+            value={productData.warranty}
+            onChange={handleInputChange}
+            placeholder="e.g., 1 year warranty, No warranty"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
       </div>
@@ -411,8 +504,27 @@ const AddProduct = () => {
               placeholder="Discount Price"
               value={detail.discountedPrice}
               onChange={(e) => handlePriceDetailChange(idx, e)}
-              className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              onWheel={(e) => e.target.blur()}
+              className={`p-3 border rounded-lg focus:ring-2 focus:outline-none ${
+                detail.discountedPrice === 0 || !detail.discountedPrice
+                  ? 'border-red-300 focus:ring-red-500'
+                  : Number(detail.discountedPrice) > Number(detail.price)
+                  ? 'border-orange-300 focus:ring-orange-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
+              required
+              min="1"
             />
+            {(detail.discountedPrice === 0 || !detail.discountedPrice) && (
+              <span className="col-span-4 text-xs text-red-500">
+                ⚠️ Discounted price cannot be 0 or empty
+              </span>
+            )}
+            {detail.discountedPrice && Number(detail.discountedPrice) > Number(detail.price) && (
+              <span className="col-span-4 text-xs text-orange-500">
+                ⚠️ Discounted price should be less than or equal to original price
+              </span>
+            )}
             <input
               type="text"
               name="size"

@@ -206,10 +206,38 @@ exports.getOrderHistory = asyncHandler(async (req, res) => {
 });
 
 exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
-    const orders = await Order.find({ 'items.sellerId': req.user.id })
-                              .populate('items.product')
-                              .sort({ createdAt: -1 });
-    res.status(200).json({ message:'Seller orders retrieved', orders });
+    const sellerId = req.user.id;
+    
+    console.log('📦 Fetching seller orders for:', sellerId);
+    
+    // Convert to ObjectId for proper matching
+    const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
+    
+    // Find orders that have items from this seller
+    const orders = await Order.find({ 
+        'items.sellerId': sellerObjectId 
+    })
+    .populate('items.product')
+    .populate('userId', 'firstName lastName email')
+    .sort({ createdAt: -1 });
+    
+    console.log(`   Found ${orders.length} orders for seller`);
+    
+    // Filter items to only show this seller's items
+    const filteredOrders = orders.map(order => {
+        const orderObj = order.toObject();
+        orderObj.items = orderObj.items.filter(item => 
+            item.sellerId.toString() === sellerId
+        );
+        return orderObj;
+    });
+    
+    res.status(200).json({ 
+        success: true,
+        message: 'Seller orders retrieved', 
+        orders: filteredOrders,
+        count: filteredOrders.length
+    });
 });
 
 

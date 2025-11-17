@@ -154,6 +154,42 @@ exports.createOrder = asyncHandler(async (req, res) => {
       });
     }
 
+    // Validate address data for Shiprocket requirements
+    const validationErrors = [];
+    
+    if (!address.mobile || address.mobile.length < 10) {
+      validationErrors.push('Mobile number must be at least 10 digits');
+    }
+    
+    if (!address.zipCode || address.zipCode.length !== 6) {
+      validationErrors.push('PIN code must be exactly 6 digits');
+    }
+    
+    if (!address.Name || address.Name.trim().length === 0) {
+      validationErrors.push('Name is required');
+    }
+    
+    if (!address.streetAddress || address.streetAddress.trim().length === 0) {
+      validationErrors.push('Street address is required');
+    }
+    
+    if (!address.city || address.city.trim().length === 0) {
+      validationErrors.push('City is required');
+    }
+    
+    if (!address.state || address.state.trim().length === 0) {
+      validationErrors.push('State is required');
+    }
+    
+    if (validationErrors.length > 0) {
+      console.error('❌ Address validation failed:', validationErrors);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid address data for shipping',
+        errors: validationErrors
+      });
+    }
+
     // Validate products and calculate subtotal
     let subTotal = 0;
     const validatedItems = [];
@@ -255,7 +291,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
 
     console.log('Creating Shiprocket order...');
     console.log('Order totals - Subtotal:', subTotal, 'Shipping:', shippingCharges, 'Total:', totalAmount);
-    
+    console.log('📦 Shiprocket Order Data:', JSON.stringify(shiprocketOrderData, null, 2));
     
     const shiprocketResponse = await shiprocketService.createOrder(shiprocketOrderData);
     console.log('✅ Shiprocket order created:', JSON.stringify(shiprocketResponse, null, 2));

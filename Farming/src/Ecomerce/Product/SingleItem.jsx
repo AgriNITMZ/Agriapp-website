@@ -175,8 +175,13 @@ const SingleItem = () => {
       const selectedPriceSize = selectedSize; // already available as state
   
       // Navigate with query params
+      // Extract sellerId - handle both object and string cases
+      const sellerIdValue = typeof selectedSellerInfo.sellerId === 'object' 
+        ? selectedSellerInfo.sellerId._id || selectedSellerInfo.sellerId 
+        : selectedSellerInfo.sellerId;
+      
       const queryParams = new URLSearchParams({
-        sellerId: selectedSellerInfo.sellerId,
+        sellerId: sellerIdValue,
         shopName: selectedSellerInfo.fullShopDetails,
         size: selectedPriceSize.size,
         price: selectedPriceSize.price,
