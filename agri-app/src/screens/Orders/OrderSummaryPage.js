@@ -62,7 +62,7 @@ const PaymentMethodSelector = ({ selectedMethod, onSelect }) => (
 );
 
 // Component for order summary details
-const OrderSummaryDetails = ({ cart }) => (
+const OrderSummaryDetails = ({ cart, shippingCost, loadingShipping, shippingInfo }) => (
     <View style={styles.orderSummary}>
         <Text style={styles.summaryTitle}>Order Summary</Text>
         <View style={styles.summaryRow}>
@@ -75,11 +75,21 @@ const OrderSummaryDetails = ({ cart }) => (
         </View>
         <View style={styles.summaryRow}>
             <Text style={styles.summaryText}>Shipping Charges</Text>
-            <Text style={styles.summaryText}>₹ 0.00</Text>
+            {loadingShipping ? (
+                <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+                <Text style={styles.summaryText}>₹ {shippingCost.toFixed(2)}</Text>
+            )}
         </View>
+        {shippingInfo && (
+            <View style={styles.summaryRow}>
+                <Text style={styles.shippingInfoText}>Est. Delivery: {shippingInfo.estimatedDays} days</Text>
+                <Text style={styles.shippingInfoText}>{shippingInfo.courierName}</Text>
+            </View>
+        )}
         <View style={styles.summaryRow}>
             <Text style={styles.grandTotalText}>Grand Total</Text>
-            <Text style={styles.grandTotalText}>₹ {cart.totalDiscountedPrice}</Text>
+            <Text style={styles.grandTotalText}>₹ {(cart.totalDiscountedPrice + shippingCost).toFixed(2)}</Text>
         </View>
     </View>
 );
@@ -97,6 +107,50 @@ const OrderSummaryPage = ({ navigation, route }) => {
     const [razorpayHTML, setRazorpayHTML] = useState('');
     const [currentOrderId, setCurrentOrderId] = useState(null);
     const [currentOrderAmount, setCurrentOrderAmount] = useState(0);
+    
+    // Shiprocket states
+    const [shippingCost, setShippingCost] = useState(0);
+    const [shippingInfo, setShippingInfo] = useState(null);
+    const [loadingShipping, setLoadingShipping] = useState(false);
+
+    // Calculate shipping cost when address is available
+    React.useEffect(() => {
+        const calculateShipping = async () => {
+            if (!selectedAddress || !selectedAddress.zipCode) {
+                return;
+            }
+
+            setLoadingShipping(true);
+            try {
+                const response = await customFetch.post('shiprocket/check-serviceability', {
+                    pincode: selectedAddress.zipCode,
+                    pickupPincode: '110001',
+                    weight: 0.5,
+                    cod: paymentMethod === 'cod' ? 1 : 0,
+                });
+
+                if (response.data.success && response.data.serviceable) {
+                    setShippingCost(response.data.shippingCost || 0);
+                    setShippingInfo({
+                        cost: response.data.shippingCost || 0,
+                        estimatedDays: response.data.estimatedDays || '5-7',
+                        courierName: response.data.courierName || 'Standard',
+                    });
+                } else {
+                    setShippingCost(0);
+                    setShippingInfo(null);
+                }
+            } catch (error) {
+                console.error('Error calculating shipping:', error);
+                setShippingCost(0);
+                setShippingInfo(null);
+            } finally {
+                setLoadingShipping(false);
+            }
+        };
+
+        calculateShipping();
+    }, [selectedAddress, paymentMethod]);
 
     // Create Razorpay payment order
     const createPaymentOrder = async (amount) => {
@@ -396,15 +450,18 @@ const OrderSummaryPage = ({ navigation, route }) => {
                 return;
             }
 
-            // Prepare order data
+            // Prepare order data with shipping info
             const orderData = {
                 addressId: selectedAddress._id,
                 paymentMethod,
                 paymentLinkId: '',
+                shippingCost: shippingCost,
+                shippingInfo: shippingInfo,
             };
 
             console.log('Sending order data:', orderData);
             console.log('Cart items count:', cart.items.length);
+            console.log('Shipping cost:', shippingCost);
 
             const response = await customFetch.post('order/createorder', orderData);
 
@@ -481,7 +538,12 @@ const OrderSummaryPage = ({ navigation, route }) => {
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
                     <AddressCard address={selectedAddress} />
                     {renderOrderItems()}
-                    <OrderSummaryDetails cart={cart} />
+                    <OrderSummaryDetails 
+                        cart={cart} 
+                        shippingCost={shippingCost}
+                        loadingShipping={loadingShipping}
+                        shippingInfo={shippingInfo}
+                    />
                     <PaymentMethodSelector
                         selectedMethod={paymentMethod}
                         onSelect={setPaymentMethod}
@@ -653,6 +715,11 @@ const styles = StyleSheet.create({
     summaryText: {
         fontSize: 14,
         color: '#555',
+    },
+    shippingInfoText: {
+        fontSize: 12,
+        color: '#16a34a',
+        fontStyle: 'italic',
     },
     grandTotalText: {
         fontSize: 16,

@@ -1,0 +1,641 @@
+import React, { useEffect, useState } from 'react';
+import { Camera, Trash2, Plus, X } from 'lucide-react';
+import axios from 'axios';
+import TextEditor from './TextEditor';
+import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+
+const AddProduct = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  // ----- local state -----
+  const [fetchdata, setFetchedData] = useState([]); // category list
+  const [images, setImages] = useState([]); // File objects for upload
+  const [deletedImages, setDeletedImages] = useState([]); // track images removed from DB
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('');
+  const [chips, setChips] = useState([]); // tag chips
+  const [isEditing, setIsEditing] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // loader flag
+
+  const [productData, setProductData] = useState({
+    fullShopDetails: '',
+    name: '',
+    description: '',
+    modelNumber: '',
+    brand: '',
+    deliveryInfo: '',
+    warranty: '',
+    priceDetails: [{ price: '', discountedPrice: '', size: '', quantity: '' }],
+    images: [], // will hold both URLs (old) and preview URLs (new files)
+  });
+
+  // ----- fetch product if editing -----
+  useEffect(() => {
+    const fetchProductData = async () => {
+      if (!id) return;
+      try {
+        const storedTokenData = JSON.parse(localStorage.getItem('token'));
+        if (!storedTokenData || Date.now() >= storedTokenData.expires) return;
+
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_API_URL}/products/getproductbyid/${id}`,
+          { headers: { Authorization: `Bearer ${storedTokenData.value}` } }
+        );
+        const product = data.product;
+        setIsEditing(true);
+        setProductData({
+          fullShopDetails: product.sellers[0]?.fullShopDetails || '',
+          name: product.name || '',
+          description: product.description || '',
+          modelNumber: product.modelNumber || '',
+          brand: product.brand || '',
+          deliveryInfo: product.sellers[0]?.deliveryInfo || '',
+          warranty: product.sellers[0]?.warranty || '',
+          priceDetails: product.sellers[0]?.price_size || [
+            { price: '', discountedPrice: '', size: '', quantity: '' },
+          ],
+          images: product.images || [], // URLs from DB
+        });
+        setSelectedCategory(product.category || '');
+        setChips(product.tag || []);
+      } catch (err) {
+        console.error('Error fetching product:', err);
+        toast.error('Could not load product');
+      }
+    };
+
+    fetchProductData();
+  }, [id]);
+
+  // ----- fetch categories on mount -----
+  useEffect(() => {
+    const fetchCategory = async () => {
+      try {
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_API_URL}/products/getallparentcategory`
+        );
+        setFetchedData(data.data);
+      } catch (err) {
+        toast.error(err.message || 'Failed to load categories');
+      }
+    };
+    fetchCategory();
+  }, []);
+
+  // ----- helpers & handlers -----
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setProductData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePriceDetailChange = (index, e) => {
+  const { name, value } = e.target;
+  setProductData((prev) => {
+    const priceDetails = [...prev.priceDetails];
+    priceDetails[index][name] =
+      name === "price" || name === "discountedPrice" || name === "quantity"
+        ? Number(value)
+        : value;
+    return { ...prev, priceDetails };
+  });
+};
+
+
+  const addPriceDetail = () => {
+    setProductData((prev) => ({
+      ...prev,
+      priceDetails: [
+        ...prev.priceDetails,
+        { price: '', discountedPrice: '', size: '', quantity: '' },
+      ],
+    }));
+  };
+
+  const removePriceDetail = (index) => {
+    setProductData((prev) => ({
+      ...prev,
+      priceDetails: prev.priceDetails.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setImages((prev) => [...prev, ...files]);
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setProductData((prev) => ({ ...prev, images: [...prev.images, ...urls] }));
+  };
+  
+  // ***********************************************
+  // ** 1. NEW FUNCTION TO HANDLE PASTED IMAGES **
+  // ***********************************************
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+    if (!items) return;
+
+    const pastedFiles = [];
+    for (let i = 0; i < items.length; i++) {
+      // Check if the clipboard item is a file and an image
+      if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          pastedFiles.push(file);
+        }
+      }
+    }
+
+    if (pastedFiles.length > 0) {
+      e.preventDefault(); // Prevent any unwanted default paste behavior
+      
+      // Update state using the same logic as your manual upload function
+      setImages((prev) => [...prev, ...pastedFiles]);
+      const urls = pastedFiles.map((file) => URL.createObjectURL(file));
+      setProductData((prev) => ({ ...prev, images: [...prev.images, ...urls] }));
+      
+      toast.success(`${pastedFiles.length} image(s) pasted successfully!`);
+    }
+  };
+  // ***********************************************
+  // ** END OF NEW FUNCTION             **
+  // ***********************************************
+
+  // ✅ updated removeImage
+  const removeImage = (index) => {
+    const imgToRemove = productData.images[index];
+
+    if (typeof imgToRemove === 'string' && isEditing) {
+      setDeletedImages((prev) => [...prev, imgToRemove]);
+    } else {
+      setImages((prev) => prev.filter((_, i) => i !== index));
+    }
+
+    setProductData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleCategoryChange = (id) => {
+    setSelectedCategory(id);
+    setSelectedSubcategory('');
+  };
+  const handleSubcategoryChange = (id) => setSelectedSubcategory(id);
+
+  const handleDeleteChip = (chipIndex) =>
+    setChips((prev) => prev.filter((_, i) => i !== chipIndex));
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = e.target.value.trim();
+      if (val && !chips.includes(val)) {
+        setChips((prev) => [...prev, val]);
+        e.target.value = '';
+      }
+    }
+  };
+
+  // ----- submit -----
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    // Validate price details
+    const invalidPrices = productData.priceDetails.some(
+      (detail) => !detail.price || !detail.discountedPrice || detail.discountedPrice === 0
+    );
+    
+    if (invalidPrices) {
+      return toast.error('Please enter valid prices. Discounted price cannot be 0 or empty.');
+    }
+
+    // Validate that discounted price is not greater than original price
+    const invalidDiscount = productData.priceDetails.some(
+      (detail) => Number(detail.discountedPrice) > Number(detail.price)
+    );
+    
+    if (invalidDiscount) {
+      return toast.error('Discounted price cannot be greater than original price.');
+    }
+
+    const storedTokenData = JSON.parse(localStorage.getItem('token'));
+    if (!storedTokenData || Date.now() >= storedTokenData.expires) {
+      return toast.error('Session expired. Please sign in again.');
+    }
+
+    const formData = new FormData();
+    formData.append('name', productData.name);
+    formData.append('description', productData.description);
+    formData.append('price_size', JSON.stringify(productData.priceDetails));
+    formData.append('fullShopDetails', productData.fullShopDetails);
+    formData.append('category', selectedSubcategory || selectedCategory);
+    formData.append('badges', 'PreciAgri');
+    formData.append('tag', JSON.stringify(chips));
+    
+    // Add new fields
+    if (productData.modelNumber) formData.append('modelNumber', productData.modelNumber);
+    if (productData.brand) formData.append('brand', productData.brand);
+    if (productData.deliveryInfo) formData.append('deliveryInfo', productData.deliveryInfo);
+    if (productData.warranty) formData.append('warranty', productData.warranty);
+
+    images.forEach((img) => formData.append('image', img));
+
+    if (deletedImages.length > 0) {
+      formData.append('deletedImages', JSON.stringify(deletedImages));
+    }
+
+    const config = {
+      headers: { Authorization: `Bearer ${storedTokenData.value}` },
+    };
+
+    const toastId = toast.loading(isEditing ? 'Updating product…' : 'Adding product…');
+    setSubmitting(true);
+
+    try {
+      const url = isEditing
+        ? `${import.meta.env.VITE_API_URL}/products/editproduct/${id}`
+        : `${import.meta.env.VITE_API_URL}/products/createproduct`;
+      const method = isEditing ? 'put' : 'post';
+
+      await axios[method](url, formData, config);
+      toast.success(isEditing ? 'Product updated!' : 'Product added!', { id: toastId });
+      
+      // Navigate to products page instead of dashboard
+      if (isEditing) {
+        // Stay on the same page after editing, or go back
+        navigate(-1); // Go back to previous page
+      } else {
+        // After adding, go to products list
+        navigate('/seller');
+      }
+    } catch (err) {
+      console.error('Error saving product:', err);
+      toast.error('Failed to save product', { id: toastId });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  //                               RENDER
+  // -------------------------------------------------------------------------
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-7xl mx-auto p-8 bg-white rounded-xl shadow-lg"
+    >
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        {isEditing ? 'Edit Product' : 'Add New Product'}
+      </h2>
+
+      {/* Grid: Shop details & name */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Full Shop Details <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="fullShopDetails"
+            value={productData.fullShopDetails}
+            onChange={handleInputChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Product Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={productData.name}
+            onChange={handleInputChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+          />
+        </div>
+      </div>
+
+      {/* Grid: Model Number & Brand */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Model Number
+            <span className="text-xs text-gray-500 ml-2">(Helps group same products)</span>
+          </label>
+          <input
+            type="text"
+            name="modelNumber"
+            value={productData.modelNumber}
+            onChange={handleInputChange}
+            placeholder="e.g., ABC123"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Brand
+          </label>
+          <input
+            type="text"
+            name="brand"
+            value={productData.brand}
+            onChange={handleInputChange}
+            placeholder="e.g., Apple, Samsung"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Grid: Delivery Info & Warranty */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Delivery Information
+          </label>
+          <input
+            type="text"
+            name="deliveryInfo"
+            value={productData.deliveryInfo}
+            onChange={handleInputChange}
+            placeholder="e.g., 2-3 days, Same day delivery"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium text-gray-700">
+            Warranty
+          </label>
+          <input
+            type="text"
+            name="warranty"
+            value={productData.warranty}
+            onChange={handleInputChange}
+            placeholder="e.g., 1 year warranty, No warranty"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Category & Subcategory */}
+      <div className="mb-6">
+        <label className="block mb-1 font-medium text-gray-700">Category</label>
+        <div className="flex gap-4">
+          <select
+            value={selectedCategory}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">Select Category</option>
+            {fetchdata.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedSubcategory}
+            onChange={(e) => handleSubcategoryChange(e.target.value)}
+            disabled={!selectedCategory}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">Select Subcategory</option>
+            {selectedCategory &&
+              fetchdata
+                .find((c) => c._id === selectedCategory)
+                ?.subcategories.map((sub) => (
+                  <option key={sub._id} value={sub._id}>
+                    {sub.name}
+                  </option>
+                ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="mb-6">
+        <label className="block mb-1 font-medium text-gray-700">Description</label>
+        <TextEditor value={productData.description} onChange={handleInputChange} />
+      </div>
+
+      {/* Tags */}
+      <div className="mb-6">
+        <label className="block mb-1 font-medium text-gray-700">Tags</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {chips.map((chip, idx) => (
+            <span
+              key={idx}
+              className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+            >
+              {chip}
+              <button
+                type="button"
+                onClick={() => handleDeleteChip(idx)}
+                className="ml-2 text-blue-600 hover:text-blue-800"
+              >
+                <X size={16} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <input
+          type="text"
+          placeholder="Add a tag (press Enter or comma)"
+          onKeyDown={handleKeyDown}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        />
+      </div>
+
+      {/* ***************************************************************** */}
+      {/* ** 2. UPDATED JSX TO ADD onPaste EVENT AND HELPER TEXT         ** */}
+      {/* ***************************************************************** */}
+      <div className="mb-6" onPaste={handlePaste}>
+        <label className="block mb-1 font-medium text-gray-700">Product Images</label>
+        {/* NEW HELPER TEXT */}
+        <p className="text-sm text-gray-500 mb-4">
+          Click "Upload Images" or simply paste an image directly onto this section.
+        </p>
+        <div className="flex flex-wrap gap-4 mb-4">
+          {productData.images.map((img, idx) => (
+            <div key={idx} className="relative group">
+              <img
+                src={typeof img === 'string' ? img : img}
+                alt="Product"
+                className="w-32 h-32 object-cover rounded-lg shadow-md"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(idx)}
+                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 w-fit">
+          <Camera size={20} /> Upload Images
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </label>
+      </div>
+
+      {/* Price & Sizes */}
+      <div className="mb-6">
+        <label className="block mb-3 font-medium text-gray-700 text-lg">Price & Sizes</label>
+        {productData.priceDetails.map((detail, idx) => (
+          <div
+            key={idx}
+            className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+          >
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Original Price (₹) *
+              </label>
+              <input
+                type="number"
+                name="price"
+                placeholder="e.g., 100"
+                value={detail.price}
+                onWheel={(e) => e.target.blur()}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Selling Price (₹) *
+              </label>
+              <input
+                type="number"
+                name="discountedPrice"
+                placeholder="e.g., 80"
+                value={detail.discountedPrice}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                onWheel={(e) => e.target.blur()}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none ${
+                  detail.discountedPrice === 0 || !detail.discountedPrice
+                    ? 'border-red-300 focus:ring-red-500'
+                    : Number(detail.discountedPrice) > Number(detail.price)
+                    ? 'border-orange-300 focus:ring-orange-500'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+                required
+                min="1"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Size/Unit *
+              </label>
+              <input
+                type="text"
+                name="size"
+                placeholder="e.g., 1kg, 500g, Pack"
+                value={detail.size}
+                onChange={(e) => handlePriceDetailChange(idx, e)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Stock Quantity *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  name="quantity"
+                  placeholder="e.g., 50"
+                  value={detail.quantity}
+                  onChange={(e) => handlePriceDetailChange(idx, e)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  required
+                />
+                {idx > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removePriceDetail(idx)}
+                    className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    title="Remove this variant"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Validation Messages */}
+            {(detail.discountedPrice === 0 || !detail.discountedPrice) && (
+              <div className="col-span-4 text-xs text-red-500 -mt-2">
+                ⚠️ Selling price cannot be 0 or empty
+              </div>
+            )}
+            {detail.discountedPrice && Number(detail.discountedPrice) > Number(detail.price) && (
+              <div className="col-span-4 text-xs text-orange-500 -mt-2">
+                ⚠️ Selling price should be less than or equal to original price
+              </div>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addPriceDetail}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          <Plus size={20} /> Add Price/Size
+        </button>
+      </div>
+
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={submitting}
+        className={`w-full p-4 rounded-lg font-semibold text-white transition-colors ${
+          submitting
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-blue-600 hover:bg-blue-700'
+        }`}
+      >
+        {submitting ? (
+          <span className="flex items-center justify-center">
+            <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                className="opacity-25"
+              />
+              <path
+                d="M22 12a10 10 0 01-10 10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                className="opacity-75"
+              />
+            </svg>
+            Saving…
+          </span>
+        ) : isEditing ? (
+          'Update Product'
+        ) : (
+          'Add Product'
+        )}
+      </button>
+    </form>
+  );
+};
+
+export default AddProduct;

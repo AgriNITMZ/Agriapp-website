@@ -11,12 +11,40 @@ const{asyncHandler}=require('../utils/error')
 exports.createProduct = asyncHandler(async (req, res) => {
             const userId = req.user.id;
            
-            const { name, price_size, category, description, tag: _tag, badges, fullShopDetails } = req.body;
+            let { name, price_size, category, description, tag: _tag, badges, fullShopDetails, modelNumber, brand, deliveryInfo, warranty } = req.body;
+            
+            // Trim and clean the product name to ensure consistent slug generation
+            name = name ? name.trim().replace(/\s+/g, ' ') : name;
+            
             const parsedPriceSize = Array.isArray(price_size) ? price_size : JSON.parse(price_size);
             const images = Array.isArray(req.files.image) ? req.files.image : [req.files.image];
     
             if (!images || !name || !parsedPriceSize || !category || !description || !_tag || !badges || !fullShopDetails) {
                 return res.status(400).json({ success: false, msg: 'Please fill all required fields' });
+            }
+
+            // Validate price_size data
+            const invalidPrices = parsedPriceSize.some(
+                item => !item.price || !item.discountedPrice || item.discountedPrice === 0 || item.price === 0
+            );
+            
+            if (invalidPrices) {
+                return res.status(400).json({ 
+                    success: false, 
+                    msg: 'Invalid price data. Price and discounted price must be greater than 0.' 
+                });
+            }
+
+            // Validate that discounted price is not greater than original price
+            const invalidDiscount = parsedPriceSize.some(
+                item => Number(item.discountedPrice) > Number(item.price)
+            );
+            
+            if (invalidDiscount) {
+                return res.status(400).json({ 
+                    success: false, 
+                    msg: 'Discounted price cannot be greater than original price.' 
+                });
             }
     
             const user = await User.findById(userId);
@@ -28,7 +56,59 @@ exports.createProduct = asyncHandler(async (req, res) => {
             if (!categoryExists) {
                 return res.status(404).json({ success: false, msg: 'Category not found' });
             }
+
+            // Generate product slug from cleaned name
+            const productSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     
+            // Check if product already exists using slug or modelNumber
+            let existingProduct = null;
+            if (modelNumber && modelNumber.trim()) {
+                // For model number, also check with trimmed name for better matching
+                existingProduct = await Product.findOne({ 
+                    modelNumber: modelNumber.trim(),
+                    productSlug: productSlug 
+                });
+            }
+            
+            // If not found by model number, try by slug alone
+            if (!existingProduct && productSlug) {
+                existingProduct = await Product.findOne({ productSlug });
+            }
+
+            // If product exists, add this seller to it
+            if (existingProduct) {
+                // Check if seller already exists for this product
+                const sellerExists = existingProduct.sellers.some(s => s.sellerId.toString() === userId);
+                
+                if (sellerExists) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        msg: 'You are already selling this product. Please update your existing offer instead.' 
+                    });
+                }
+
+                // Add new seller to existing product
+                existingProduct.sellers.push({
+                    sellerId: userId,
+                    price_size: parsedPriceSize,
+                    fullShopDetails,
+                    deliveryInfo: deliveryInfo || 'Standard delivery',
+                    warranty: warranty || 'No warranty'
+                });
+
+                const updatedProduct = await existingProduct.save();
+                await User.findByIdAndUpdate(userId, { $push: { products: updatedProduct._id } }, { new: true });
+
+                console.log("Seller added to existing product:", updatedProduct);
+                return res.status(201).json({ 
+                    success: true, 
+                    msg: 'You have been added as a seller for this existing product', 
+                    product: updatedProduct,
+                    isNewProduct: false
+                });
+            }
+    
+            // Product doesn't exist, create new one
             const uploadedImages = [];
             for (const imageFile of images) {
                 const uploadedImage = await uploadUmageToCloudinary(imageFile, process.env.FOLDER_NAME, 1000, 1000);
@@ -39,6 +119,9 @@ exports.createProduct = asyncHandler(async (req, res) => {
     
             const newProduct = new Product({
                 name,
+                productSlug,
+                modelNumber: modelNumber || undefined,
+                brand: brand || '',
                 category,
                 description,
                 tag,
@@ -48,7 +131,8 @@ exports.createProduct = asyncHandler(async (req, res) => {
                     sellerId: userId,
                     price_size: parsedPriceSize,
                     fullShopDetails,
-                   
+                    deliveryInfo: deliveryInfo || 'Standard delivery',
+                    warranty: warranty || 'No warranty'
                 }]
             });
     
@@ -58,7 +142,7 @@ exports.createProduct = asyncHandler(async (req, res) => {
             await Category.findByIdAndUpdate(category, { $push: { product: savedProduct._id } }, { new: true });
     
             console.log("Newly created product:", savedProduct);
-            res.status(201).json({ success: true, msg: 'Product created successfully', product: savedProduct });
+            res.status(201).json({ success: true, msg: 'Product created successfully', product: savedProduct, isNewProduct: true });
     });
 
 
@@ -209,6 +293,12 @@ exports.getProductById = asyncHandler(async (req, res) => {
         const productId = req.params.productId;
 
         const product = await Product.findById(productId)
+            .populate({
+                path: 'sellers.sellerId',
+                select: 'firstName lastName email shopName phoneNumber'
+            })
+            .populate('ratingandreview');
+            
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -216,22 +306,94 @@ exports.getProductById = asyncHandler(async (req, res) => {
             })
         }
 
+        // BACKWARD COMPATIBILITY: Handle old products with root-level fields
+        let productObj = product.toObject();
+        
+        // If sellers array is empty but root-level fields exist, migrate them
+        if ((!productObj.sellers || productObj.sellers.length === 0) && productObj.sellerId) {
+            productObj.sellers = [{
+                sellerId: productObj.sellerId,
+                price_size: productObj.price_size || [],
+                fullShopDetails: productObj.fullShopDetails || 'Shop Details',
+                deliveryInfo: 'Standard delivery',
+                warranty: 'No warranty'
+            }];
+        }
+
+        // Ensure sellers array exists
+        if (!productObj.sellers || productObj.sellers.length === 0) {
+            productObj.sellers = [{
+                sellerId: null,
+                price_size: productObj.price_size || [],
+                fullShopDetails: productObj.fullShopDetails || 'Shop Details',
+                deliveryInfo: 'Standard delivery',
+                warranty: 'No warranty'
+            }];
+        }
+
+        // Format sellers data for frontend
+        const formattedProduct = {
+            ...productObj,
+            sellersCount: productObj.sellers.length,
+            allSellers: productObj.sellers.map(seller => ({
+                sellerId: seller.sellerId?._id || seller.sellerId,
+                sellerName: seller.sellerId?.shopName || seller.sellerId?.firstName ? 
+                    `${seller.sellerId.firstName} ${seller.sellerId.lastName}` : 'Unknown Seller',
+                sellerEmail: seller.sellerId?.email,
+                sellerPhone: seller.sellerId?.phoneNumber,
+                price_size: seller.price_size || [],
+                fullShopDetails: seller.fullShopDetails || 'Shop Details',
+                deliveryInfo: seller.deliveryInfo || 'Standard delivery',
+                warranty: seller.warranty || 'No warranty',
+                addedAt: seller.addedAt
+            }))
+        };
+
         res.status(200).json({
             success: true,
             msg: 'Product found successfully',
-            product
+            product: formattedProduct
         })  
 })
 
 // get all products
 
 exports.getAllProducts = asyncHandler(async (req, res) => {
-        const products = await Product.find()
+        const products = await Product.find();
+
+        // BACKWARD COMPATIBILITY: Ensure all products have sellers array
+        const formattedProducts = products.map(product => {
+            const productObj = product.toObject();
+            
+            // If sellers array is empty but root-level fields exist, use them
+            if ((!productObj.sellers || productObj.sellers.length === 0) && productObj.sellerId) {
+                productObj.sellers = [{
+                    sellerId: productObj.sellerId,
+                    price_size: productObj.price_size || [],
+                    fullShopDetails: productObj.fullShopDetails || 'Shop Details',
+                    deliveryInfo: 'Standard delivery',
+                    warranty: 'No warranty'
+                }];
+            }
+            
+            // Ensure sellers array exists
+            if (!productObj.sellers || productObj.sellers.length === 0) {
+                productObj.sellers = [{
+                    sellerId: null,
+                    price_size: productObj.price_size || [],
+                    fullShopDetails: productObj.fullShopDetails || 'Shop Details',
+                    deliveryInfo: 'Standard delivery',
+                    warranty: 'No warranty'
+                }];
+            }
+            
+            return productObj;
+        });
 
         res.status(200).json({
             success: true,
             msg: 'Products found successfully',
-            products
+            products: formattedProducts
         })
 
 })
@@ -548,6 +710,15 @@ exports.getFilteredProducts = async (req, res) => {
         // Match stage (apply filters)
         pipeline.push({ $match: filter });
 
+        // Extract price_size from first seller to root level for easier access
+        pipeline.push({
+            $addFields: {
+                price_size: { 
+                    $arrayElemAt: ['$sellers.price_size', 0] 
+                }
+            }
+        });
+
         // Unwind the price_size array for price/discount filtering
         if (minPrice || maxPrice || minDiscount || sort === 'price_asc' || sort === 'price_desc' || sort === 'discount') {
             pipeline.push({ $unwind: '$price_size' });
@@ -856,7 +1027,7 @@ exports.addSellerToProduct = asyncHandler(async (req, res) => {
     
         const userId = req.user.id;
         const { productId } = req.params;
-        const { price_size, fullShopDetails } = req.body;
+        const { price_size, fullShopDetails, deliveryInfo, warranty } = req.body;
 
         // Parse price_size if sent as string
         const parsedPriceSize = Array.isArray(price_size)
@@ -903,6 +1074,8 @@ exports.addSellerToProduct = asyncHandler(async (req, res) => {
             sellerId: userId,
             price_size: parsedPriceSize,
             fullShopDetails,
+            deliveryInfo: deliveryInfo || 'Standard delivery',
+            warranty: warranty || 'No warranty'
         });
 
         await product.save();

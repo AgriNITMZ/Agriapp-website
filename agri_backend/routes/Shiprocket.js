@@ -1,30 +1,22 @@
-// Shiprocket Routes
+// routes/Shiprocket.js
 const express = require('express');
 const router = express.Router();
-const { auth, isSeller } = require('../middleware/auth');
-const {
-  createShipment,
-  checkServiceability,
-  generateAWB,
-  trackShipment,
-  cancelShipment,
-  generateLabel,
-  getSellerShipments,
-  getBuyerShipment
-} = require('../controller/Shiprocket');
+const { auth } = require('../middleware/auth');
+const shiprocketController = require('../controller/Shiprocket');
 
-// Seller routes (require seller authentication)
-router.post('/create-shipment', auth, isSeller, createShipment);
-router.post('/generate-awb', auth, isSeller, generateAWB);
-router.post('/cancel-shipment', auth, isSeller, cancelShipment);
-router.post('/generate-label', auth, isSeller, generateLabel);
-router.get('/seller/shipments', auth, isSeller, getSellerShipments);
+// Payment routes
+router.post('/payment/create-order', auth, shiprocketController.createPaymentOrder);
+router.post('/payment/verify', auth, shiprocketController.verifyPayment);
 
-// Common routes (buyer and seller)
-router.get('/track/:orderId', auth, trackShipment);
-router.get('/buyer/shipment/:orderId', auth, getBuyerShipment);
+// Order routes
+router.post('/create', auth, shiprocketController.createOrder);
+router.get('/orders', auth, shiprocketController.getOrders);
 
-// Public route (can be used before order creation)
-router.post('/check-serviceability', checkServiceability);
+// Tracking routes
+router.get('/track/:shipmentId', auth, shiprocketController.trackShipment);
+router.post('/cancel/:shipmentId', auth, shiprocketController.cancelShipment);
+
+// Serviceability check
+router.post('/check-serviceability', auth, shiprocketController.checkServiceability);
 
 module.exports = router;

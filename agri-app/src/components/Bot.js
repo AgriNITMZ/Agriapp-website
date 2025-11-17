@@ -328,8 +328,8 @@ export default function Bot() {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 50,
-    right: 20,
+    bottom: 70,
+    right: 15,
     zIndex: 999,
   },
   fab: {

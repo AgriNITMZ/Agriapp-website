@@ -1,4 +1,5 @@
 // backend/controller/Order.js
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Cart = require('../models/CartItem');
@@ -161,7 +162,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
 
     console.log('=== Order Creation Completed ===');
 
-    // Invalidate analytics cache for real-time updates
+ 
     try {
         // Invalidate cache for all sellers involved in this order
         const sellerIds = orderItems.map(item => item.sellerId.toString());
@@ -206,10 +207,38 @@ exports.getOrderHistory = asyncHandler(async (req, res) => {
 });
 
 exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
-    const orders = await Order.find({ 'items.sellerId': req.user.id })
-                              .populate('items.product')
-                              .sort({ createdAt: -1 });
-    res.status(200).json({ message:'Seller orders retrieved', orders });
+    const sellerId = req.user.id;
+    
+    console.log('📦 Fetching seller orders for:', sellerId);
+    
+    // Convert to ObjectId for proper matching
+    const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
+    
+    // Find orders that have items from this seller
+    const orders = await Order.find({ 
+        'items.sellerId': sellerObjectId 
+    })
+    .populate('items.product')
+    .populate('userId', 'firstName lastName email')
+    .sort({ createdAt: -1 });
+    
+    console.log(`   Found ${orders.length} orders for seller`);
+    
+    // Filter items to only show this seller's items
+    const filteredOrders = orders.map(order => {
+        const orderObj = order.toObject();
+        orderObj.items = orderObj.items.filter(item => 
+            item.sellerId.toString() === sellerId
+        );
+        return orderObj;
+    });
+    
+    res.status(200).json({ 
+        success: true,
+        message: 'Seller orders retrieved', 
+        orders: filteredOrders,
+        count: filteredOrders.length
+    });
 });
 
 
@@ -219,9 +248,16 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
     const { orderStatus } = req.body;
     const sellerId = req.user.id;
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate('userId', 'firstName lastName email');
     if (!order) {
         return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Prevent updating Shiprocket orders - they are managed by Shiprocket API
+    if (order.shiprocketOrderId || order.shiprocketShipmentId) {
+        return res.status(403).json({ 
+            message: 'Cannot update Shiprocket orders. These are managed by Shiprocket API.' 
+        });
     }
 
     // Check if seller has items in this order
@@ -241,6 +277,9 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'Invalid order status' });
     }
 
+    // Store old status for notification
+    const oldStatus = order.orderStatus;
+
     order.orderStatus = orderStatus;
     await order.save();
 
@@ -259,6 +298,28 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
         invalidateAnalyticsCache(sellerId);
     } catch (cacheError) {
         console.warn('Failed to invalidate cache:', cacheError.message);
+    }
+
+    // Emit Socket.IO event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+        // Emit to buyer's room
+        io.to(`user-${order.userId._id.toString()}`).emit('order-status-updated', {
+            orderId: order._id,
+            orderStatus: orderStatus,
+            oldStatus: oldStatus,
+            message: `Your order #${order._id.toString().slice(-8)} is now ${orderStatus}`,
+            timestamp: new Date()
+        });
+
+        // Emit to seller's room (for multi-device sync)
+        io.to(`seller-${sellerId}`).emit('order-updated', {
+            orderId: order._id,
+            orderStatus: orderStatus,
+            timestamp: new Date()
+        });
+
+        console.log(`📡 Socket.IO: Order ${orderId} status updated to ${orderStatus}`);
     }
 
     res.status(200).json({

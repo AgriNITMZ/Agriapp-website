@@ -20,6 +20,7 @@ const SelectAddressPage = ({ navigation, route }) => {
     const [error, setError] = useState(null);
 
     const cart = route.params?.cart || []; // Ensure cart is defined
+    const fromShiprocket = route.params?.fromShiprocket || false; // Check if coming from Shiprocket
 
     // Fetch addresses from API
     useEffect(() => {
@@ -47,12 +48,18 @@ const SelectAddressPage = ({ navigation, route }) => {
         setSelectedAddress(address);
     };
 
-    // Proceed to order summary
+    // Proceed to order summary or back to Shiprocket
     const handleContinue = () => {
         if (selectedAddress) {
-            console.log(cart)
-            console.log(selectedAddress)
-            navigation.navigate('OrderSummary', { cart, selectedAddress });
+            if (fromShiprocket) {
+                // Navigate back to Shiprocket checkout with selected address
+                navigation.navigate('ShiprocketCheckout', { selectedAddress });
+            } else {
+                // Navigate to regular order summary
+                console.log(cart)
+                console.log(selectedAddress)
+                navigation.navigate('OrderSummary', { cart, selectedAddress });
+            }
         } else {
             Toast.show({
                 type: 'error',

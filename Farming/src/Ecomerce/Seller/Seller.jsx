@@ -1,0 +1,169 @@
+import React, { useState, useEffect } from 'react';
+import AddProduct from './Component/AddProduct';
+import OrdersTable from './Component/OrdersTable';
+import ProductTable from './Component/ProductTable';
+import DashBoard from './Component/DashBoard';
+import BulkUpload from './Component/AddBulkProduct';
+import LowStockProducts from './Component/LowStockProducts';
+import SellerAnalytics from '../../Component/Analytics/SellerDashboard';
+import { useNavigate } from 'react-router-dom';
+
+// Placeholder components for dashboard views
+
+
+const Customers = () => <div>Customers List</div>;
+
+const UpdateProductForm = () => <div>Update Product Form</div>;
+
+const Seller = () => {
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [currentRoute, setCurrentRoute] = useState('/');
+  const navigate = useNavigate();
+
+  // Menu items with routes
+  const menuItems = [
+    { name: "Dashboard", path: "/", icon: "📊" },
+    { name: "Analytics", path: "/analytics", icon: "📈" },
+    { name: "Products", path: "/products", icon: "📦" },
+    { name: "Low Stock Items", path: "/low-stock", icon: "⚠️" },
+    { name: "Customers", path: "/customers", icon: "👥" },
+    { name: "Orders", path: "/orders", icon: "🛒" },
+    { name: "Total Earnings", path: "/earnings", icon: "💰" },
+    { name: "Weekly Overview", path: "/weekly", icon: "📅" },
+    { name: "Monthly Overview", path: "/monthly", icon: "📆" },
+    { name: "Add Product", path: "/product/create", icon: "➕" },
+    { name: "Bulk Add Product", path: "/bulk", icon: "✏️" }
+  ];
+
+  // Responsive check
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsLargeScreen(window.innerWidth > 1024);
+    };
+
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  // Logout handler (placeholder)
+  const handleLogout = () => {
+    // Implement actual logout logic
+    setCurrentRoute('/');
+    localStorage.removeItem('token');
+  };
+
+  // Render current view based on route
+  const renderCurrentView = () => {
+    switch (currentRoute) {
+      case '/':
+        return <DashBoard onRouteChange={setCurrentRoute} />;
+      case '/analytics':
+        return <SellerAnalytics hideBackButton={true} />;
+      case '/products':
+        return <ProductTable />;
+      case '/low-stock':
+        return <LowStockProducts />;
+      case '/customers':
+        return <Customers />;
+      case '/orders':
+        return <OrdersTable />;
+      case '/product/create':
+        return <AddProduct />;
+         case '/bulk':
+        return <BulkUpload />;
+      case '/product/update':
+        return <UpdateProductForm />;
+      default:
+        return <DashBoard onRouteChange={setCurrentRoute} />;
+    }
+  };
+
+  // Sidebar component
+  const Sidebar = () => (
+    <div className={`
+      fixed top-0 left-0 h-full w-64 bg-gray-800 text-white transition-transform duration-300
+      ${isLargeScreen || sidebarVisible ? 'translate-x-0' : '-translate-x-full'}
+      lg:translate-x-0 lg:static
+    `}>
+      <div className="p-4 border-b border-gray-700">
+        <h2 className="text-xl font-bold">Seller Panel</h2>
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="mt-3 w-full flex items-center space-x-2 text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+        >
+          <span>←</span>
+          <span>Back to Home</span>
+        </button>
+      </div>
+      
+      <nav className="py-4 flex flex-col justify-between">
+        {menuItems.map((item) => (
+          <div 
+            key={item.path}
+            onClick={() => {
+              setCurrentRoute(item.path);
+              if (!isLargeScreen) setSidebarVisible(false);
+            }}
+            className={`flex items-center p-3 hover:bg-gray-700 cursor-pointer transition-colors ${
+              currentRoute === item.path ? 'bg-gray-700' : ''
+            }`}
+          >
+            <span className="mr-3">{item.icon}</span>
+            <span>{item.name}</span>
+          </div>
+        ))}
+      </nav>
+
+      {/* Logout Section */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+        <button 
+          onClick={handleLogout}
+          className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 transition"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+
+  // Navbar component
+  const Navbar = () => (
+    <div className="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
+      <div className="flex items-center space-x-3">
+        <button 
+          onClick={() => setSidebarVisible(!sidebarVisible)}
+          className="text-2xl"
+        >
+          ☰
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="text-gray-600 hover:text-gray-900 text-sm"
+        >
+          ← Home
+        </button>
+      </div>
+      <h1 className="text-xl font-semibold">Seller Panel</h1>
+      <div>{/* Placeholder for additional navbar items */}</div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen pt-16">
+      <Sidebar />
+      
+      <main className="flex-1 overflow-y-auto bg-gray-100">
+        <Navbar />
+        
+        <div className="p-6">
+          {renderCurrentView()}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+
+export default Seller
