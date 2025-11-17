@@ -1,4 +1,5 @@
 // backend/controller/Order.js
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Cart = require('../models/CartItem');
