@@ -40,6 +40,7 @@ import {
   MarketplaceScreen
 } from './src/screens';
 import AppNavigator from './AppNavigator';
+import SellerNavigator from './src/navigation/SellerNavigator';
 import WeatherPage from './src/screens/services/WeatherPage';
 import ShowAddressPage from './src/screens/address/ShowAddress';
 import AddPost from './src/screens/Posts/AddPost';
@@ -75,8 +76,9 @@ const loadFonts = async () => {
   });
 };
 
-const StackNav = ({ route }) => {
-  const { isAuthenticated } = route.params;
+const StackNav = ({ route, isAuthenticated: isAuthProp }) => {
+  // Support both route params (when used as Drawer.Screen) and direct prop (when used standalone)
+  const isAuthenticated = route?.params?.isAuthenticated ?? isAuthProp ?? false;
   const Stack = createStackNavigator();
 
   return (
@@ -136,6 +138,7 @@ const App = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [accountType, setAccountType] = useState(null); // Track account type
 
   const handleFontsLoaded = useCallback(async () => {
     await loadFonts();
@@ -163,27 +166,56 @@ const App = () => {
           const isValidToken = await checkTokenExpiration();
           if (isValidToken) {
             console.log("User is authenticated with valid token");
+            console.log("Account Type:", user.accountType);
             setIsAuthenticated(true);
+            setAccountType(user.accountType);
           } else {
             console.log("Token expired, cleaning up");
             await removeUserFromLocalStorage();
             setIsAuthenticated(false);
+            setAccountType(null);
           }
         } else {
           console.log("No user found");
           setIsAuthenticated(false);
+          setAccountType(null);
         }
       } catch (error) {
         console.error('Error during app initialization:', error);
         await removeUserFromLocalStorage();
         setIsAuthenticated(false);
+        setAccountType(null);
       } finally {
         setIsCheckingAuth(false);
       }
     };
 
     initializeApp();
-  }, []);
+
+    // Listen for storage changes to re-check authentication
+    const checkAuthInterval = setInterval(async () => {
+      const user = await getUserFromLocalStorage();
+      if (!user || !user.token) {
+        // User logged out, update state
+        if (isAuthenticated) {
+          console.log("Auth state changed - user logged out");
+          setIsAuthenticated(false);
+          setAccountType(null);
+        }
+      } else {
+        // User logged in or account type changed, update state
+        const currentAccountType = user.accountType;
+        if (!isAuthenticated || accountType !== currentAccountType) {
+          console.log("Auth state changed - user logged in or account type changed");
+          console.log("New account type:", currentAccountType);
+          setIsAuthenticated(true);
+          setAccountType(currentAccountType);
+        }
+      }
+    }, 500); // Check every 500ms for faster response
+
+    return () => clearInterval(checkAuthInterval);
+  }, [isAuthenticated, accountType]);
 
   if (!fontsLoaded || isFirstLaunch === null || isCheckingAuth) {
     return (
@@ -197,16 +229,20 @@ const App = () => {
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
         <Provider theme={theme}>
-          <AppProviders>
-            <NavigationContainer>
-              {isFirstLaunch ? (
-                <AppNavigator
-                  isFirstLaunch={isFirstLaunch}
-                  setIsFirstLaunch={setIsFirstLaunch}
-                  isAuthenticated={isAuthenticated}
-                />
-              ) : (
-                <Drawer.Navigator screenOptions={{ headerShown: false }}>
+          <NavigationContainer>
+            {isFirstLaunch ? (
+              <AppNavigator
+                isFirstLaunch={isFirstLaunch}
+                setIsFirstLaunch={setIsFirstLaunch}
+                isAuthenticated={isAuthenticated}
+              />
+            ) : accountType === 'Seller' ? (
+              // Seller Navigation - No Cart/Wishlist providers
+              <SellerNavigator key={`seller-${isAuthenticated}`} />
+            ) : isAuthenticated ? (
+              // Buyer Navigation - With Cart/Wishlist providers
+              <AppProviders>
+                <Drawer.Navigator screenOptions={{ headerShown: false }} key={`buyer-${isAuthenticated}`}>
                   <Drawer.Screen
                     name="Home"
                     component={StackNav}
@@ -219,10 +255,13 @@ const App = () => {
                   <Drawer.Screen name="Contact-Us" component={ContactUs} />
                   <Drawer.Screen name="Logout" component={LogoutScreen} />
                 </Drawer.Navigator>
-              )}
-              <Toast />
-            </NavigationContainer>
-          </AppProviders>
+              </AppProviders>
+            ) : (
+              // Not authenticated - Show login/signup screens
+              <StackNav isAuthenticated={false} key="unauthenticated" />
+            )}
+            <Toast />
+          </NavigationContainer>
         </Provider>
       </SafeAreaView>
     </SafeAreaProvider>

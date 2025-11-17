@@ -28,16 +28,59 @@ const ShiprocketCheckout = () => {
 
   // Handle pre-selected product or cart items from navigation state
   useEffect(() => {
+    // First, try to load from sessionStorage (for page refresh)
+    const savedProducts = sessionStorage.getItem('shiprocketSelectedProducts');
+    if (savedProducts) {
+      try {
+        const parsedProducts = JSON.parse(savedProducts);
+        // Validate that all products have required fields
+        const validProducts = parsedProducts.filter(p => 
+          p.productId && p.name && p.quantity && p.price
+        );
+        
+        if (validProducts.length > 0) {
+          setSelectedProducts(validProducts);
+          console.log('Loaded products from sessionStorage:', validProducts);
+        } else {
+          console.warn('No valid products found in sessionStorage');
+          sessionStorage.removeItem('shiprocketSelectedProducts');
+        }
+      } catch (error) {
+        console.error('Error parsing saved products:', error);
+        sessionStorage.removeItem('shiprocketSelectedProducts');
+      }
+    }
+    
+    // Then check for new products from navigation state
     if (location.state?.preSelectedProduct) {
       const preSelected = location.state.preSelectedProduct;
-      setSelectedProducts([preSelected]);
-      toast.success(`${preSelected.name} added to checkout`);
+      // Validate required fields
+      if (preSelected.productId && preSelected.name && preSelected.quantity && preSelected.price) {
+        setSelectedProducts([preSelected]);
+        // Save to sessionStorage
+        sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify([preSelected]));
+        toast.success(`${preSelected.name} added to checkout`);
+      } else {
+        console.error('Invalid product data:', preSelected);
+        toast.error('Product data is incomplete. Please try again.');
+      }
       // Clear the navigation state to prevent re-adding on refresh
       window.history.replaceState({}, document.title);
     } else if (location.state?.cartItems) {
       const cartItems = location.state.cartItems;
-      setSelectedProducts(cartItems);
-      toast.success(`${cartItems.length} item(s) added to checkout from cart`);
+      // Validate all cart items
+      const validCartItems = cartItems.filter(item => 
+        item.productId && item.name && item.quantity && item.price
+      );
+      
+      if (validCartItems.length > 0) {
+        setSelectedProducts(validCartItems);
+        // Save to sessionStorage
+        sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(validCartItems));
+        toast.success(`${validCartItems.length} item(s) added to checkout from cart`);
+      } else {
+        toast.error('Cart items are incomplete. Please try again.');
+      }
       // Clear the navigation state to prevent re-adding on refresh
       window.history.replaceState({}, document.title);
     }
@@ -185,13 +228,16 @@ const ShiprocketCheckout = () => {
     if (existingProduct) {
       updateQuantity(product._id, existingProduct.quantity + 1);
     } else {
-      setSelectedProducts([...selectedProducts, {
+      const newProducts = [...selectedProducts, {
         productId: product._id,
         name: product.name,
         quantity: 1,
         price: priceDetail.discountedPrice || priceDetail.price,
         imageUrl: product.images?.[0] || ''
-      }]);
+      }];
+      setSelectedProducts(newProducts);
+      // Save to sessionStorage
+      sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(newProducts));
       toast.success(`${product.name} added to checkout`);
     }
   };
@@ -202,14 +248,20 @@ const ShiprocketCheckout = () => {
       removeProduct(productId);
       return;
     }
-    setSelectedProducts(selectedProducts.map(p =>
+    const updatedProducts = selectedProducts.map(p =>
       p.productId === productId ? { ...p, quantity: newQuantity } : p
-    ));
+    );
+    setSelectedProducts(updatedProducts);
+    // Save to sessionStorage
+    sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(updatedProducts));
   };
 
   // Remove product
   const removeProduct = (productId) => {
-    setSelectedProducts(selectedProducts.filter(p => p.productId !== productId));
+    const updatedProducts = selectedProducts.filter(p => p.productId !== productId);
+    setSelectedProducts(updatedProducts);
+    // Save to sessionStorage
+    sessionStorage.setItem('shiprocketSelectedProducts', JSON.stringify(updatedProducts));
     toast.success('Product removed');
   };
 
@@ -250,13 +302,33 @@ const ShiprocketCheckout = () => {
       return;
     }
 
+    // Validate all products have required fields
+    const invalidProducts = selectedProducts.filter(p => 
+      !p.productId || !p.name || !p.quantity || !p.price
+    );
+    
+    if (invalidProducts.length > 0) {
+      console.error('Invalid products found:', invalidProducts);
+      toast.error('Some products are missing required information. Please try adding them again.');
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
       const totalAmount = calculateTotal();
+      
+      console.log('Creating order with:', {
+        addressId: selectedAddress._id,
+        paymentMethod,
+        items: selectedProducts,
+        shippingCost: shippingInfo?.cost || 0,
+        totalAmount
+      });
 
       if (paymentMethod === 'cod') {
         // Direct order creation for COD
+        console.log('Sending COD order request...');
         const orderResponse = await axios.post(
           `${import.meta.env.VITE_API_URL}/shiprocket/create`,
           {
@@ -269,11 +341,13 @@ const ShiprocketCheckout = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        console.log('Order response:', orderResponse.data);
+        console.log('COD Order response:', orderResponse.data);
         
         if (orderResponse.data.success) {
           // Clear selected products to prevent duplicate orders
           setSelectedProducts([]);
+          // Clear sessionStorage
+          sessionStorage.removeItem('shiprocketSelectedProducts');
           
           toast.success('Order placed successfully!');
           console.log('Navigating to success page with:', {
@@ -368,6 +442,8 @@ const ShiprocketCheckout = () => {
                 if (orderResponse.data.success) {
                   // Clear selected products to prevent duplicate orders
                   setSelectedProducts([]);
+                  // Clear sessionStorage
+                  sessionStorage.removeItem('shiprocketSelectedProducts');
                   
                   toast.success('Payment successful! Order placed.');
                   navigate('/shiprocket/success', {
@@ -407,7 +483,15 @@ const ShiprocketCheckout = () => {
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error.response?.data?.message || 'Payment failed. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        selectedProducts: selectedProducts,
+        selectedAddress: selectedAddress,
+        totalAmount: calculateTotal()
+      });
+      toast.error(error.response?.data?.message || error.message || 'Payment failed. Please try again.');
       setIsProcessing(false);
     }
   };

@@ -10,7 +10,8 @@ const {
     getAdminPlatformOverview,
     getAdminUserAnalytics,
     getAdminProductAnalytics,
-    getAdminFinancialAnalytics
+    getAdminFinancialAnalytics,
+    getSellerDashboardAnalytics // CHANGED FOR APP
     // exportData,
     // configureAlert,
     // getUserAlerts
@@ -22,6 +23,18 @@ router.get('/seller/overview', auth, isSeller, getSellerOverview);
 router.get('/seller/products', auth, isSeller, getSellerProductPerformance);
 
 router.get('/seller/sales-trends', auth, isSeller, getSellerSalesTrends);
+
+// Helper function to check if user is seller or admin
+const isSellerOrAdmin = (req, res, next) => {
+    if (req.user.accountType === 'Seller' || req.user.accountType === 'Admin') {
+        next();
+    } else {
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied. Seller or Admin role required.'
+        });
+    }
+};
 
 // Admin Analytics Routes
 router.get('/admin/platform-overview', auth, isAdmin, getAdminPlatformOverview);
@@ -142,5 +155,8 @@ router.get('/debug/categories', auth, isAdmin, async (req, res) => {
         });
     }
 });
+
+// CHANGED FOR APP - Seller Dashboard Route
+router.get('/seller-dashboard', auth, isSellerOrAdmin, getSellerDashboardAnalytics);
 
 module.exports = router;

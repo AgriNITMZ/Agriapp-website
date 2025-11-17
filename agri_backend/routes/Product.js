@@ -71,15 +71,17 @@ router.post('/removewishlist', auth,removeFromWishlist)
 router.get('/wishlistid', auth, getWishList)
 
 
-router.get('/searchProducts/search',seachProduct)
-router.get('/sellerProductt',auth,isSeller,getAllProductBySeller)
-// router.get('/searchProducts/search', seachProduct)
-router.get('/filteredproducts', getFilteredProducts)
-
-
 // rating and review
 const { createRatingAndReview, getAllRatingsAndReviews } = require('../controller/RatingAndReview')
 router.post("/create", auth, createRatingAndReview);
+
+// IMPORTANT: Specific routes MUST come BEFORE the catch-all /:productId route
+router.get('/searchProducts/search',seachProduct)
+router.get('/searchproducts',seachProduct) // Frontend uses this endpoint
+router.get('/sellerProductt',auth,isSeller,getAllProductBySeller)
+router.get('/filteredproducts', getFilteredProducts)
+
+// This catch-all route MUST be last to avoid conflicts
 router.get("/:productId", getAllRatingsAndReviews);
 
 

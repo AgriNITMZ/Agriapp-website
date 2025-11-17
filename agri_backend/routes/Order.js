@@ -55,6 +55,12 @@ router.get('/findeorderbyid/:orderId',auth,getOrderById)
 router.get('/orderhistory',auth,getOrderHistory)
 router.post('/seller/orders',auth,isSeller,getSellerOrderHistory)
 
+// ============ CHANGED FOR APP - Update Order Status ============
+router.put('/update-status/:orderId', auth, isSeller, orderController.updateOrderStatus);
+
+// Cancel Order
+router.put('/cancel/:orderId', auth, orderController.cancelOrder);
+
 // NEW Payment routes for mobile app
 router.post('/create-payment-app', auth, paymentController.createPaymentOrder);
 router.post('/verify-payment-app', auth, paymentController.verifyPayment);
