@@ -1837,18 +1837,43 @@ const getSellerDashboardAnalytics = async (req, res) => {
             }
         });
 
-        // Get sales trend for last 7 days (always show last 7 days for chart)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-        const recentOrders = await Order.find({
-            'items.sellerId': sellerId,
-            createdAt: { $gte: sevenDaysAgo }
-        }).sort({ createdAt: 1 });
+        // Get sales trend based on selected period
+        let trendStartDate;
+        let trendOrders;
+        
+        if (period && period !== 'overall') {
+            // Use the same date filter as the main query
+            trendOrders = orders; // Reuse already filtered orders
+            
+            // Determine start date for trend calculation
+            switch (period) {
+                case '7days':
+                    trendStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30days':
+                    trendStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case '6months':
+                    trendStartDate = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+                    break;
+                case '1year':
+                    trendStartDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    trendStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            }
+        } else {
+            // For overall, show last 7 days
+            trendStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            trendOrders = await Order.find({
+                'items.sellerId': sellerId,
+                createdAt: { $gte: trendStartDate }
+            }).sort({ createdAt: 1 });
+        }
 
         // Group by day
         const salesByDay = {};
-        recentOrders.forEach(order => {
+        trendOrders.forEach(order => {
             const date = order.createdAt.toISOString().split('T')[0];
             if (!salesByDay[date]) {
                 salesByDay[date] = 0;
@@ -1861,10 +1886,26 @@ const getSellerDashboardAnalytics = async (req, res) => {
             });
         });
 
-        const salesTrend = Object.keys(salesByDay).map(date => ({
-            label: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            value: Math.round(salesByDay[date])
-        }));
+        // Format sales trend with appropriate date format based on period
+        const salesTrend = Object.keys(salesByDay).sort().map(date => {
+            const dateObj = new Date(date);
+            let label;
+            
+            // Format label based on period
+            if (period === '6months' || period === '1year') {
+                // Show month and day for longer periods
+                label = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            } else {
+                // Show month and day for shorter periods
+                label = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            
+            return {
+                label,
+                value: Math.round(salesByDay[date]),
+                date: date // Include full date for reference
+            };
+        });
 
         const responseData = {
             totalProducts,

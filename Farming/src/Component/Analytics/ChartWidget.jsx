@@ -36,6 +36,21 @@ const ChartWidget = ({
     );
   }
 
+  // Handle empty data
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+        <div className="flex items-center justify-center h-64 text-gray-400">
+          <div className="text-center">
+            <p className="text-lg mb-2">📊</p>
+            <p>No data available for this period</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const renderChart = () => {
     switch (type) {
       case 'line':
@@ -49,6 +64,7 @@ const ChartWidget = ({
             <Line 
               type="monotone" 
               dataKey="value" 
+              name="Revenue (₹)"
               stroke={colors[0]} 
               strokeWidth={2}
               dot={{ fill: colors[0] }}

@@ -50,9 +50,10 @@ const SellerDashboard = ({ hideBackButton = false }) => {
     
     return trends.salesTrends.map(trend => ({
       date: new Date(trend.date).toLocaleDateString(),
-      sales: trend.totalSales,
-      revenue: trend.totalRevenue,
-      orders: trend.orderCount
+      value: trend.totalRevenue || 0, // Use revenue as the main value for the chart
+      sales: trend.totalSales || 0,
+      revenue: trend.totalRevenue || 0,
+      orders: trend.orderCount || 0
     }));
   };
 

@@ -10,11 +10,11 @@ import SellerFooterNavigation from '../../components/seller/SellerFooterNavigati
 const screenWidth = Dimensions.get('window').width;
 
 const TIME_PERIODS = [
-    { label: 'Last 7 Days', value: '7days' },
-    { label: 'Last 30 Days', value: '30days' },
-    { label: 'Last 6 Months', value: '6months' },
-    { label: 'Last Year', value: '1year' },
-    { label: 'Overall', value: 'overall' }
+    { label: 'Last 7 Days', value: '7days', chartLabel: 'Last 7 Days' },
+    { label: 'Last 30 Days', value: '30days', chartLabel: 'Last 30 Days' },
+    { label: 'Last 6 Months', value: '6months', chartLabel: 'Last 6 Months' },
+    { label: 'Last Year', value: '1year', chartLabel: 'Last Year' },
+    { label: 'Overall', value: 'overall', chartLabel: 'Last 7 Days' }
 ];
 
 const SalesAnalytics = ({ navigation }) => {
@@ -63,6 +63,12 @@ const SalesAnalytics = ({ navigation }) => {
         datasets: [{
             data: analytics?.salesTrend?.map(item => item.value) || [0]
         }]
+    };
+
+    // Get chart title based on selected period
+    const getChartTitle = () => {
+        const period = TIME_PERIODS.find(p => p.value === selectedPeriod);
+        return period ? period.chartLabel : 'Last 7 Days';
     };
 
     return (
@@ -149,13 +155,13 @@ const SalesAnalytics = ({ navigation }) => {
                     </View>
 
                     {/* Sales Trend Line Chart */}
-                    {analytics?.salesTrend?.length > 0 && (
-                        <Card style={styles.chartCard}>
-                            <Card.Content>
-                                <View style={styles.chartHeader}>
-                                    <TrendingUp size={20} color="#4CAF50" />
-                                    <Text style={styles.chartTitle}>Sales Trend (Last 7 Days)</Text>
-                                </View>
+                    <Card style={styles.chartCard}>
+                        <Card.Content>
+                            <View style={styles.chartHeader}>
+                                <TrendingUp size={20} color="#4CAF50" />
+                                <Text style={styles.chartTitle}>Sales Trend ({getChartTitle()})</Text>
+                            </View>
+                            {analytics?.salesTrend?.length > 0 ? (
                                 <LineChart
                                     data={chartData}
                                     width={screenWidth - 60}
@@ -177,18 +183,22 @@ const SalesAnalytics = ({ navigation }) => {
                                     bezier
                                     style={styles.chart}
                                 />
-                            </Card.Content>
-                        </Card>
-                    )}
+                            ) : (
+                                <View style={styles.noDataContainer}>
+                                    <Text style={styles.noDataText}>No sales data for this period</Text>
+                                </View>
+                            )}
+                        </Card.Content>
+                    </Card>
 
                     {/* Sales Bar Chart */}
-                    {analytics?.salesTrend?.length > 0 && (
-                        <Card style={styles.chartCard}>
-                            <Card.Content>
-                                <View style={styles.chartHeader}>
-                                    <BarChart3 size={20} color="#2196F3" />
-                                    <Text style={styles.chartTitle}>Daily Sales Comparison</Text>
-                                </View>
+                    <Card style={styles.chartCard}>
+                        <Card.Content>
+                            <View style={styles.chartHeader}>
+                                <BarChart3 size={20} color="#2196F3" />
+                                <Text style={styles.chartTitle}>Sales Comparison ({getChartTitle()})</Text>
+                            </View>
+                            {analytics?.salesTrend?.length > 0 ? (
                                 <BarChart
                                     data={chartData}
                                     width={screenWidth - 60}
@@ -205,9 +215,13 @@ const SalesAnalytics = ({ navigation }) => {
                                     style={styles.chart}
                                     showValuesOnTopOfBars
                                 />
-                            </Card.Content>
-                        </Card>
-                    )}
+                            ) : (
+                                <View style={styles.noDataContainer}>
+                                    <Text style={styles.noDataText}>No sales data for this period</Text>
+                                </View>
+                            )}
+                        </Card.Content>
+                    </Card>
                     <View style={{ height: 80 }} />
                 </ScrollView>
                 <SellerFooterNavigation navigation={navigation} activePage="Dashboard" />
@@ -353,6 +367,16 @@ const styles = StyleSheet.create({
     chart: {
         marginVertical: 8,
         borderRadius: 16,
+    },
+    noDataContainer: {
+        paddingVertical: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    noDataText: {
+        fontSize: 14,
+        color: '#9CA3AF',
+        fontWeight: '500',
     },
 });
 
