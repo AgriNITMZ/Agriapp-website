@@ -19,8 +19,16 @@ export function getProductById(productId){
             if(!response.data.success){
                 throw new Error(response.data.message)
             }
-            dispatch(setSelectedProduct(response?.data?.product))
-            console.log("SELECTED PRODUCT............",response?.data?.product)
+            
+            const productData = response?.data?.product;
+            
+            // Use allSellers if available (new format with proper seller names)
+            if (productData.allSellers && productData.allSellers.length > 0) {
+                productData.sellers = productData.allSellers;
+            }
+            
+            dispatch(setSelectedProduct(productData))
+            console.log("SELECTED PRODUCT............",productData)
         }catch(error){
             console.log("GET_PRODUCT_BY_ID_API ERROR............",error)
             toast.error("Failed to get product")

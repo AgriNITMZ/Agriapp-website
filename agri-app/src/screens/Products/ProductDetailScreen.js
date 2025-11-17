@@ -42,11 +42,42 @@ const ProductDetailScreen = ({ navigation, route }) => {
             setError(null);
             try {
                 const response = await customFetch.get(`/products/getproductbyId/${productId}`);
-                setProduct(response.data.product);
-                const similarResponse = await customFetch.get(`/products/filteredproducts?category=${response.data.product.category}`);
+                const productData = response.data.product;
+                
+                // Use allSellers if available (new format), otherwise fallback to sellers
+                if (productData.allSellers && productData.allSellers.length > 0) {
+                    productData.sellers = productData.allSellers;
+                } else if (productData.sellers && productData.sellers.length > 0) {
+                    // Keep existing sellers but ensure they have proper structure
+                    productData.sellers = productData.sellers.map((seller, index) => ({
+                        ...seller,
+                        sellerName: seller.sellerName || 
+                                   seller.fullShopDetails || 
+                                   (seller.sellerId?.shopName) ||
+                                   (seller.sellerId?.firstName ? `${seller.sellerId.firstName} ${seller.sellerId.lastName || ''}`.trim() : null) ||
+                                   'Shop ' + (index + 1),
+                        fullShopDetails: seller.fullShopDetails || 'Shop Details'
+                    }));
+                }
+                
+                // Ensure sellers array exists and has valid data
+                if (!productData.sellers || productData.sellers.length === 0) {
+                    productData.sellers = [{
+                        sellerId: null,
+                        sellerName: 'Default Shop',
+                        price_size: productData.price_size || [],
+                        fullShopDetails: productData.fullShopDetails || 'Shop Details',
+                        deliveryInfo: 'Standard delivery',
+                        warranty: 'No warranty'
+                    }];
+                }
+                
+                setProduct(productData);
+                const similarResponse = await customFetch.get(`/products/filteredproducts?category=${productData.category}`);
                 setSimilarProducts(similarResponse.data.data.products);
             } catch (err) {
                 setError('Failed to load product details. Please try again.');
+                console.error('Error fetching product:', err);
             } finally {
                 setLoading(false);
             }
@@ -57,24 +88,38 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
     // Reset selected size when seller changes
     useEffect(() => {
-        setSelectedSize(0);
-        setQuantity(1);
-    }, [selectedSellerIndex]);
+        const currentPriceSize = getCurrentPriceSize();
+        // Only reset if there are sizes available
+        if (currentPriceSize.length > 0) {
+            setSelectedSize(0);
+            setQuantity(1);
+        }
+    }, [selectedSellerIndex, product]);
 
     const getCurrentSeller = () => {
-        return product?.sellers?.[selectedSellerIndex] || null;
+        if (!product?.sellers || product.sellers.length === 0) return null;
+        // Ensure selectedSellerIndex is within bounds
+        const index = Math.min(selectedSellerIndex, product.sellers.length - 1);
+        return product.sellers[index] || null;
     };
 
     const getCurrentPriceSize = () => {
         const seller = getCurrentSeller();
-        return seller?.price_size || [];
+        if (!seller?.price_size || !Array.isArray(seller.price_size)) return [];
+        return seller.price_size;
     };
 
     const handleBuyNow = async () => {
         if (!product) return;
         try {
             const seller = getCurrentSeller();
-            await addToCart(product, quantity, selectedSize, seller);
+            if (!seller) {
+                console.error('No seller available');
+                return;
+            }
+            const currentPriceSize = getCurrentPriceSize();
+            const safeSize = Math.min(selectedSize, Math.max(0, currentPriceSize.length - 1));
+            await addToCart(product, quantity, safeSize, seller);
             navigation.navigate('Cart');
         } catch (error) {
             console.error('Error handling Buy Now:', error);
@@ -86,7 +131,13 @@ const ProductDetailScreen = ({ navigation, route }) => {
         if (!product) return;
         try {
             const seller = getCurrentSeller();
-            await addToCart(product, quantity, selectedSize, seller);
+            if (!seller) {
+                console.error('No seller available');
+                return;
+            }
+            const currentPriceSize = getCurrentPriceSize();
+            const safeSize = Math.min(selectedSize, Math.max(0, currentPriceSize.length - 1));
+            await addToCart(product, quantity, safeSize, seller);
         } catch (error) {
             console.error('Error adding to cart:', error);
         }
@@ -113,7 +164,9 @@ const ProductDetailScreen = ({ navigation, route }) => {
     }
 
     const currentPriceSize = getCurrentPriceSize();
-    const maxQuantity = currentPriceSize[selectedSize]?.quantity || 0;
+    // Ensure selectedSize is within bounds
+    const safeSelectedSize = Math.min(selectedSize, Math.max(0, currentPriceSize.length - 1));
+    const maxQuantity = currentPriceSize[safeSelectedSize]?.quantity || 0;
 
     return (
         <View style={styles.container}>
@@ -127,7 +180,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
                 <View style={styles.productDetail}>
                     <ProductInfo
                         product={product}
-                        selectedSize={selectedSize}
+                        selectedSize={safeSelectedSize}
                         priceSize={currentPriceSize}
                     />
                     <View style={styles.divider} />
@@ -141,7 +194,7 @@ const ProductDetailScreen = ({ navigation, route }) => {
 
                     <SizeSelector
                         priceSize={currentPriceSize}
-                        selectedSize={selectedSize}
+                        selectedSize={safeSelectedSize}
                         setSelectedSize={setSelectedSize}
                     />
                     <View style={styles.divider} />
@@ -159,8 +212,36 @@ const ProductDetailScreen = ({ navigation, route }) => {
                     {product.description ? (
                         <WebView
                             originWhitelist={['*']}
-                            source={{ html: `<html><body>${product.description}</body></html>` }}
-                            style={{ height: 300 }}
+                            source={{ 
+                                html: `
+                                    <html>
+                                        <head>
+                                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                            <style>
+                                                body {
+                                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                                    font-size: 16px;
+                                                    line-height: 1.6;
+                                                    color: #333;
+                                                    margin: 0;
+                                                    padding: 10px;
+                                                    word-wrap: break-word;
+                                                }
+                                                * {
+                                                    max-width: 100%;
+                                                }
+                                                img {
+                                                    height: auto;
+                                                }
+                                            </style>
+                                        </head>
+                                        <body>${product.description}</body>
+                                    </html>
+                                ` 
+                            }}
+                            style={styles.webView}
+                            scrollEnabled={false}
+                            showsVerticalScrollIndicator={false}
                         />
                     ) : (
                         <Text>No description available</Text>
@@ -200,6 +281,7 @@ const styles = StyleSheet.create({
     productDetail: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
     sectionTitle: { paddingLeft: 15, fontSize: 20, fontWeight: 'bold', marginBottom: 8, color: '#333' },
     descriptionContainer: { padding: 16 },
+    webView: { height: 400, backgroundColor: 'transparent' },
     divider: { height: 1, backgroundColor: '#ddd', marginVertical: 5 },
     footer: { position: 'absolute', bottom: 0, flexDirection: 'row', padding: 7, backgroundColor: '#fff' },
     addToCartButton: { backgroundColor: 'orange', padding: 16, borderRadius: 8, flex: 1, marginRight: 8 },
