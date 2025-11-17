@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle, Package, Truck, CreditCard, Calendar, ArrowRight } from 'lucide-react';
+import { CheckCircle, Package, Truck, CreditCard, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const ShiprocketSuccess = () => {
   const location = useLocation();
@@ -36,6 +36,15 @@ const ShiprocketSuccess = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 pt-24">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/product')}
+          className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Continue Shopping</span>
+        </button>
+
         {/* Success Header */}
         <div className="bg-white shadow-lg rounded-lg p-8 mb-6">
           <div className="text-center">

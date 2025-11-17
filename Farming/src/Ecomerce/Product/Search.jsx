@@ -1,10 +1,12 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import ProductCard from './ProductCard';
 
 const Search = () => {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [product, setProduct] = useState([]);
     const query = searchParams.get("query");
     const [page, setPage] = useState(1);
@@ -36,6 +38,15 @@ const Search = () => {
 
     return (
         <div className='pt-24 p-4'>
+            {/* Back Button */}
+            <button
+                onClick={() => navigate(-1)}
+                className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+            >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Back</span>
+            </button>
+
             <h2 className='text-xl font-semibold'>Search Results</h2>
 
             {/* Sorting Options in a Row */}

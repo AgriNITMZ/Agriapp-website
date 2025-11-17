@@ -113,11 +113,11 @@ const ShiprocketTrack = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <button
-          onClick={() => navigate('/shiprocket/orders')}
+          onClick={() => navigate(-1)}
           className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Orders</span>
+          <span>Back</span>
         </button>
 
         {/* Header */}

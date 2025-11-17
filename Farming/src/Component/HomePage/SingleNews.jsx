@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const SingleNews = () => {
     const [news, setNews] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { id } = useParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchNews = async () => {
@@ -63,7 +65,16 @@ const SingleNews = () => {
     });
 
     return (
-        <div className="pt-24 mx-auto my-10 bg-white shadow-xl rounded-lg overflow-hidden">
+        <div className="pt-24 mx-auto my-10 bg-white shadow-xl rounded-lg overflow-hidden max-w-4xl px-4">
+            {/* Back Button */}
+            <button
+                onClick={() => navigate(-1)}
+                className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+            >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Back</span>
+            </button>
+
             <div className="relative">
                 <img 
                     src={news.image} 

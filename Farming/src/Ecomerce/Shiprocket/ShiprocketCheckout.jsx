@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CreditCard, Truck, Shield, ArrowRight, MapPin, Edit, Package, Minus, Plus } from 'lucide-react';
+import { CreditCard, Truck, Shield, ArrowRight, MapPin, Edit, Package, Minus, Plus, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import AddressPopup from '../Address/AddressPopup';
@@ -500,6 +500,15 @@ const ShiprocketCheckout = () => {
     <div className="min-h-screen bg-gray-50 py-12 pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-medium">Back</span>
+          </button>
+
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Shiprocket Checkout</h1>
