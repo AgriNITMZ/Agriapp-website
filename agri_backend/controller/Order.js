@@ -143,7 +143,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
       await cart.save();
       console.log('Cart cleared for COD order');
 
-      // CREATE NOTIFICATION FOR COD ORDER
+      // CREATE NOTIFICATION FOR USER (COD ORDER)
       await createNotification(
         userId,
         'order_placed',
@@ -156,6 +156,26 @@ exports.createOrder = asyncHandler(async (req, res) => {
           paymentMethod: 'COD'
         }
       );
+
+      // CREATE NOTIFICATIONS FOR ALL SELLERS (COD ORDER)
+      const uniqueSellerIds = [...new Set(orderItems.map(item => item.sellerId?.toString()).filter(Boolean))];
+      for (const sellerId of uniqueSellerIds) {
+        const sellerItems = orderItems.filter(item => item.sellerId?.toString() === sellerId);
+        const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+        
+        await createNotification(
+          sellerId,
+          'order_placed',
+          'New Order Received! 🛒',
+          `You have received a new order worth ₹${sellerTotal}. Order ID: ${newOrder._id}`,
+          newOrder._id,
+          {
+            amount: sellerTotal,
+            itemCount: sellerItems.length,
+            paymentMethod: 'COD'
+          }
+        );
+      }
     } else if (paymentMethod === 'online') {
       console.log('Cart NOT cleared - waiting for payment confirmation');
     }
@@ -406,7 +426,7 @@ exports.cancelOrder = asyncHandler(async (req, res) => {
     // Invalidate analytics cache
     invalidateAnalyticsCache();
 
-    // Create notification for user
+    // Create notification for USER
     await createNotification(
         order.userId,
         'order_cancelled',
@@ -415,15 +435,25 @@ exports.cancelOrder = asyncHandler(async (req, res) => {
         order._id
     );
 
-    // Create notification for seller
-    if (order.items && order.items.length > 0 && order.items[0].sellerId) {
-        await createNotification(
-            order.items[0].sellerId,
-            'order_cancelled',
-            'Order Cancelled',
-            `Order #${order._id.toString().slice(-8)} has been cancelled by the customer.`,
-            order._id
-        );
+    // Create notifications for ALL SELLERS
+    if (order.items && order.items.length > 0) {
+        const uniqueSellerIds = [...new Set(order.items.map(item => item.sellerId?.toString()).filter(Boolean))];
+        for (const sellerId of uniqueSellerIds) {
+            const sellerItems = order.items.filter(item => item.sellerId?.toString() === sellerId);
+            const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+            
+            await createNotification(
+                sellerId,
+                'order_cancelled',
+                'Order Cancelled by Customer',
+                `Order #${order._id.toString().slice(-8)} worth ₹${sellerTotal} has been cancelled by the customer.`,
+                order._id,
+                {
+                    amount: sellerTotal,
+                    itemCount: sellerItems.length
+                }
+            );
+        }
     }
 
     console.log('Order cancelled successfully');
