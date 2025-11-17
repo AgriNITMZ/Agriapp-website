@@ -130,7 +130,7 @@ const Seller = () => {
   );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen pt-16">
       <Sidebar />
       
       <main className="flex-1 overflow-y-auto bg-gray-100">

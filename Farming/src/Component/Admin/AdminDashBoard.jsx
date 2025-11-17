@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const AdminDashBoard = () => {
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl">
+    <div className="max-w-3xl mx-auto mt-10 pt-24 p-6 bg-white shadow-lg rounded-xl">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
         Admin Dashboard
       </h1>

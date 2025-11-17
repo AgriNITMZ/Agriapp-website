@@ -61,8 +61,10 @@ const SellerDashboard = () => {
     if (!products || !products.topProducts) return [];
     
     return products.topProducts.slice(0, 5).map(product => ({
-      name: product.productName.substring(0, 20) + '...',
-      value: product.totalQuantitySold
+      name: product.productName 
+        ? (product.productName.length > 20 ? product.productName.substring(0, 20) + '...' : product.productName)
+        : 'Unknown Product',
+      value: product.totalQuantitySold || 0
     }));
   };
 
@@ -150,22 +152,30 @@ const SellerDashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {productPerformance?.topProducts?.slice(0, 10).map((product, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {product.productName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {product.totalQuantitySold}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ₹{product.totalRevenue}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {product.orderCount}
+                {productPerformance?.topProducts?.length > 0 ? (
+                  productPerformance.topProducts.slice(0, 10).map((product, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {product.productName || 'Unknown Product'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {product.totalQuantitySold || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ₹{product.totalRevenue || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {product.orderCount || 0}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-8 text-center text-sm text-gray-500">
+                      No product data available yet
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -179,10 +189,10 @@ const SellerDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {productPerformance.lowStockAlerts.map((product, index) => (
               <div key={index} className="bg-white rounded-lg p-4 border border-yellow-300">
-                <h4 className="font-medium text-gray-900">{product.productName}</h4>
-                <p className="text-sm text-gray-600">Category: {product.category}</p>
+                <h4 className="font-medium text-gray-900">{product.productName || 'Unknown Product'}</h4>
+                <p className="text-sm text-gray-600">Category: {product.category || 'N/A'}</p>
                 <p className="text-sm text-red-600 font-medium">
-                  Min Stock: {product.minQuantity} units
+                  Min Stock: {product.minQuantity || 0} units
                 </p>
               </div>
             ))}

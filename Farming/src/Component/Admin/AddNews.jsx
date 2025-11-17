@@ -52,7 +52,7 @@ const AddNewsForm = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl">
+    <div className="max-w-lg mx-auto mt-10 pt-24 p-6 bg-white shadow-lg rounded-xl">
       <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">Add News</h2>
       {message && <p className="text-center mb-4 text-green-600">{message}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
