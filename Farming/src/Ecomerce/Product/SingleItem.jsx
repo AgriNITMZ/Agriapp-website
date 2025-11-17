@@ -413,7 +413,7 @@ const SingleItem = () => {
           {/* Current Seller Info */}
           <div className="bg-gray-50 p-4 rounded-lg mb-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Seller: {selectedProduct.sellers[selectedSeller].fullShopDetails}</h3>
+              <h3 className="text-lg font-semibold">Seller: {selectedProduct.sellers[selectedSeller].fullShopDetails || selectedProduct.sellers[selectedSeller].sellerName}</h3>
               {selectedProduct.sellers.length > 1 && (
                 <button
                   onClick={() => setShowOtherSellers(!showOtherSellers)}
@@ -443,7 +443,7 @@ const SingleItem = () => {
                     onClick={() => changeSeller(index)}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-medium">{seller.fullShopDetails}</h4>
+                      <h4 className="font-medium">{seller.fullShopDetails || seller.sellerName}</h4>
                       {selectedSeller === index && (
                         <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Selected</span>
                       )}

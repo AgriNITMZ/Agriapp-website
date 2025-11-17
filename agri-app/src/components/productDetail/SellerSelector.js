@@ -16,7 +16,7 @@ const SellerSelector = ({ sellers, selectedSellerIndex, setSelectedSellerIndex }
                     <View style={styles.sellerCard}>
                         <View style={styles.sellerHeader}>
                             <Ionicons name="storefront-outline" size={20} color="#2E7D32" />
-                            <Text style={styles.sellerName}>{sellers[0].fullShopDetails}</Text>
+                            <Text style={styles.sellerName}>{sellers[0].fullShopDetails || sellers[0].sellerName || 'Unknown Seller'}</Text>
                         </View>
                         <Text style={styles.priceRangeText}>
                             {getPriceRange(sellers[0].price_size)}
@@ -33,7 +33,7 @@ const SellerSelector = ({ sellers, selectedSellerIndex, setSelectedSellerIndex }
             <View style={styles.sellersContainer}>
                 {sellers.map((seller, index) => (
                     <TouchableOpacity
-                        key={seller._id}
+                        key={`seller-${index}-${seller._id || ''}`}
                         style={[
                             styles.sellerCard,
                             selectedSellerIndex === index && styles.selectedSellerCard,
@@ -51,9 +51,9 @@ const SellerSelector = ({ sellers, selectedSellerIndex, setSelectedSellerIndex }
                                     styles.sellerName,
                                     selectedSellerIndex === index && styles.selectedSellerName,
                                 ]}
-                                numberOfLines={2}
+                                numberOfLines={3}
                             >
-                                {seller.fullShopDetails}
+                                {seller.fullShopDetails || seller.sellerName || 'Unknown Seller'}
                             </Text>
                         </View>
                         <Text style={styles.priceRangeText}>
