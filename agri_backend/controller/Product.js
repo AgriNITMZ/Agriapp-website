@@ -710,6 +710,15 @@ exports.getFilteredProducts = async (req, res) => {
         // Match stage (apply filters)
         pipeline.push({ $match: filter });
 
+        // Extract price_size from first seller to root level for easier access
+        pipeline.push({
+            $addFields: {
+                price_size: { 
+                    $arrayElemAt: ['$sellers.price_size', 0] 
+                }
+            }
+        });
+
         // Unwind the price_size array for price/discount filtering
         if (minPrice || maxPrice || minDiscount || sort === 'price_asc' || sort === 'price_desc' || sort === 'discount') {
             pipeline.push({ $unwind: '$price_size' });
