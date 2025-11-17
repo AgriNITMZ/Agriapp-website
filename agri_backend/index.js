@@ -1,5 +1,8 @@
 const express = require('express');
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
 const cors = require('cors');
 const fileUpload = require('express-fileupload');
 require('dotenv').config();
@@ -30,6 +33,40 @@ app.use(cors(
   credentials: true,
 
 }));
+
+// Initialize Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+
+  // Join user-specific room
+  socket.on('join-user-room', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`👤 User ${userId} joined their room`);
+  });
+
+  // Join seller-specific room
+  socket.on('join-seller-room', (sellerId) => {
+    socket.join(`seller-${sellerId}`);
+    console.log(`🏪 Seller ${sellerId} joined their room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
 database.connect()
 
 app.use(
@@ -83,7 +120,8 @@ app.get('/', (req, res) => {
 const { initializeNewsCron } = require('./scraper/newsCronJob');
 initializeNewsCron();
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Start server with Socket.IO
+server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔌 Socket.IO enabled for real-time updates`);
 });
