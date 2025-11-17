@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { Text, Card, Chip, Button, Menu, Portal, Dialog, TextInput } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import customFetch from '../../utils/axios';
 import { Package, Clock, Truck, CheckCircle, XCircle } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
@@ -32,6 +33,13 @@ const SellerOrders = ({ navigation, route }) => {
     useEffect(() => {
         fetchOrders();
     }, []);
+
+    // Refresh orders when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchOrders();
+        }, [])
+    );
 
     useEffect(() => {
         if (filterStatus === 'All') {

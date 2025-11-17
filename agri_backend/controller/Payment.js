@@ -272,9 +272,13 @@ exports.verifyPayment = async (req, res) => {
 
           // Send notifications to ALL SELLERS
           const uniqueSellerIds = [...new Set(order.items.map(item => item.sellerId?.toString()).filter(Boolean))];
+          console.log('📧 Creating payment notifications for sellers:', uniqueSellerIds);
+          
           for (const sellerId of uniqueSellerIds) {
             const sellerItems = order.items.filter(item => item.sellerId?.toString() === sellerId);
             const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+            
+            console.log(`📧 Sending payment notification to seller ${sellerId} for ₹${sellerTotal}`);
             
             await createNotification(
               sellerId,
@@ -288,6 +292,8 @@ exports.verifyPayment = async (req, res) => {
                 paymentId: razorpay_payment_id
               }
             );
+            
+            console.log(`✅ Payment notification sent to seller ${sellerId}`);
           }
         }
       }

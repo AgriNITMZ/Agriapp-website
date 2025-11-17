@@ -136,14 +136,19 @@ exports.createOrder = asyncHandler(async (req, res) => {
 
     console.log('Order created successfully:', newOrder._id);
 
-    if (paymentMethod === 'cod' && cart) {
-      cart.items = [];
-      cart.totalPrice = 0;
-      cart.totalDiscountedPrice = 0;
-      await cart.save();
-      console.log('Cart cleared for COD order');
+    // Handle COD orders
+    if (paymentMethod === 'cod') {
+      // Clear cart if order was from cart
+      if (cart) {
+        cart.items = [];
+        cart.totalPrice = 0;
+        cart.totalDiscountedPrice = 0;
+        await cart.save();
+        console.log('Cart cleared for COD order');
+      }
 
       // CREATE NOTIFICATION FOR USER (COD ORDER)
+      console.log('📧 Creating order placed notification for user:', userId);
       await createNotification(
         userId,
         'order_placed',
@@ -156,12 +161,17 @@ exports.createOrder = asyncHandler(async (req, res) => {
           paymentMethod: 'COD'
         }
       );
+      console.log('✅ User notification sent');
 
       // CREATE NOTIFICATIONS FOR ALL SELLERS (COD ORDER)
       const uniqueSellerIds = [...new Set(orderItems.map(item => item.sellerId?.toString()).filter(Boolean))];
+      console.log('📧 Creating notifications for sellers:', uniqueSellerIds);
+      
       for (const sellerId of uniqueSellerIds) {
         const sellerItems = orderItems.filter(item => item.sellerId?.toString() === sellerId);
         const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+        
+        console.log(`📧 Sending notification to seller ${sellerId} for ₹${sellerTotal}`);
         
         await createNotification(
           sellerId,
@@ -175,6 +185,8 @@ exports.createOrder = asyncHandler(async (req, res) => {
             paymentMethod: 'COD'
           }
         );
+        
+        console.log(`✅ Notification sent to seller ${sellerId}`);
       }
     } else if (paymentMethod === 'online') {
       console.log('Cart NOT cleared - waiting for payment confirmation');

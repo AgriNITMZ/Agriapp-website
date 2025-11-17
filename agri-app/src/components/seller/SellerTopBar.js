@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Menu, Bell, Search } from 'lucide-react-native';
+import { useNotificationCount } from '../topBar/useNotificationCount';
 
 const SellerTopBar = ({ navigation, title, showSearch = false, onSearchPress }) => {
+    const { notificationCount, refreshNotificationCount } = useNotificationCount();
+
+    // Refresh notification count when navigation state changes
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            refreshNotificationCount();
+        });
+
+        return unsubscribe;
+    }, [navigation, refreshNotificationCount]);
+
     return (
         <View style={styles.container}>
             <View style={styles.leftSection}>
@@ -25,6 +37,13 @@ const SellerTopBar = ({ navigation, title, showSearch = false, onSearchPress }) 
                 )}
                 <TouchableOpacity onPress={() => navigation.navigate('Notification')} style={styles.iconButton}>
                     <Bell size={24} color="#333" />
+                    {notificationCount > 0 && (
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>
+                                {notificationCount > 99 ? '99+' : notificationCount}
+                            </Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
         </View>
@@ -80,6 +99,24 @@ const styles = StyleSheet.create({
     iconButton: {
         marginLeft: 18,
         padding: 2,
+        position: 'relative',
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -8,
+        backgroundColor: '#f44336',
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: 'bold',
     },
 });
 

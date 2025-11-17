@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { Text, Card } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import customFetch from '../../utils/axios';
 import { Package, ShoppingCart, DollarSign, AlertCircle, TrendingUp, ChevronRight } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
@@ -26,6 +27,13 @@ const SellerDashboard = ({ navigation }) => {
     useEffect(() => {
         fetchAnalytics();
     }, []);
+
+    // Refresh data when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchAnalytics();
+        }, [])
+    );
 
     const onRefresh = () => {
         setRefreshing(true);

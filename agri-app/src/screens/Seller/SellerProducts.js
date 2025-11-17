@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Image, Alert } from 'react-native';
 import { Text, Card, Button, Searchbar, FAB } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import customFetch from '../../utils/axios';
 import { Edit, Trash2, Package } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
@@ -39,6 +40,13 @@ const SellerProducts = ({ navigation, route }) => {
     useEffect(() => {
         fetchProducts();
     }, []);
+
+    // Refresh products when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchProducts();
+        }, [])
+    );
 
     const onRefresh = () => {
         setRefreshing(true);
