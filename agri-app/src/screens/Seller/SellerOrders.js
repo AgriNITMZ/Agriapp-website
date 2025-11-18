@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, Alert, Image, TouchableOpacity } from 'react-native';
 import { Text, Card, Chip, Button, Menu, Portal, Dialog, TextInput } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import customFetch from '../../utils/axios';
-import { Package, Clock, Truck, CheckCircle, XCircle } from 'lucide-react-native';
+import { Package, Clock, Truck, CheckCircle, XCircle, User, MapPin, Phone } from 'lucide-react-native';
 import SellerTopBar from '../../components/seller/SellerTopBar';
 import SellerFooterNavigation from '../../components/seller/SellerFooterNavigation';
 
@@ -19,6 +19,15 @@ const SellerOrders = ({ navigation, route }) => {
     const fetchOrders = async () => {
         try {
             const response = await customFetch.post('/order/seller/orders');
+            console.log('📦 Orders fetched:', response.data.orders.length);
+            if (response.data.orders.length > 0) {
+                const sampleOrder = response.data.orders[0];
+                console.log('🔍 Sample Order ID:', sampleOrder._id);
+                console.log('👤 User data:', sampleOrder.user || sampleOrder.userId);
+                console.log('📍 Shipping Address:', sampleOrder.shippingAddress);
+                console.log('📦 First Item:', sampleOrder.items[0]);
+                console.log('🖼️ Product in first item:', sampleOrder.items[0]?.product);
+            }
             setOrders(response.data.orders);
             setFilteredOrders(response.data.orders);
         } catch (error) {
@@ -137,6 +146,23 @@ const SellerOrders = ({ navigation, route }) => {
         }
     };
 
+    const getStatusBgColor = (status) => {
+        switch (status) {
+            case 'Pending':
+                return '#FFF3E0';
+            case 'Processing':
+                return '#E3F2FD';
+            case 'Shipped':
+                return '#F3E5F5';
+            case 'Delivered':
+                return '#E8F5E9';
+            case 'Cancelled':
+                return '#FFEBEE';
+            default:
+                return '#F5F5F5';
+        }
+    };
+
     const getNextStatus = (currentStatus) => {
         switch (currentStatus) {
             case 'Pending':
@@ -219,13 +245,18 @@ const SellerOrders = ({ navigation, route }) => {
                                 <Card.Content>
                                     <View style={styles.orderHeader}>
                                         <Text style={styles.orderId}>Order #{order._id.slice(-8)}</Text>
-                                        <Chip
-                                            icon={() => getStatusIcon(order.orderStatus)}
-                                            style={[styles.statusChip, { backgroundColor: getStatusColor(order.orderStatus) + '20' }]}
-                                            textStyle={{ color: getStatusColor(order.orderStatus) }}
-                                        >
-                                            {order.orderStatus}
-                                        </Chip>
+                                        <View style={[
+                                            styles.statusBadge, 
+                                            { backgroundColor: getStatusBgColor(order.orderStatus) }
+                                        ]}>
+                                            {getStatusIcon(order.orderStatus)}
+                                            <Text style={[
+                                                styles.statusText,
+                                                { color: getStatusColor(order.orderStatus) }
+                                            ]}>
+                                                {order.orderStatus}
+                                            </Text>
+                                        </View>
                                     </View>
 
                                     <Text style={styles.orderDate}>
@@ -236,17 +267,109 @@ const SellerOrders = ({ navigation, route }) => {
                                         })}
                                     </Text>
 
+                                    {/* Customer Details */}
+                                    {(order.user || order.userId) && (
+                                        <View style={styles.customerSection}>
+                                            <View style={styles.customerHeader}>
+                                                <User size={16} color="#4CAF50" />
+                                                <Text style={styles.sectionTitle}>Customer Details</Text>
+                                            </View>
+                                            <Text style={styles.customerName}>
+                                                {/* Try different field combinations */}
+                                                {order.user?.Name || order.userId?.Name || 
+                                                 `${order.user?.additionalDetails?.firstName || order.userId?.additionalDetails?.firstName || ''} ${order.user?.additionalDetails?.lastName || order.userId?.additionalDetails?.lastName || ''}`.trim() || 
+                                                 'N/A'}
+                                            </Text>
+                                            {/* Show phone from additionalDetails or shippingAddress */}
+                                            {(order.user?.additionalDetails?.contactNo || order.userId?.additionalDetails?.contactNo || order.shippingAddress?.mobile) && (
+                                                <View style={styles.customerInfo}>
+                                                    <Phone size={14} color="#666" />
+                                                    <Text style={styles.customerText}>
+                                                        {order.user?.additionalDetails?.contactNo || 
+                                                         order.userId?.additionalDetails?.contactNo || 
+                                                         order.shippingAddress?.mobile}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                            {(order.user?.email || order.userId?.email) && (
+                                                <Text style={styles.customerText}>
+                                                    {order.user?.email || order.userId?.email}
+                                                </Text>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    {/* Shipping Address */}
+                                    {order.shippingAddress && (
+                                        <View style={styles.addressSection}>
+                                            <View style={styles.addressHeader}>
+                                                <MapPin size={16} color="#4CAF50" />
+                                                <Text style={styles.sectionTitle}>Shipping Address</Text>
+                                            </View>
+                                            {(order.shippingAddress.Name || order.shippingAddress.name) && (
+                                                <Text style={styles.addressText}>
+                                                    {order.shippingAddress.Name || order.shippingAddress.name}
+                                                </Text>
+                                            )}
+                                            {order.shippingAddress.streetAddress && (
+                                                <Text style={styles.addressText}>
+                                                    {order.shippingAddress.streetAddress}
+                                                </Text>
+                                            )}
+                                            {(order.shippingAddress.city || order.shippingAddress.state || order.shippingAddress.zipCode || order.shippingAddress.pinCode) && (
+                                                <Text style={styles.addressText}>
+                                                    {order.shippingAddress.city}{order.shippingAddress.city && ', '}{order.shippingAddress.state} {order.shippingAddress.zipCode || order.shippingAddress.pinCode}
+                                                </Text>
+                                            )}
+                                            {order.shippingAddress.mobile && (
+                                                <Text style={styles.addressText}>
+                                                    Phone: {order.shippingAddress.mobile}
+                                                </Text>
+                                            )}
+                                        </View>
+                                    )}
+
                                     <View style={styles.divider} />
 
-                                    {order.items.map((item, index) => (
-                                        <View key={index} style={styles.orderItem}>
-                                            <Text style={styles.itemName}>{item.product?.name || 'Product'}</Text>
-                                            <Text style={styles.itemDetails}>
-                                                Size: {item.size} | Qty: {item.quantity}
-                                            </Text>
-                                            <Text style={styles.itemPrice}>₹{item.selectedDiscountedPrice * item.quantity}</Text>
-                                        </View>
-                                    ))}
+                                    {/* Order Items with Images */}
+                                    <Text style={styles.itemsHeader}>Order Items</Text>
+                                    {order.items.map((item, index) => {
+                                        // Get image URL - handle different formats
+                                        let imageUrl = 'https://via.placeholder.com/80';
+                                        if (item.product?.images && Array.isArray(item.product.images) && item.product.images.length > 0) {
+                                            // If images is array of strings
+                                            imageUrl = typeof item.product.images[0] === 'string' 
+                                                ? item.product.images[0] 
+                                                : item.product.images[0]?.url || imageUrl;
+                                        } else if (item.product?.imageUrl) {
+                                            imageUrl = item.product.imageUrl;
+                                        }
+                                        
+                                        return (
+                                            <View key={index} style={styles.orderItem}>
+                                                <Image
+                                                    source={{ uri: imageUrl }}
+                                                    style={styles.productImage}
+                                                    resizeMode="cover"
+                                                    onError={() => console.log('Image load error:', imageUrl)}
+                                                />
+                                                <View style={styles.itemDetails}>
+                                                    <Text style={styles.itemName} numberOfLines={2}>
+                                                        {item.product?.name || 'Product'}
+                                                    </Text>
+                                                    <Text style={styles.itemSpecs}>
+                                                        Size: {item.size}
+                                                    </Text>
+                                                    <Text style={styles.itemSpecs}>
+                                                        Quantity: {item.quantity}
+                                                    </Text>
+                                                    <Text style={styles.itemPrice}>
+                                                        ₹{item.selectedDiscountedPrice} × {item.quantity} = ₹{item.selectedDiscountedPrice * item.quantity}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
 
                                     <View style={styles.divider} />
 
@@ -378,6 +501,18 @@ const styles = StyleSheet.create({
     statusChip: {
         height: 28,
     },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 6,
+    },
+    statusText: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
     orderDate: {
         fontSize: 12,
         color: '#666',
@@ -388,24 +523,96 @@ const styles = StyleSheet.create({
         backgroundColor: '#e0e0e0',
         marginVertical: 12,
     },
-    orderItem: {
+    customerSection: {
+        backgroundColor: '#f0f9ff',
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 12,
+    },
+    customerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 8,
+        gap: 6,
+    },
+    sectionTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#333',
+    },
+    customerName: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    customerInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 2,
+    },
+    customerText: {
+        fontSize: 13,
+        color: '#666',
+    },
+    addressSection: {
+        backgroundColor: '#fff8e1',
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 12,
+    },
+    addressHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        gap: 6,
+    },
+    addressText: {
+        fontSize: 13,
+        color: '#666',
+        lineHeight: 18,
+    },
+    itemsHeader: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 12,
+    },
+    orderItem: {
+        flexDirection: 'row',
+        marginBottom: 12,
+        backgroundColor: '#f9f9f9',
+        padding: 10,
+        borderRadius: 8,
+        gap: 12,
+    },
+    productImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        backgroundColor: '#e0e0e0',
+    },
+    itemDetails: {
+        flex: 1,
+        justifyContent: 'space-between',
     },
     itemName: {
         fontSize: 14,
         fontWeight: '600',
         color: '#333',
+        marginBottom: 4,
     },
-    itemDetails: {
+    itemSpecs: {
         fontSize: 12,
         color: '#666',
-        marginTop: 2,
+        marginBottom: 2,
     },
     itemPrice: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
         color: '#4CAF50',
-        marginTop: 2,
+        marginTop: 4,
     },
     orderFooter: {
         flexDirection: 'row',

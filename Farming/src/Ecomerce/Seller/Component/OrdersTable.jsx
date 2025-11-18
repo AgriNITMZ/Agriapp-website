@@ -147,12 +147,15 @@ const OrdersTable = () => {
 
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(order => 
-        order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.userId?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.userId?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.items.some(item => item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+      filtered = filtered.filter(order => {
+        const customerName = order.userId?.Name || 
+          `${order.userId?.additionalDetails?.firstName || ''} ${order.userId?.additionalDetails?.lastName || ''}`.trim();
+        
+        return order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.userId?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.items.some(item => item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+      });
     }
 
     setFilteredOrders(filtered);
@@ -402,7 +405,9 @@ const OrdersTable = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.userId?.firstName} {order.userId?.lastName}
+                      {order.userId?.Name || 
+                       `${order.userId?.additionalDetails?.firstName || ''} ${order.userId?.additionalDetails?.lastName || ''}`.trim() || 
+                       'N/A'}
                       <p className="text-xs text-gray-500">{order.userId?.email}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -552,7 +557,11 @@ const OrderDetailModal = ({ order, onClose, onUpdateStatus, updatingStatus }) =>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Name</p>
-                <p className="font-medium">{order.userId?.firstName} {order.userId?.lastName}</p>
+                <p className="font-medium">
+                  {order.userId?.Name || 
+                   `${order.userId?.additionalDetails?.firstName || ''} ${order.userId?.additionalDetails?.lastName || ''}`.trim() || 
+                   'N/A'}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Email</p>
@@ -560,7 +569,11 @@ const OrderDetailModal = ({ order, onClose, onUpdateStatus, updatingStatus }) =>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium">{order.shippingAddress?.mobile || 'N/A'}</p>
+                <p className="font-medium">
+                  {order.userId?.additionalDetails?.contactNo || 
+                   order.shippingAddress?.mobile || 
+                   'N/A'}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Order Date</p>
@@ -576,7 +589,7 @@ const OrderDetailModal = ({ order, onClose, onUpdateStatus, updatingStatus }) =>
               <p className="text-gray-700">
                 {order.shippingAddress.Name}<br />
                 {order.shippingAddress.streetAddress}<br />
-                {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.zipcode}
+                {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.zipCode}
               </p>
             </div>
           )}

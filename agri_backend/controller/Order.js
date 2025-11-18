@@ -250,18 +250,38 @@ exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
     const orders = await Order.find({ 
         'items.sellerId': sellerObjectId 
     })
-    .populate('items.product')
-    .populate('userId', 'firstName lastName email')
+    .populate({
+        path: 'items.product',
+        select: 'name images imageUrl price discountedPrice'
+    })
+    .populate({
+        path: 'userId',
+        select: 'Name email image',
+        populate: {
+            path: 'additionalDetails',
+            select: 'firstName lastName contactNo'
+        }
+    })
+    .populate('shippingAddress')
     .sort({ createdAt: -1 });
     
-    console.log(`   Found ${orders.length} orders for seller`);
+    console.log(`✅ Found ${orders.length} orders for seller`);
     
-    // Filter items to only show this seller's items
+    if (orders.length > 0) {
+        console.log('🔍 Sample order data:');
+        console.log('   - User:', orders[0].userId);
+        console.log('   - Shipping Address:', orders[0].shippingAddress);
+        console.log('   - First Product:', orders[0].items[0]?.product);
+    }
+    
+    // Filter items to only show this seller's items and format response
     const filteredOrders = orders.map(order => {
         const orderObj = order.toObject();
         orderObj.items = orderObj.items.filter(item => 
             item.sellerId.toString() === sellerId
         );
+        // Map userId to user for frontend compatibility
+        orderObj.user = orderObj.userId;
         return orderObj;
     });
     
