@@ -60,6 +60,7 @@ const userRoute = require('./routes/User')
 const productRoute = require('./routes/Product')
 const orderRoute = require('./routes/Order')
 const newsRoute = require('./routes/News')
+const newsScraperRoute = require('./routes/newsRoute') // Scraped news route
 const schemeRoute = require('./routes/Scheme')
 const analyticsRoute = require('./routes/Analytics')
 const shiprocketRoute = require('./routes/Shiprocket')
@@ -84,7 +85,8 @@ app.use("/api/v1/scrape", scrapeWebsite);
 app.use("/api/v1/auth", userRoute)
 app.use("/api/v1/products", productRoute)
 app.use("/api/v1/order", orderRoute)
-app.use("/api/v1/news", newsRoute)
+app.use("/api/v1/news", newsRoute) // Manual news (admin added)
+app.use("/api/v1/scraped-news", newsScraperRoute) // Auto-scraped news
 app.use("/api/v1/scheme", schemeRoute)
 app.use("/api/v1/analytics", analyticsRoute)
 app.use("/api/v1/shiprocket", shiprocketRoute)

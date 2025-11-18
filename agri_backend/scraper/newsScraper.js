@@ -2,6 +2,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const AgriNews = require('../models/newsModel');
+const { scrapeStaticNews } = require('../seed-scraped-news'); // for dummy
 
 // Helper to parse dates
 const parseDate = (dateStr) => {
@@ -113,30 +114,83 @@ const scrapeIMDWeather = async () => {
   }
 };
 
-// Generic NIC website scraper
+// Generic NIC website scraper with enhanced selectors
 const scrapeGenericNIC = async (url, sourceName) => {
   try {
-    const response = await axios.get(url, { timeout: 10000 });
+    const response = await axios.get(url, { 
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
     const $ = cheerio.load(response.data);
     const news = [];
 
-    const selectors = ['.eventItem', '.news-item', '.scheme-item', '.update-item', 'article', '.content-item'];
+    // Enhanced selectors for various website structures
+    const selectors = [
+      '.eventItem', 
+      '.news-item', 
+      '.scheme-item', 
+      '.update-item', 
+      'article', 
+      '.content-item',
+      '.post',
+      '.news',
+      '.announcement',
+      '.event',
+      '.notice',
+      'li a[href*="scheme"]',
+      'li a[href*="news"]',
+      'li a[href*="event"]',
+      'li a[href*="notice"]',
+      '.list-group-item',
+      '.card',
+      '.media'
+    ];
 
+    // Try each selector
     selectors.forEach(selector => {
       $(selector).each((_, element) => {
-        const title = $(element).find('h2, h3, h4, .title, a').first().text().trim();
-        const link = $(element).find('a').attr('href');
-        const description = $(element).find('p, .description').first().text().trim();
-        const dateText = $(element).find('.date, .publish-date, time').text().trim();
+        const $el = $(element);
+        
+        // Try multiple ways to get title
+        let title = $el.find('h2, h3, h4, h5, .title, .heading').first().text().trim();
+        if (!title) {
+          title = $el.find('a').first().text().trim();
+        }
+        if (!title && $el.is('a')) {
+          title = $el.text().trim();
+        }
+        
+        // Try multiple ways to get link
+        let link = $el.find('a').first().attr('href');
+        if (!link && $el.is('a')) {
+          link = $el.attr('href');
+        }
+        
+        // Get description
+        let description = $el.find('p, .description, .excerpt, .summary').first().text().trim();
+        if (!description) {
+          description = $el.text().trim().substring(0, 200);
+        }
+        
+        // Get date
+        const dateText = $el.find('.date, .publish-date, .posted-on, time, .timestamp').text().trim();
 
-        if (title && link && !news.find(n => n.title === title)) {
-          news.push({
-            title,
-            link: link.startsWith('http') ? link : new URL(link, url).href,
-            description: description.substring(0, 500),
-            date: parseDate(dateText),
-            source: sourceName
-          });
+        // Only add if we have title and link, and it's not a duplicate
+        if (title && link && title.length > 10 && !news.find(n => n.title === title)) {
+          try {
+            const fullLink = link.startsWith('http') ? link : new URL(link, url).href;
+            news.push({
+              title: title.substring(0, 200),
+              link: fullLink,
+              description: description.substring(0, 500),
+              date: parseDate(dateText),
+              source: sourceName
+            });
+          } catch (e) {
+            // Skip invalid URLs
+          }
         }
       });
     });
@@ -156,12 +210,57 @@ const scrapeAllNews = async () => {
 
   // Run all scrapers
   const scrapers = [
+    // Static news source (always works - 20 items)
+    { fn: scrapeStaticNews, name: 'Static News Data Source' }, // dummy
+    
+    // Live website scrapers
     { fn: scrapeMizoramAgri, name: 'Mizoram Agriculture' },
     { fn: scrapeSerchhip, name: 'Serchhip District' },
     { fn: scrapeIMDWeather, name: 'IMD Weather' },
     { 
       fn: () => scrapeGenericNIC('https://lawngtlai.nic.in/agriculture/', 'Lawngtlai Agriculture'),
       name: 'Lawngtlai'
+    },
+    // Additional working government sources
+    { 
+      fn: () => scrapeGenericNIC('https://serchhip.nic.in/', 'Serchhip District Portal'),
+      name: 'Serchhip Portal'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://mizoram.nic.in/', 'Mizoram State Portal'),
+      name: 'Mizoram Portal'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://aizawl.nic.in/', 'Aizawl District'),
+      name: 'Aizawl'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://champhai.nic.in/', 'Champhai District'),
+      name: 'Champhai'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://kolasib.nic.in/', 'Kolasib District'),
+      name: 'Kolasib'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://lunglei.nic.in/', 'Lunglei District'),
+      name: 'Lunglei'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://mamit.nic.in/', 'Mamit District'),
+      name: 'Mamit'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://siaha.nic.in/', 'Siaha District'),
+      name: 'Siaha'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://saitual.nic.in/', 'Saitual District'),
+      name: 'Saitual'
+    },
+    { 
+      fn: () => scrapeGenericNIC('https://khawzawl.nic.in/', 'Khawzawl District'),
+      name: 'Khawzawl'
     }
   ];
 

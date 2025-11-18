@@ -48,17 +48,26 @@ const ArticleList = ({ data, section }) => {
             }
             style={styles.articleContainer}
         >
-            <Image
-                source={
-                    imageErrors[item.id]
-                        ? require('../../assets/images/placeholder/news.png')
-                        : { uri: item.image }
-                }
-                style={styles.articleImage}
-            // onError={() => handleError(item.id)}
-            />
+            <View style={styles.imageWrapper}>
+                <Image
+                    source={
+                        imageErrors[item.id]
+                            ? require('../../assets/images/placeholder/news.png')
+                            : { uri: item.image }
+                    }
+                    style={styles.articleImage}
+                // onError={() => handleError(item.id)}
+                />
+                {item.isScraped && (
+                    <View style={styles.newBadge}>
+                        <Text style={styles.newBadgeText}>NEW</Text>
+                    </View>
+                )}
+            </View>
             <View style={styles.articleTextContainer}>
-                <Text style={styles.articleTitle}>{item.title}</Text>
+                <View style={styles.titleRow}>
+                    <Text style={styles.articleTitle}>{item.title}</Text>
+                </View>
                 <Text style={styles.articleDate}>
                     {formatRelativeDate(item.date)} • {item.source}
                 </Text>
@@ -82,6 +91,7 @@ const ArticleList = ({ data, section }) => {
 export default function NewsAndSchemesTabView({ navigation }) {
     const [activeTab, setActiveTab] = useState('news');
     const [newsData, setNewsData] = useState([]);
+    const [scrapedNewsData, setScrapedNewsData] = useState([]);
     const [schemesData, setSchemesData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -93,14 +103,26 @@ export default function NewsAndSchemesTabView({ navigation }) {
             setError(null);
 
             try {
-                // Fetch news data
+                // Fetch manual news data
                 const newsResponse = await customFetch.get('/news');
                 if (newsResponse.data.success && Array.isArray(newsResponse.data.data)) {
-
                     setNewsData(newsResponse.data.data);
                 } else {
-                    // console.log('Invalid news data format:', newsResponse);
                     setNewsData([]);
+                }
+
+                // Fetch scraped news data (NEW)
+                const scrapedNewsResponse = await customFetch.get('/scraped-news');
+                if (scrapedNewsResponse.data.success && Array.isArray(scrapedNewsResponse.data.news)) {
+                    // Mark scraped news with isScraped flag
+                    const markedScrapedNews = scrapedNewsResponse.data.news.map(item => ({
+                        ...item,
+                        isScraped: true,
+                        image: item.image || 'https://via.placeholder.com/400x300?text=Agriculture+News'
+                    }));
+                    setScrapedNewsData(markedScrapedNews);
+                } else {
+                    setScrapedNewsData([]);
                 }
 
                 // Fetch schemes data
@@ -108,7 +130,6 @@ export default function NewsAndSchemesTabView({ navigation }) {
                 if (schemesResponse.data.success && Array.isArray(schemesResponse.data.data)) {
                     setSchemesData(schemesResponse.data.data);
                 } else {
-                    // console.log('Invalid schemes data format:', schemesResponse);
                     setSchemesData([]);
                 }
             } catch (err) {
@@ -158,7 +179,11 @@ export default function NewsAndSchemesTabView({ navigation }) {
     }
 
     const renderContent = () => {
-        if (activeTab === 'news') return <ArticleList data={newsData} section="news" />;
+        if (activeTab === 'news') {
+            // Combine manual and scraped news, scraped news first
+            const combinedNews = [...scrapedNewsData, ...newsData];
+            return <ArticleList data={combinedNews} section="news" />;
+        }
         if (activeTab === 'schemes') return <ArticleList data={schemesData} section="schemes" />;
     };
 
@@ -229,14 +254,39 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 3,
     },
+    imageWrapper: {
+        position: 'relative',
+        marginRight: 10,
+    },
     articleImage: {
         width: 80,
         height: 100,
         borderRadius: 10,
-        marginRight: 10,
+    },
+    newBadge: {
+        position: 'absolute',
+        top: 5,
+        right: 5,
+        backgroundColor: '#ff4444',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        shadowColor: '#000',
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    newBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     articleTextContainer: {
         flex: 1,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
     },
     articleTitle: {
         fontWeight: 'bold',
