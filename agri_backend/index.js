@@ -114,6 +114,10 @@ app.set('io', io);
 const { initializeNewsCron } = require("./scraper/newsCronJob");
 initializeNewsCron();
 
+// Initialize scheme cron job (every Monday at 6 AM)
+const { initSchemeCron } = require("./scraper/schemeScraperCron");
+initSchemeCron();
+
 // Start server - Use server.listen() instead of app.listen() for Socket.IO
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
