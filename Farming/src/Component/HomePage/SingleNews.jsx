@@ -12,13 +12,31 @@ const SingleNews = () => {
     useEffect(() => {
         const fetchNews = async () => {
             try {
-                const response = await fetch(`http://localhost:4000/api/v1/news/${id}`);
-                const data = await response.json();
+                // Try fetching from manual news first
+                let response = await fetch(`${import.meta.env.VITE_API_URL}/news/${id}`);
+                let data = await response.json();
                 
                 if (data.success) {
                     setNews(data.data);
                 } else {
-                    setError("News not found");
+                    // If not found in manual news, try scraped news
+                    response = await fetch(`${import.meta.env.VITE_API_URL}/scraped-news`);
+                    data = await response.json();
+                    
+                    if (data.success && data.news) {
+                        const scrapedItem = data.news.find(item => item._id === id);
+                        if (scrapedItem) {
+                            setNews({
+                                ...scrapedItem,
+                                isScraped: true,
+                                image: scrapedItem.image || 'https://via.placeholder.com/400x300?text=Agriculture+News'
+                            });
+                        } else {
+                            setError("News not found");
+                        }
+                    } else {
+                        setError("News not found");
+                    }
                 }
             } catch (err) {
                 setError("Failed to fetch news");
@@ -81,6 +99,11 @@ const SingleNews = () => {
                     alt={news.title} 
                     className="w-full h-96 object-cover"
                 />
+                {news.isScraped && (
+                    <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                        NEW
+                    </div>
+                )}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
                     <div className="inline-block px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full mb-2">
                         {news.category || news.source}
@@ -110,6 +133,21 @@ const SingleNews = () => {
                     {news.content && (
                         <div className="mt-6 text-gray-700" 
                              dangerouslySetInnerHTML={{ __html: news.content }} />
+                    )}
+
+                    {/* External link button for scraped news */}
+                    {news.link && news.isScraped && (
+                        <a
+                            href={news.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Read Full Article on Source Website
+                        </a>
                     )}
                 </div>
                 

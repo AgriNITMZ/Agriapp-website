@@ -257,7 +257,7 @@ exports.verifyPayment = async (req, res) => {
             await cart.save();
           }
 
-          // Send success notification
+          // Send success notification to USER
           await createNotification(
             order.userId,
             'payment_success',
@@ -269,6 +269,32 @@ exports.verifyPayment = async (req, res) => {
               paymentId: razorpay_payment_id
             }
           );
+
+          // Send notifications to ALL SELLERS
+          const uniqueSellerIds = [...new Set(order.items.map(item => item.sellerId?.toString()).filter(Boolean))];
+          console.log('📧 Creating payment notifications for sellers:', uniqueSellerIds);
+          
+          for (const sellerId of uniqueSellerIds) {
+            const sellerItems = order.items.filter(item => item.sellerId?.toString() === sellerId);
+            const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+            
+            console.log(`📧 Sending payment notification to seller ${sellerId} for ₹${sellerTotal}`);
+            
+            await createNotification(
+              sellerId,
+              'payment_success',
+              'New Order - Payment Received! 💰',
+              `Payment of ₹${sellerTotal} received for order #${order._id.toString().slice(-8)}. Start processing the order.`,
+              order._id,
+              {
+                amount: sellerTotal,
+                itemCount: sellerItems.length,
+                paymentId: razorpay_payment_id
+              }
+            );
+            
+            console.log(`✅ Payment notification sent to seller ${sellerId}`);
+          }
         }
       }
 
@@ -359,7 +385,7 @@ async function handleSuccessfulPayment(order) {
       await cart.save();
     }
 
-    // Send success notification
+    // Send success notification to USER
     await createNotification(
       order.userId,
       'payment_success',
@@ -371,6 +397,26 @@ async function handleSuccessfulPayment(order) {
         paymentId: order.paymentId
       }
     );
+
+    // Send notifications to ALL SELLERS
+    const uniqueSellerIds = [...new Set(order.items.map(item => item.sellerId?.toString()).filter(Boolean))];
+    for (const sellerId of uniqueSellerIds) {
+      const sellerItems = order.items.filter(item => item.sellerId?.toString() === sellerId);
+      const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+      
+      await createNotification(
+        sellerId,
+        'payment_success',
+        'New Order - Payment Received! 💰',
+        `Payment of ₹${sellerTotal} received for order #${order._id.toString().slice(-8)}. Start processing the order.`,
+        order._id,
+        {
+          amount: sellerTotal,
+          itemCount: sellerItems.length,
+          paymentId: order.paymentId
+        }
+      );
+    }
   } catch (error) {
     console.error("Error in handleSuccessfulPayment:", error);
     throw error;

@@ -10,7 +10,8 @@ import {
     ScrollView,
     SafeAreaView,
     StatusBar,
-    ActivityIndicator
+    ActivityIndicator,
+    Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SwiperFlatList from 'react-native-swiper-flatlist';
@@ -33,12 +34,30 @@ const ArticleDetail = ({ route, navigation }) => {
     // Handle sharing article
     const handleShare = async (item) => {
         try {
+            const shareMessage = item.link 
+                ? `${item.title}\n\n${item.description}\n\nRead more: ${item.link}\n\nShared from PreciAgri App`
+                : `${item.title}\n\n${item.description}\n\nShared from PreciAgri App`;
+            
             await Share.share({
-                message: `${item.title}\n\n${item.description}\n\nShared from PreciAgri App`,
+                message: shareMessage,
                 title: item.title,
             });
         } catch (error) {
             console.error('Error sharing article:', error.message);
+        }
+    };
+
+    // Handle opening external link
+    const handleOpenLink = async (url) => {
+        try {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                console.error("Don't know how to open this URL:", url);
+            }
+        } catch (error) {
+            console.error('Error opening link:', error.message);
         }
     };
 
@@ -72,7 +91,14 @@ const ArticleDetail = ({ route, navigation }) => {
 
                     {/* Article Content */}
                     <View style={styles.contentContainer}>
-                        <Text style={styles.title}>{item.title}</Text>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.title}>{item.title}</Text>
+                            {item.isScraped && (
+                                <View style={styles.newBadgeDetail}>
+                                    <Text style={styles.newBadgeTextDetail}>NEW</Text>
+                                </View>
+                            )}
+                        </View>
 
                         <View style={styles.metaInfo}>
                             <View style={styles.sourceContainer}>
@@ -110,6 +136,18 @@ const ArticleDetail = ({ route, navigation }) => {
                         )}
 
                         <Text style={styles.description}>{item.description}</Text>
+
+                        {/* External link button for scraped news */}
+                        {item.link && item.isScraped && (
+                            <TouchableOpacity
+                                style={styles.externalLinkButton}
+                                onPress={() => handleOpenLink(item.link)}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="open-outline" size={20} color="white" />
+                                <Text style={styles.externalLinkButtonText}>Read Full Article</Text>
+                            </TouchableOpacity>
+                        )}
 
                         {/* Share button at bottom */}
                         <TouchableOpacity
@@ -198,12 +236,30 @@ const styles = StyleSheet.create({
     contentContainer: {
         padding: 16,
     },
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
     title: {
+        flex: 1,
         fontSize: 22,
         fontWeight: 'bold',
         color: '#2f4f2f',
-        marginBottom: 12,
         lineHeight: 28,
+        marginRight: 8,
+    },
+    newBadgeDetail: {
+        backgroundColor: '#ff4444',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 4,
+        marginTop: 2,
+    },
+    newBadgeTextDetail: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: 'bold',
     },
     metaInfo: {
         flexDirection: 'row',
@@ -259,6 +315,26 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         color: '#333',
         marginBottom: 20,
+    },
+    externalLinkButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#2196F3',
+        padding: 14,
+        borderRadius: 8,
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    externalLinkButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 8,
     },
     shareButton: {
         flexDirection: 'row',

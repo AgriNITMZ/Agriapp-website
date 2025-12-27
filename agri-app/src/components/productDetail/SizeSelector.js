@@ -12,7 +12,7 @@ const SizeSelector = ({ priceSize, selectedSize, setSelectedSize }) => {
             <View style={styles.sizeContainer}>
                 {priceSize.map((size, index) => (
                     <TouchableOpacity
-                        key={size._id}
+                        key={`size-${index}-${size._id || size.size}`}
                         style={[
                             styles.sizeBox,
                             selectedSize === index && styles.selectedSizeBox, // Highlight selected size

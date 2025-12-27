@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Button, Divider } from 'react-native-paper';
-import { CommonActions } from '@react-navigation/native';
+import { Text, Card, Divider } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import { User, Mail, Phone, MapPin, Edit2, LogOut, Lock, Bell, HelpCircle, Shield, ChevronRight } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import customFetch from '../../utils/axios';
@@ -16,6 +16,13 @@ const SellerProfile = ({ navigation }) => {
     useEffect(() => {
         fetchUserProfile();
     }, []);
+
+    // Refresh profile when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchUserProfile();
+        }, [])
+    );
 
     const fetchUserProfile = async () => {
         try {
@@ -85,7 +92,7 @@ const SellerProfile = ({ navigation }) => {
                                 </View>
                                 <TouchableOpacity 
                                     style={styles.editIconButton}
-                                    onPress={() => navigation.navigate('EditProfile')}
+                                    onPress={() => navigation.navigate('EditProfile', { profileData: user })}
                                 >
                                     <Edit2 size={20} color="#4CAF50" />
                                 </TouchableOpacity>
@@ -142,7 +149,7 @@ const SellerProfile = ({ navigation }) => {
                             
                             <TouchableOpacity 
                                 style={styles.menuItem}
-                                onPress={() => navigation.navigate('EditProfile')}
+                                onPress={() => navigation.navigate('EditProfile', { profileData: user })}
                             >
                                 <View style={styles.menuLeft}>
                                     <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
@@ -155,7 +162,7 @@ const SellerProfile = ({ navigation }) => {
 
                             <TouchableOpacity 
                                 style={styles.menuItem}
-                                onPress={() => navigation.navigate('ChangePassword')}
+                                onPress={() => navigation.navigate('ChangePassword', { email: user?.email })}
                             >
                                 <View style={styles.menuLeft}>
                                     <View style={[styles.iconContainer, { backgroundColor: '#FFF3E0' }]}>
@@ -186,7 +193,16 @@ const SellerProfile = ({ navigation }) => {
                         <Card.Content>
                             <Text style={styles.sectionTitle}>Support & Help</Text>
                             
-                            <TouchableOpacity style={styles.menuItem}>
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    Alert.alert(
+                                        'Help Center',
+                                        'For assistance, please contact:\n\nEmail: support@preciagri.com\nPhone: +91 1234567890',
+                                        [{ text: 'OK' }]
+                                    );
+                                }}
+                            >
                                 <View style={styles.menuLeft}>
                                     <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
                                         <HelpCircle size={20} color="#4CAF50" />
@@ -196,7 +212,16 @@ const SellerProfile = ({ navigation }) => {
                                 <ChevronRight size={20} color="#999" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.menuItem}>
+                            <TouchableOpacity 
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    Alert.alert(
+                                        'Privacy Policy',
+                                        'Your privacy is important to us. We collect and use your data to provide better services. For full details, visit our website.',
+                                        [{ text: 'OK' }]
+                                    );
+                                }}
+                            >
                                 <View style={styles.menuLeft}>
                                     <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
                                         <Shield size={20} color="#2196F3" />

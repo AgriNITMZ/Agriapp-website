@@ -6,7 +6,7 @@ const { translateText } = require("../controller/translateText");
 const { GoogleGenAI } = require("@google/genai");
 
 const router = express.Router();
-const ai = new GoogleGenAI({ apiKey: process.env.G00GLE_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 // -------------------
 // Helper: clean JSON text from Gemini
@@ -60,7 +60,7 @@ async function classifyIntent(message) {
 
   try {
     const res = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.0-flash-lite",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       temperature: 0.2,
       maxOutputTokens: 200,
@@ -86,12 +86,20 @@ async function classifyIntent(message) {
 }
 
 // -------------------
-// Local FAQ matcher
+// Local FAQ matcher (only match at word boundaries)
 // -------------------
 function getFAQReply(query) {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
+  
+  // Only match very short queries (greetings should be short)
+  if (q.length > 20) return null;
+  
   for (const f of FAQ) {
-    if (f.keywords.some((k) => q.includes(k))) {
+    // Check if any keyword matches at the start of the query
+    if (f.keywords.some((k) => {
+      const regex = new RegExp(`^${k}\\b`, 'i');
+      return regex.test(q) || q === k;
+    })) {
       return f.reply;
     }
   }
@@ -147,15 +155,15 @@ router.post("/", async (req, res) => {
           ? `I found ${products.length} product(s) for "${query}"`
           : `Sorry, I couldn't find products for "${query}"`;
     } else {
-      // General intent → check FAQ first
-      const faqReply = getFAQReply(query);
+      // General intent → check FAQ first (only for simple greetings)
+      const faqReply = getFAQReply(translatedInput); // Check original input, not query
       if (faqReply) {
         reply = faqReply;
       } else {
         // Fallback: call Gemini only if no FAQ match
         try {
           const generalRes = await ai.models.generateContent({
-            model: "gemini-2.5-flash-lite",
+            model: "gemini-2.0-flash-lite",
             contents: [{ role: "user", parts: [{ text: translatedInput }] }],
             temperature: 0.3,
             maxOutputTokens: 200,

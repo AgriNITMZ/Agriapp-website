@@ -295,7 +295,11 @@ exports.getProductById = asyncHandler(async (req, res) => {
         const product = await Product.findById(productId)
             .populate({
                 path: 'sellers.sellerId',
-                select: 'firstName lastName email shopName phoneNumber'
+                select: 'Name email image accountType',
+                populate: {
+                    path: 'additionalDetails',
+                    select: 'firstName lastName contactNo'
+                }
             })
             .populate('ratingandreview');
             
@@ -335,18 +339,42 @@ exports.getProductById = asyncHandler(async (req, res) => {
         const formattedProduct = {
             ...productObj,
             sellersCount: productObj.sellers.length,
-            allSellers: productObj.sellers.map(seller => ({
-                sellerId: seller.sellerId?._id || seller.sellerId,
-                sellerName: seller.sellerId?.shopName || seller.sellerId?.firstName ? 
-                    `${seller.sellerId.firstName} ${seller.sellerId.lastName}` : 'Unknown Seller',
-                sellerEmail: seller.sellerId?.email,
-                sellerPhone: seller.sellerId?.phoneNumber,
-                price_size: seller.price_size || [],
-                fullShopDetails: seller.fullShopDetails || 'Shop Details',
-                deliveryInfo: seller.deliveryInfo || 'Standard delivery',
-                warranty: seller.warranty || 'No warranty',
-                addedAt: seller.addedAt
-            }))
+            allSellers: productObj.sellers.map(seller => {
+                let sellerName = 'Unknown Seller';
+                let sellerPhone = null;
+                
+                // Try to get name from User.Name first
+                if (seller.sellerId?.Name) {
+                    sellerName = seller.sellerId.Name;
+                } 
+                // Then try additionalDetails (Profile)
+                else if (seller.sellerId?.additionalDetails?.firstName) {
+                    const firstName = seller.sellerId.additionalDetails.firstName;
+                    const lastName = seller.sellerId.additionalDetails.lastName || '';
+                    sellerName = `${firstName} ${lastName}`.trim();
+                } 
+                // Fallback to fullShopDetails
+                else if (seller.fullShopDetails) {
+                    sellerName = seller.fullShopDetails;
+                }
+                
+                // Get phone number
+                if (seller.sellerId?.additionalDetails?.contactNo) {
+                    sellerPhone = seller.sellerId.additionalDetails.contactNo;
+                }
+                
+                return {
+                    sellerId: seller.sellerId?._id || seller.sellerId,
+                    sellerName: sellerName,
+                    sellerEmail: seller.sellerId?.email,
+                    sellerPhone: sellerPhone,
+                    price_size: seller.price_size || [],
+                    fullShopDetails: seller.fullShopDetails || 'Shop Details',
+                    deliveryInfo: seller.deliveryInfo || 'Standard delivery',
+                    warranty: seller.warranty || 'No warranty',
+                    addedAt: seller.addedAt
+                };
+            })
         };
 
         res.status(200).json({
@@ -709,6 +737,15 @@ exports.getFilteredProducts = async (req, res) => {
 
         // Match stage (apply filters)
         pipeline.push({ $match: filter });
+
+        // Extract price_size from first seller to root level for easier access
+        pipeline.push({
+            $addFields: {
+                price_size: { 
+                    $arrayElemAt: ['$sellers.price_size', 0] 
+                }
+            }
+        });
 
         // Unwind the price_size array for price/discount filtering
         if (minPrice || maxPrice || minDiscount || sort === 'price_asc' || sort === 'price_desc' || sort === 'discount') {

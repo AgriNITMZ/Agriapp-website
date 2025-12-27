@@ -213,7 +213,7 @@ const CartPage = ({ navigation }) => {
                             </View>
                         )}
 
-                        <View style={styles.priceRow}>
+                        {/* <View style={styles.priceRow}>
                             <Text style={styles.priceLabel}>Shipping:</Text>
                             <Text style={styles.priceValue}>
                                 {priceDetails.isFreeShipping ? (
@@ -222,7 +222,7 @@ const CartPage = ({ navigation }) => {
                                     `₹ ${SHIPPING_CHARGE}`
                                 )}
                             </Text>
-                        </View>
+                        </View> */}
 
                         {/* {priceDetails.isFreeShipping && (
                             <Text style={styles.freeShippingNote}>

@@ -22,7 +22,7 @@ export const notificationService = {
     // Get all notifications for user
     getUserNotifications: async (params = {}) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/notifications/user`, {
+            const response = await axios.get(`${API_BASE_URL}/notifications`, {
                 headers: createAuthHeaders(),
                 params
             });

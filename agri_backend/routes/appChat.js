@@ -5,7 +5,7 @@ const { translateText } = require("../controller/translateText");
 const { GoogleGenAI } = require("@google/genai");
 
 const router = express.Router();
-const ai = new GoogleGenAI({ apiKey: process.env.G00GLE_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 function cleanGeminiJson(text) {
   if (!text) return null;
@@ -113,9 +113,17 @@ Examples:
 }
 
 function getFAQReply(query) {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
+  
+  // Only match very short queries (greetings should be short)
+  if (q.length > 20) return null;
+  
   for (const f of FAQ) {
-    if (f.keywords.some((k) => q.includes(k))) {
+    // Check if any keyword matches at the start of the query
+    if (f.keywords.some((k) => {
+      const regex = new RegExp(`^${k}\\b`, 'i');
+      return regex.test(q) || q === k;
+    })) {
       return f.reply;
     }
   }
@@ -254,7 +262,8 @@ router.post("/", async (req, res) => {
       
     } else {
       // General intent - farming question with context
-      const faqReply = getFAQReply(query);
+      // Only check FAQ for very simple greetings, not farming questions
+      const faqReply = getFAQReply(translatedInput); // Check original input, not query
       if (faqReply) {
         reply = faqReply;
       } else {

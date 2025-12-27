@@ -136,14 +136,19 @@ exports.createOrder = asyncHandler(async (req, res) => {
 
     console.log('Order created successfully:', newOrder._id);
 
-    if (paymentMethod === 'cod' && cart) {
-      cart.items = [];
-      cart.totalPrice = 0;
-      cart.totalDiscountedPrice = 0;
-      await cart.save();
-      console.log('Cart cleared for COD order');
+    // Handle COD orders
+    if (paymentMethod === 'cod') {
+      // Clear cart if order was from cart
+      if (cart) {
+        cart.items = [];
+        cart.totalPrice = 0;
+        cart.totalDiscountedPrice = 0;
+        await cart.save();
+        console.log('Cart cleared for COD order');
+      }
 
-      // CREATE NOTIFICATION FOR COD ORDER
+      // CREATE NOTIFICATION FOR USER (COD ORDER)
+      console.log('📧 Creating order placed notification for user:', userId);
       await createNotification(
         userId,
         'order_placed',
@@ -156,6 +161,33 @@ exports.createOrder = asyncHandler(async (req, res) => {
           paymentMethod: 'COD'
         }
       );
+      console.log('✅ User notification sent');
+
+      // CREATE NOTIFICATIONS FOR ALL SELLERS (COD ORDER)
+      const uniqueSellerIds = [...new Set(orderItems.map(item => item.sellerId?.toString()).filter(Boolean))];
+      console.log('📧 Creating notifications for sellers:', uniqueSellerIds);
+      
+      for (const sellerId of uniqueSellerIds) {
+        const sellerItems = orderItems.filter(item => item.sellerId?.toString() === sellerId);
+        const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+        
+        console.log(`📧 Sending notification to seller ${sellerId} for ₹${sellerTotal}`);
+        
+        await createNotification(
+          sellerId,
+          'order_placed',
+          'New Order Received! 🛒',
+          `You have received a new order worth ₹${sellerTotal}. Order ID: ${newOrder._id}`,
+          newOrder._id,
+          {
+            amount: sellerTotal,
+            itemCount: sellerItems.length,
+            paymentMethod: 'COD'
+          }
+        );
+        
+        console.log(`✅ Notification sent to seller ${sellerId}`);
+      }
     } else if (paymentMethod === 'online') {
       console.log('Cart NOT cleared - waiting for payment confirmation');
     }
@@ -218,18 +250,38 @@ exports.getSellerOrderHistory = asyncHandler(async (req, res) => {
     const orders = await Order.find({ 
         'items.sellerId': sellerObjectId 
     })
-    .populate('items.product')
-    .populate('userId', 'firstName lastName email')
+    .populate({
+        path: 'items.product',
+        select: 'name images imageUrl price discountedPrice'
+    })
+    .populate({
+        path: 'userId',
+        select: 'Name email image',
+        populate: {
+            path: 'additionalDetails',
+            select: 'firstName lastName contactNo'
+        }
+    })
+    .populate('shippingAddress')
     .sort({ createdAt: -1 });
     
-    console.log(`   Found ${orders.length} orders for seller`);
+    console.log(`✅ Found ${orders.length} orders for seller`);
     
-    // Filter items to only show this seller's items
+    if (orders.length > 0) {
+        console.log('🔍 Sample order data:');
+        console.log('   - User:', orders[0].userId);
+        console.log('   - Shipping Address:', orders[0].shippingAddress);
+        console.log('   - First Product:', orders[0].items[0]?.product);
+    }
+    
+    // Filter items to only show this seller's items and format response
     const filteredOrders = orders.map(order => {
         const orderObj = order.toObject();
         orderObj.items = orderObj.items.filter(item => 
             item.sellerId.toString() === sellerId
         );
+        // Map userId to user for frontend compatibility
+        orderObj.user = orderObj.userId;
         return orderObj;
     });
     
@@ -406,7 +458,7 @@ exports.cancelOrder = asyncHandler(async (req, res) => {
     // Invalidate analytics cache
     invalidateAnalyticsCache();
 
-    // Create notification for user
+    // Create notification for USER
     await createNotification(
         order.userId,
         'order_cancelled',
@@ -415,15 +467,25 @@ exports.cancelOrder = asyncHandler(async (req, res) => {
         order._id
     );
 
-    // Create notification for seller
-    if (order.items && order.items.length > 0 && order.items[0].sellerId) {
-        await createNotification(
-            order.items[0].sellerId,
-            'order_cancelled',
-            'Order Cancelled',
-            `Order #${order._id.toString().slice(-8)} has been cancelled by the customer.`,
-            order._id
-        );
+    // Create notifications for ALL SELLERS
+    if (order.items && order.items.length > 0) {
+        const uniqueSellerIds = [...new Set(order.items.map(item => item.sellerId?.toString()).filter(Boolean))];
+        for (const sellerId of uniqueSellerIds) {
+            const sellerItems = order.items.filter(item => item.sellerId?.toString() === sellerId);
+            const sellerTotal = sellerItems.reduce((sum, item) => sum + (item.selectedDiscountedPrice * item.quantity), 0);
+            
+            await createNotification(
+                sellerId,
+                'order_cancelled',
+                'Order Cancelled by Customer',
+                `Order #${order._id.toString().slice(-8)} worth ₹${sellerTotal} has been cancelled by the customer.`,
+                order._id,
+                {
+                    amount: sellerTotal,
+                    itemCount: sellerItems.length
+                }
+            );
+        }
     }
 
     console.log('Order cancelled successfully');

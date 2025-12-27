@@ -40,12 +40,20 @@ const FAQ = [
 ];
 
 // -------------------
-// FAQ matcher (English + Mizo)
+// FAQ matcher (English + Mizo) - only match at start
 // -------------------
 function matchFAQ(message) {
-  const q = message.toLowerCase();
+  const q = message.toLowerCase().trim();
+  
+  // Only match very short queries (greetings should be short)
+  if (q.length > 20) return null;
+  
   for (const f of FAQ) {
-    if (f.keywords.some((k) => q.includes(k))) {
+    // Check if any keyword matches at the start of the query
+    if (f.keywords.some((k) => {
+      const regex = new RegExp(`^${k}\\b`, 'i');
+      return regex.test(q) || q === k;
+    })) {
       // Simple heuristic: if contains Mizo words, return Mizo reply
       if (/[áâêîôûāēīōū]|chibai|ti ang che|duh|ka/.test(q)) {
         return f.reply_mizo || f.reply_en;
@@ -60,6 +68,7 @@ export default function ChatBot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [conversationHistory, setConversationHistory] = useState([]);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -77,22 +86,35 @@ export default function ChatBot() {
   const sendMessage = async () => {
     if (!input.trim()) return;
     const userMsg = { sender: "user", text: input };
+    const currentInput = input;
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
     // 🔹 Step 1: Check FAQ locally (no backend call if matched)
-    const faqReply = matchFAQ(input);
+    const faqReply = matchFAQ(currentInput);
     if (faqReply) {
       setMessages((prev) => [...prev, { sender: "bot", text: faqReply }]);
       return;
     }
 
-    // 🔹 Step 2: If not FAQ, call backend
+    // 🔹 Step 2: If not FAQ, call backend with conversation history
     try {
-      const { data } = await axios.post(`${API_BASE}/chat`, {
-        message: input,
+      const { data } = await axios.post(`${API_BASE}/appChat`, {
+        message: currentInput,
         cart: JSON.parse(localStorage.getItem("cart") || "[]"),
+        conversationHistory: conversationHistory,
       });
+
+      // Update conversation history
+      const newHistory = [
+        ...conversationHistory,
+        { role: "user", content: currentInput },
+        { role: "assistant", content: data.text },
+      ];
+      
+      // Keep only last 10 messages (5 exchanges)
+      const trimmedHistory = newHistory.slice(-10);
+      setConversationHistory(trimmedHistory);
 
       setMessages((prev) => [
         ...prev,
@@ -105,6 +127,7 @@ export default function ChatBot() {
         },
       ]);
     } catch (err) {
+      console.error("Chat error:", err);
       setMessages((prev) => [
         ...prev,
         { sender: "bot", text: "⚠️ Server error. Please try later." },

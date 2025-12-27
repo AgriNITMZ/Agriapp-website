@@ -46,9 +46,17 @@ const FAQ = [
 ];
 
 function matchFAQ(message) {
-  const q = message.toLowerCase();
+  const q = message.toLowerCase().trim();
+  
+  // Only match very short queries (greetings should be short)
+  if (q.length > 20) return null;
+  
   for (const f of FAQ) {
-    if (f.keywords.some((k) => q.includes(k))) {
+    // Check if any keyword matches at the start of the query
+    if (f.keywords.some((k) => {
+      const regex = new RegExp(`^${k}\\b`, 'i');
+      return regex.test(q) || q === k;
+    })) {
       if (/chibai|ti ang che|duh|zawng|thei|ang che|ka kal|engtin|hming/i.test(q)) {
         return f.reply_mizo || f.reply_en;
       }

@@ -12,15 +12,36 @@ const News = () => {
   const [currentPageType, setCurrentPageType] = useState("news"); 
   const limit = 10;
 
-  // Fetch news data
+  // Fetch news data (combining manual and scraped news)
   const fetchNews = async (page = 1, limit = 10) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/news`, {
-        params: { page, limit },
-      });
-      setNews(response.data.data);
-      setCurrentPage(response.data.page);
-      setTotal(response.data.total);
+      // Fetch both manual and scraped news
+      const [manualResponse, scrapedResponse] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API_URL}/news`, {
+          params: { page, limit: Math.ceil(limit / 2) },
+        }),
+        axios.get(`${import.meta.env.VITE_API_URL}/scraped-news`, {
+          params: { page, limit: Math.ceil(limit / 2) },
+        })
+      ]);
+
+      // Combine both news sources
+      const manualNews = manualResponse.data.data || [];
+      const scrapedNews = scrapedResponse.data.news || [];
+      
+      // Mark scraped news with isScraped flag
+      const markedScrapedNews = scrapedNews.map(item => ({
+        ...item,
+        isScraped: true,
+        image: item.image || 'https://via.placeholder.com/400x300?text=Agriculture+News'
+      }));
+
+      // Combine: scraped news first, then manual news
+      const combinedNews = [...markedScrapedNews, ...manualNews];
+      
+      setNews(combinedNews);
+      setCurrentPage(page);
+      setTotal(manualResponse.data.total + (scrapedResponse.data.pagination?.total || 0));
     } catch (error) {
       console.error("Error fetching news:", error);
     }
@@ -114,6 +135,11 @@ const News = () => {
                     alt={item.title}
                     className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-110"
                   />
+                  {item.isScraped && (
+                    <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                      NEW
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
                 <div className="p-6">
