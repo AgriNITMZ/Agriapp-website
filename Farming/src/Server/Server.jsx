@@ -14,37 +14,70 @@ const Server = () => {
     const user = useSelector((state) => state.profile.user);
     console.log("User data in Server component:", user);
 
-    // Fetch sensor names from the backend
+    // Get API URLs from environment
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://agriapp-backend-a1zy.onrender.com/api/v1';
+    
+    console.log("API URL:", apiUrl);
+
+    // Fetch sensor names from the backend (via proxy)
     const fetchSensorNames = async () => {
+        console.log("Fetching sensor names from:", `${apiUrl}/sensor/sensor-ids`);
         try {
-            const response = await fetch('apis/get_sensor_ids.php');
-            // if (!response.ok) {
-            //     throw new Error('Failed to fetch sensor names');
-            // }
+            const response = await fetch(`${apiUrl}/sensor/sensor-ids`);
+            console.log("Sensor IDs Response status:", response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const result = await response.json();
-            setSensorOptions(result?.sensor_ids); // Assuming the response is an array of sensor names
+            console.log("Sensor IDs Result:", result);
+            
+            if (result?.sensor_ids && Array.isArray(result.sensor_ids)) {
+                setSensorOptions(result.sensor_ids);
+                // Set first sensor as default if available
+                if (result.sensor_ids.length > 0 && !selectedSensor) {
+                    setSelectedSensor(result.sensor_ids[0]);
+                }
+            } else {
+                console.error("Invalid sensor_ids format:", result);
+            }
         } catch (error) {
             console.error('Error fetching sensor names:', error);
+            alert(`Failed to fetch sensor names: ${error.message}`);
         }
     };
 
     console.log("sensor name",sensorOptions);
-    // Fetch sensor data from the backend
+    // Fetch sensor data from the backend (via proxy)
     const fetchData = async (page, sensor) => {
+        console.log("Fetching sensor data for:", sensor, "page:", page);
         setLoading(true);
         try {
-            const response = await fetch(
-                `apis/get_sensor_data_pagination.php?table=${sensor}&limit=20&page=${page}`
-            );
-            // if (!response.ok) {
-            //     throw new Error('Failed to fetch sensor data');
-            // }
+            const url = `${apiUrl}/sensor/sensor-data?table=${sensor}&limit=20&page=${page}`;
+            console.log("Fetching from URL:", url);
+            
+            const response = await fetch(url);
+            console.log("Sensor Data Response status:", response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const result = await response.json();
-            setData(result.data);
-            setCurrentPage(result.current_page);
-            setTotalPages(result.total_pages);
+            console.log("Sensor Data Result:", result);
+            
+            if (result?.data && Array.isArray(result.data)) {
+                setData(result.data);
+                setCurrentPage(result.current_page || page);
+                setTotalPages(result.total_pages || 1);
+            } else {
+                console.error("Invalid data format:", result);
+                setData([]);
+            }
         } catch (error) {
             console.error('Error fetching sensor data:', error);
+            alert(`Failed to fetch sensor data: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -98,17 +131,23 @@ const Server = () => {
                 </div>
                 {/* Sensor selection */}
                 <div className="flex justify-center mb-6">
-                    <select
-                        value={selectedSensor}
-                        onChange={handleSensorChange}
-                        className="border border-gray-300 rounded px-3 py-2 mx-2"
-                    >
-                        {sensorOptions?.map((sensor, index) => (
-                            <option key={index} value={sensor}>
-                                {sensor}
-                            </option>
-                        ))}
-                    </select>
+                    {sensorOptions && sensorOptions.length > 0 ? (
+                        <select
+                            value={selectedSensor}
+                            onChange={handleSensorChange}
+                            className="border border-gray-300 rounded px-3 py-2 mx-2"
+                        >
+                            {sensorOptions.map((sensor, index) => (
+                                <option key={index} value={sensor}>
+                                    {sensor}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div className="text-red-600 bg-red-50 px-4 py-2 rounded border border-red-300">
+                            No sensors available. Please check your XAMPP server connection.
+                        </div>
+                    )}
                 </div>
                 {/* Data table */}
                 <div className="overflow-x-auto">
@@ -141,7 +180,7 @@ const Server = () => {
                                         Loading...
                                     </td>
                                 </tr>
-                            ) : (
+                            ) : data && data.length > 0 ? (
                                 data.map((row) => (
                                     <tr key={row.id} className="hover:bg-green-50">
                                         <td className="py-3 px-4 text-center">{row.id}</td>
@@ -163,6 +202,12 @@ const Server = () => {
                                         <td className="py-3 px-4 text-center">{row.loc3}</td>
                                     </tr>
                                 ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="17" className="py-10 text-center text-gray-500">
+                                        No sensor data available. Please check your XAMPP server.
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>

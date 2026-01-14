@@ -38,21 +38,21 @@ const SensorDropdownScreen = ({ navigation }) => {
     const fetchSensorIds = async () => {
         setLoading(true);
         try {
-            const apiUrl = API_BASE || 'http://192.168.0.111:4000/api/v1';
+            const apiUrl = API_BASE || 'https://agriapp-backend-a1zy.onrender.com/api/v1';
             const response = await fetch(`${apiUrl}/sensor/sensor-ids`);
             const json = await response.json();
 
-            if (json.status === 'success' && json.sensor_ids) {
+            if (json.sensor_ids && json.sensor_ids.length > 0) {
                 setSensorIds(json.sensor_ids);
-                if (json.sensor_ids.length > 0 && !selectedSensor) {
+                if (!selectedSensor) {
                     setSelectedSensor(json.sensor_ids[0]);
                 }
             } else {
-                Alert.alert('Feature Unavailable', json.message || 'Sensor feature is still in development and will be available soon');
+                Alert.alert('No Sensors Found', 'No sensor IDs available from the server');
             }
         } catch (error) {
             console.error('Error fetching sensor IDs:', error);
-            Alert.alert('Feature Unavailable', 'Sensor feature is still in development and will be available soon');
+            Alert.alert('Connection Error', 'Unable to connect to sensor server. Please check your connection.');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -64,23 +64,23 @@ const SensorDropdownScreen = ({ navigation }) => {
 
         setDataLoading(true);
         try {
-            const apiUrl = API_BASE || 'http://192.168.0.111:4000/api/v1';
+            const apiUrl = API_BASE || 'https://agriapp-backend-a1zy.onrender.com/api/v1';
             const response = await fetch(
                 `${apiUrl}/sensor/sensor-data?table=${selectedSensor}&limit=20&page=${currentPage}`
             );
             const json = await response.json();
 
-            if (json.data) {
+            if (json.data && json.data.length > 0) {
                 setSensorData(json.data);
                 setTotalPages(json.total_pages || 0);
                 setCurrentPage(json.current_page || 1);
             } else {
-                Alert.alert('Feature Unavailable', json.message || 'Sensor feature is still in development and will be available soon');
                 setSensorData([]);
+                setTotalPages(0);
             }
         } catch (error) {
             console.error('Error fetching sensor data:', error);
-            Alert.alert('Feature Unavailable', 'Sensor feature is still in development and will be available soon');
+            Alert.alert('Connection Error', 'Unable to fetch sensor data. Please check your connection.');
             setSensorData([]);
         } finally {
             setDataLoading(false);
