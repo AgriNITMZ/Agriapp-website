@@ -1,4 +1,26 @@
 const Scheme = require('../models/Scheme');
+const { scrapeAllSchemes } = require('../scraper/schemeScraper');
+
+// Trigger scheme scraper manually
+exports.triggerScraper = async (req, res) => {
+    try {
+        console.log('🚀 Manual scheme scraper triggered via API');
+        const result = await scrapeAllSchemes();
+        
+        res.json({
+            success: true,
+            message: 'Scheme scraper completed successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('❌ Error triggering scheme scraper:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to run scheme scraper',
+            error: error.message
+        });
+    }
+};
 
 // Add a new scheme
 exports.addScheme = async (req, res) => {
@@ -18,8 +40,12 @@ exports.getSchemes = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const schemes = await Scheme.find().skip(skip).limit(limit);
+        console.log(`📋 Fetching schemes - Page: ${page}, Limit: ${limit}`);
+
+        const schemes = await Scheme.find().sort({ date: -1 }).skip(skip).limit(limit);
         const total = await Scheme.countDocuments();
+
+        console.log(`   Found ${total} total schemes, returning ${schemes.length} for this page`);
 
         res.json({
             success: true,
@@ -29,6 +55,7 @@ exports.getSchemes = async (req, res) => {
             data: schemes
         });
     } catch (error) {
+        console.error('❌ Error fetching schemes:', error);
         res.status(500).json({ success: false, message: "Failed to fetch schemes", error: error.message });
     }
 };

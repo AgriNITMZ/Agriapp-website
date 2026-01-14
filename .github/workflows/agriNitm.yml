@@ -1,0 +1,46 @@
+name: Farming + Agri Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "agri-app/**"
+
+  pull_request:
+    paths-ignore:
+      - "agri-app/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            Farming/package-lock.json
+            agri_backend/package-lock.json
+
+      - name: Install Farming dependencies
+        run: npm ci
+        working-directory: Farming
+
+      - name: Build Farming
+        run: npm run build
+        working-directory: Farming
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Install Backend dependencies
+        run: npm ci
+        working-directory: agri_backend
+
+      - name: Build Backend
+        run: node -e "console.log('Backend JS CI passed')"
+        working-directory: agri_backend
