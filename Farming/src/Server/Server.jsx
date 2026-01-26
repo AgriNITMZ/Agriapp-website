@@ -151,60 +151,62 @@ const Server = () => {
                 </div>
                 {/* Data table */}
                 <div className="overflow-x-auto">
-                    <table className="w-full bg-white border border-gray-200 rounded-lg shadow-md">
+                    <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
                         <thead>
                             <tr className="bg-green-500 text-white">
-                                <th className="py-3 px-4 text-center">ID</th>
-                                <th className="py-3 px-4 text-center">Soil Moisture</th>
-                                <th className="py-3 px-4 text-center">Soil Temp</th>
-                                <th className="py-3 px-4 text-center">Soil Conductivity</th>
-                                <th className="py-3 px-4 text-center">Temperature</th>
-                                <th className="py-3 px-4 text-center">Humidity</th>
-                                <th className="py-3 px-4 text-center">Raindrop</th>
-                                <th className="py-3 px-4 text-center">Atm Light</th>
-                                <th className="py-3 px-4 text-center">Soil Nitrogen</th>
-                                <th className="py-3 px-4 text-center">Soil Phosphorus</th>
-                                <th className="py-3 px-4 text-center">Soil Potassium</th>
-                                <th className="py-3 px-4 text-center">Soil pH</th>
-                                <th className="py-3 px-4 text-center">Timestamp</th>
-                                <th className="py-3 px-4 text-center">Loc0</th>
-                                <th className="py-3 px-4 text-center">Loc1</th>
-                                <th className="py-3 px-4 text-center">Loc2</th>
-                                <th className="py-3 px-4 text-center">Loc3</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">ID</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Soil Moisture(%)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Soil Temp (°C)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Soil Conductivity (µS/cm)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Temperature (°C)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Humidity (%)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Raindrop (%)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Atmospheric Light (%)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Nitrogen (kg/ha)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Phosphorus (kg/ha)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Potassium (kg/ha)</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Soil pH</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Sensor Timestamp</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Receive Time</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Loc0</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Loc1</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Loc2</th>
+                                <th className="py-3 px-6 text-center whitespace-nowrap">Loc3</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="17" className="py-10 text-center text-gray-500">
+                                    <td colSpan="18" className="py-10 text-center text-gray-500">
                                         Loading...
                                     </td>
                                 </tr>
                             ) : data && data.length > 0 ? (
                                 data.map((row) => (
                                     <tr key={row.id} className="hover:bg-green-50">
-                                        <td className="py-3 px-4 text-center">{row.id}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_moisture}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_temp}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_conductivity}</td>
-                                        <td className="py-3 px-4 text-center">{row.temperature}</td>
-                                        <td className="py-3 px-4 text-center">{row.humidity}</td>
-                                        <td className="py-3 px-4 text-center">{row.raindrop}</td>
-                                        <td className="py-3 px-4 text-center">{row.atm_light}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_nitrogen}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_phosphorus}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_potassium}</td>
-                                        <td className="py-3 px-4 text-center">{row.soil_ph}</td>
-                                        <td className="py-3 px-4 text-center whitespace-nowrap">{row.timestamp}</td>
-                                        <td className="py-3 px-4 text-center">{row.loc0}</td>
-                                        <td className="py-3 px-4 text-center">{row.loc1}</td>
-                                        <td className="py-3 px-4 text-center">{row.loc2}</td>
-                                        <td className="py-3 px-4 text-center">{row.loc3}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.id}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_moisture}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_temp}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_conductivity}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.temperature}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.humidity}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.raindrop}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.atm_light}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_nitrogen}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_phosphorus}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_potassium}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.soil_ph}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.timestamp}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.received_at}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.loc0}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.loc1}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.loc2}</td>
+                                        <td className="py-3 px-6 text-center whitespace-nowrap">{row.loc3}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="17" className="py-10 text-center text-gray-500">
+                                    <td colSpan="18" className="py-10 text-center text-gray-500">
                                         No sensor data available. Please check your XAMPP server.
                                     </td>
                                 </tr>
