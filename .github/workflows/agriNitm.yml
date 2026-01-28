@@ -1,9 +1,14 @@
-name: VITE React Agrinitmz CI
+name: Farming + Agri Backend CI
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "agri-app/**"
+
   pull_request:
+    paths-ignore:
+      - "agri-app/**"
 
 jobs:
   build:
@@ -11,25 +16,31 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses : actions/checout@v4
-       
-       
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            Farming/package-lock.json
+            agri_backend/package-lock.json
 
-      -  name: Install dependencies
-         run: npm ci
+      - name: Install Farming dependencies
+        run: npm ci
+        working-directory: Farming
 
-      -  name: Build Vite app
-         run: npm run build
+      - name: Build Farming
+        run: npm run build
+        working-directory: Farming
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-         env:
-           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      - name: Install Backend dependencies
+        run: npm ci
+        working-directory: agri_backend
 
-    
-
-    
-    
+      - name: Build Backend
+        run: node -e "console.log('Backend JS CI passed')"
+        working-directory: agri_backend

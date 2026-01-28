@@ -38,21 +38,21 @@ const SensorDropdownScreen = ({ navigation }) => {
     const fetchSensorIds = async () => {
         setLoading(true);
         try {
-            const apiUrl = API_BASE || 'http://192.168.0.111:4000/api/v1';
+            const apiUrl = API_BASE || 'https://agriapp-backend-a1zy.onrender.com/api/v1';
             const response = await fetch(`${apiUrl}/sensor/sensor-ids`);
             const json = await response.json();
 
-            if (json.status === 'success' && json.sensor_ids) {
+            if (json.sensor_ids && json.sensor_ids.length > 0) {
                 setSensorIds(json.sensor_ids);
-                if (json.sensor_ids.length > 0 && !selectedSensor) {
+                if (!selectedSensor) {
                     setSelectedSensor(json.sensor_ids[0]);
                 }
             } else {
-                Alert.alert('Feature Unavailable', json.message || 'Sensor feature is still in development and will be available soon');
+                Alert.alert('No Sensors Found', 'No sensor IDs available from the server');
             }
         } catch (error) {
             console.error('Error fetching sensor IDs:', error);
-            Alert.alert('Feature Unavailable', 'Sensor feature is still in development and will be available soon');
+            Alert.alert('Connection Error', 'Unable to connect to sensor server. Please check your connection.');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -64,23 +64,23 @@ const SensorDropdownScreen = ({ navigation }) => {
 
         setDataLoading(true);
         try {
-            const apiUrl = API_BASE || 'http://192.168.0.111:4000/api/v1';
+            const apiUrl = API_BASE || 'https://agriapp-backend-a1zy.onrender.com/api/v1';
             const response = await fetch(
                 `${apiUrl}/sensor/sensor-data?table=${selectedSensor}&limit=20&page=${currentPage}`
             );
             const json = await response.json();
 
-            if (json.data) {
+            if (json.data && json.data.length > 0) {
                 setSensorData(json.data);
                 setTotalPages(json.total_pages || 0);
                 setCurrentPage(json.current_page || 1);
             } else {
-                Alert.alert('Feature Unavailable', json.message || 'Sensor feature is still in development and will be available soon');
                 setSensorData([]);
+                setTotalPages(0);
             }
         } catch (error) {
             console.error('Error fetching sensor data:', error);
-            Alert.alert('Feature Unavailable', 'Sensor feature is still in development and will be available soon');
+            Alert.alert('Connection Error', 'Unable to fetch sensor data. Please check your connection.');
             setSensorData([]);
         } finally {
             setDataLoading(false);
@@ -111,33 +111,78 @@ const SensorDropdownScreen = ({ navigation }) => {
     const renderItem = ({ item }) => (
         <View style={styles.dataItem}>
             <Text style={styles.dataItemHeader}>Record ID: {item.id}</Text>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Soil Moisture: {item.soil_moisture}</Text>
-                <Text style={styles.dataField}>Soil Temp: {item.soil_temp}</Text>
+                <Text style={styles.dataLabel}>Soil Moisture (V):</Text>
+                <Text style={styles.dataValue}>{item.soil_moisture || 'N/A'}</Text>
             </View>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Soil Conductivity: {item.soil_conductivity}</Text>
-                <Text style={styles.dataField}>Temperature: {item.temperature}</Text>
+                <Text style={styles.dataLabel}>Soil Temp (°C):</Text>
+                <Text style={styles.dataValue}>{item.soil_temp || 'N/A'}</Text>
             </View>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Humidity: {item.humidity}</Text>
-                <Text style={styles.dataField}>Raindrop: {item.raindrop}</Text>
+                <Text style={styles.dataLabel}>Soil Conductivity (µS/cm):</Text>
+                <Text style={styles.dataValue}>{item.soil_conductivity || 'N/A'}</Text>
             </View>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Atm Light: {item.atm_light}</Text>
-                <Text style={styles.dataField}>Soil pH: {item.soil_ph}</Text>
+                <Text style={styles.dataLabel}>Temperature (°C):</Text>
+                <Text style={styles.dataValue}>{item.temperature || 'N/A'}</Text>
             </View>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Soil Nitrogen: {item.soil_nitrogen}</Text>
-                <Text style={styles.dataField}>Soil Phosphorus: {item.soil_phosphorus}</Text>
+                <Text style={styles.dataLabel}>Humidity (%):</Text>
+                <Text style={styles.dataValue}>{item.humidity || 'N/A'}</Text>
             </View>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Soil Potassium: {item.soil_potassium}</Text>
+                <Text style={styles.dataLabel}>Raindrop H (V):</Text>
+                <Text style={styles.dataValue}>{item.raindrop || 'N/A'}</Text>
             </View>
+            
             <View style={styles.dataRow}>
-                <Text style={styles.dataField}>Location: {item.loc0}, {item.loc1}, {item.loc2}, {item.loc3}</Text>
+                <Text style={styles.dataLabel}>Atmospheric Light (lux):</Text>
+                <Text style={styles.dataValue}>{item.atm_light || 'N/A'}</Text>
             </View>
-            <Text style={styles.dataTimestamp}>Timestamp: {item.timestamp}</Text>
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Nitrogen (kg/ha):</Text>
+                <Text style={styles.dataValue}>{item.soil_nitrogen || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Phosphorus (kg/ha):</Text>
+                <Text style={styles.dataValue}>{item.soil_phosphorus || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Potassium (kg/ha):</Text>
+                <Text style={styles.dataValue}>{item.soil_potassium || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Soil pH:</Text>
+                <Text style={styles.dataValue}>{item.soil_ph || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Sensor Time:</Text>
+                <Text style={styles.dataValue}>{item.timestamp || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Receive Time:</Text>
+                <Text style={styles.dataValue}>{item.received_at || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Location:</Text>
+                <Text style={styles.dataValue}>{item.loc0}, {item.loc1}, {item.loc2}, {item.loc3}</Text>
+            </View>
         </View>
     );
 
@@ -239,15 +284,18 @@ const styles = StyleSheet.create({
     },
     dropdownContainer: {
         marginBottom: 16,
+        paddingHorizontal: 16,
+        paddingTop: 12,
     },
     dropdownLabel: {
         fontSize: 16,
         marginBottom: 8,
         fontWeight: '600',
+        color: '#333',
     },
     pickerContainer: {
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#ddd',
         borderRadius: 8,
         backgroundColor: '#fff',
         overflow: 'hidden',
@@ -257,72 +305,89 @@ const styles = StyleSheet.create({
     },
     sensorTitleContainer: {
         marginVertical: 12,
+        paddingHorizontal: 16,
     },
     dataTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#1e5631',
     },
     listContainer: {
+        paddingHorizontal: 16,
         paddingBottom: 16,
     },
     dataItem: {
         backgroundColor: '#fff',
         padding: 16,
         marginBottom: 12,
-        borderRadius: 8,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
     },
     dataItemHeader: {
         fontSize: 16,
         fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#333',
+        marginBottom: 12,
+        color: '#1e5631',
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
     },
     dataRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 6,
+        alignItems: 'center',
+        paddingVertical: 6,
     },
-    dataField: {
+    dataLabel: {
         fontSize: 14,
-        color: '#555',
+        color: '#666',
         flex: 1,
+        fontWeight: '500',
     },
-    dataTimestamp: {
-        fontSize: 12,
-        color: '#888',
-        marginTop: 8,
-        fontStyle: 'italic',
+    dataValue: {
+        fontSize: 14,
+        color: '#333',
+        flex: 1,
+        textAlign: 'right',
+        fontWeight: '400',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#e0e0e0',
+        marginVertical: 8,
     },
     paginationContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 8,
-        marginTop: 4,
+        padding: 12,
+        marginHorizontal: 16,
+        marginTop: 8,
+        marginBottom: 16,
         backgroundColor: '#fff',
         borderRadius: 8,
-        elevation: 1,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
     },
     paginationButton: {
-        backgroundColor: '#007bff',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 4,
+        backgroundColor: '#1e5631',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 6,
     },
     paginationButtonText: {
         color: '#fff',
-        fontWeight: '500',
+        fontWeight: '600',
+        fontSize: 14,
     },
     disabledButton: {
-        backgroundColor: '#cccccc',
+        backgroundColor: '#ccc',
     },
     paginationText: {
         fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
     },
     emptyText: {
         textAlign: 'center',
