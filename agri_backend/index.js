@@ -15,7 +15,7 @@ if (process.env.CORS_ORIGIN) allowedOrigins.push(process.env.CORS_ORIGIN);
 // Initialize Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => callback(null, true), // Allow all origins
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -35,16 +35,10 @@ app.use(cookieParser());
 // allowedOrigins is defined above
 app.use(
   cors({
-    origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-
-}));
+    origin: (origin, callback) => callback(null, true), // Allow all origins
+    credentials: true,
+  })
+);
 database.connect()
 
 app.use(
