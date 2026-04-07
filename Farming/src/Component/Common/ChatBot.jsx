@@ -69,7 +69,15 @@ export default function ChatBot() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [conversationHistory, setConversationHistory] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef(null);
+
+  const clearHistory = () => {
+    setConversationHistory([]);
+    setMessages([
+      { sender: "bot", text: "👋 Conversation cleared! How can I help you?" },
+    ]);
+  };
 
   useEffect(() => {
     setMessages([
@@ -84,24 +92,35 @@ export default function ChatBot() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
     const userMsg = { sender: "user", text: input };
     const currentInput = input;
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setIsLoading(true);
 
     // 🔹 Step 1: Check FAQ locally (no backend call if matched)
     const faqReply = matchFAQ(currentInput);
     if (faqReply) {
-      setMessages((prev) => [...prev, { sender: "bot", text: faqReply }]);
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { sender: "bot", text: faqReply }]);
+        setIsLoading(false);
+      }, 500);
       return;
     }
 
     // 🔹 Step 2: If not FAQ, call backend with conversation history
     try {
+      let cartData = [];
+      try {
+        cartData = JSON.parse(localStorage.getItem("cart") || "[]");
+      } catch (err) {
+        cartData = [];
+      }
+
       const { data } = await axios.post(`${API_BASE}/appChat`, {
         message: currentInput,
-        cart: JSON.parse(localStorage.getItem("cart") || "[]"),
+        cart: cartData,
         conversationHistory: conversationHistory,
       });
 
@@ -132,6 +151,8 @@ export default function ChatBot() {
         ...prev,
         { sender: "bot", text: "⚠️ Server error. Please try later." },
       ]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,12 +167,21 @@ export default function ChatBot() {
               <MessageCircle className="w-5 h-5" />
               <span className="font-semibold">AgriBot</span>
             </div>
-            <button 
-              onClick={() => setOpen(false)}
-              className="text-white hover:text-mizoram-200 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={clearHistory}
+                className="text-mizoram-100 hover:text-white transition-colors"
+                title="Clear Chat"
+              >
+                <span className="text-sm border border-mizoram-300 rounded px-2 py-1 hover:bg-mizoram-500">Clear</span>
+              </button>
+              <button 
+                onClick={() => setOpen(false)}
+                className="text-white hover:text-mizoram-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col h-96">
@@ -168,7 +198,7 @@ export default function ChatBot() {
                   }`}
                 >
                   <div
-                    className={`px-3 py-2 rounded-lg max-w-xs ${
+                    className={`px-3 py-2 rounded-lg max-w-xs whitespace-pre-wrap ${
                       m.sender === "user" ? "bg-blue-200" : "bg-gray-200"
                     }`}
                   >
@@ -247,6 +277,14 @@ export default function ChatBot() {
                   </div>
                 </div>
               ))}
+              
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="px-3 py-2 rounded-lg max-w-xs bg-gray-200 text-gray-500 italic">
+                    Typing...
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Input */}
@@ -255,12 +293,14 @@ export default function ChatBot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500"
+                className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mizoram-500 focus:border-mizoram-500 disabled:bg-gray-100 disabled:opacity-50"
                 placeholder="Type your message..."
+                disabled={isLoading}
               />
               <button
                 onClick={sendMessage}
-                className="ml-3 bg-mizoram-600 hover:bg-mizoram-700 text-white p-2 rounded-full transition-colors duration-200"
+                disabled={isLoading}
+                className="ml-3 bg-mizoram-600 hover:bg-mizoram-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white p-2 rounded-full transition-colors duration-200"
               >
                 <Send className="w-4 h-4" />
               </button>

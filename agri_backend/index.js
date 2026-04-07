@@ -5,14 +5,17 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 const cors = require('cors');
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://192.168.0.101:19000", // Expo Go dev server
+  "https://agriapp-website.vercel.app", // production frontend
+];
+if (process.env.CORS_ORIGIN) allowedOrigins.push(process.env.CORS_ORIGIN);
+
 // Initialize Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      process.env.CORS_ORIGIN,
-      "http://192.168.0.101:19000"
-    ],
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -29,11 +32,7 @@ const PORT = process.env.PORT || 5000;
 app.use(morgan("tiny")); // only for development purpose
 app.use(express.json());
 app.use(cookieParser());
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.CORS_ORIGIN, // for web
-  "http://192.168.0.101:19000", // Expo Go dev server (adjust IP accordingly)
-];
+// allowedOrigins is defined above
 app.use(
   cors({
     origin: (origin, callback) => {
