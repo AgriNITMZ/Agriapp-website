@@ -3,7 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { MessageCircle, X, Send } from "lucide-react";
 
-const API_BASE =import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 // -------------------
 // Local FAQ (English + Mizo)
@@ -44,10 +44,10 @@ const FAQ = [
 // -------------------
 function matchFAQ(message) {
   const q = message.toLowerCase().trim();
-  
+
   // Only match very short queries (greetings should be short)
   if (q.length > 20) return null;
-  
+
   for (const f of FAQ) {
     // Check if any keyword matches at the start of the query
     if (f.keywords.some((k) => {
@@ -130,7 +130,7 @@ export default function ChatBot() {
         { role: "user", content: currentInput },
         { role: "assistant", content: data.text },
       ];
-      
+
       // Keep only last 10 messages (5 exchanges)
       const trimmedHistory = newHistory.slice(-10);
       setConversationHistory(trimmedHistory);
@@ -168,14 +168,14 @@ export default function ChatBot() {
               <span className="font-semibold">AgriBot</span>
             </div>
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={clearHistory}
                 className="text-mizoram-100 hover:text-white transition-colors"
                 title="Clear Chat"
               >
                 <span className="text-sm border border-mizoram-300 rounded px-2 py-1 hover:bg-mizoram-500">Clear</span>
               </button>
-              <button 
+              <button
                 onClick={() => setOpen(false)}
                 className="text-white hover:text-mizoram-200 transition-colors"
               >
@@ -193,14 +193,12 @@ export default function ChatBot() {
               {messages.map((m, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${
-                    m.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
                 >
                   <div
-                    className={`px-3 py-2 rounded-lg max-w-xs whitespace-pre-wrap ${
-                      m.sender === "user" ? "bg-blue-200" : "bg-gray-200"
-                    }`}
+                    className={`px-3 py-2 rounded-lg max-w-xs whitespace-pre-wrap ${m.sender === "user" ? "bg-blue-200" : "bg-gray-200"
+                      }`}
                   >
                     {m.text}
 
@@ -277,7 +275,7 @@ export default function ChatBot() {
                   </div>
                 </div>
               ))}
-              
+
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="px-3 py-2 rounded-lg max-w-xs bg-gray-200 text-gray-500 italic">
