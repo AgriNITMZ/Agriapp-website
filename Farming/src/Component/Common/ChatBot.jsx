@@ -81,7 +81,7 @@ export default function ChatBot() {
 
   useEffect(() => {
     setMessages([
-      { sender: "bot", text: "👋 Hi! I’m AgriBot. Ask me in English or Mizo." },
+      { sender: "bot", text: "👋 Hi! I'm AgriBot. Ask me in English, Hindi, Mizo, or Nepali." },
     ]);
   }, []);
 
